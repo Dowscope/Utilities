@@ -5,6 +5,7 @@ button.dowm_trigger {
 }
 
 button.dowm_static_trigger {
+    z-index: 1;
     position: fixed;
     bottom: 0;
     left: 5rem;

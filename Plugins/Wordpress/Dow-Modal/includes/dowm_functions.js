@@ -16,6 +16,11 @@ jQuery(document).ready(function() {
         dialog.showModal();
     });
 
+    jQuery('.wpps_static_trigger').click(function() {
+        dialog = jQuery('.wpps_modal');
+        dialog.showModal();
+    });
+
     jQuery(document.body).click(function(event) {
         target = jQuery(event.target);
         if (target.parents('.dowm_modal').length == 0 && !target.hasClass('dowm_trigger')) {
