@@ -12,3 +12,5 @@ This is still a work in progress as I am updating some features.  Currenting it 
 - 1.0.3 - Missing JS, added script to the static button
 - 1.0.4 - Corrected spelling of naming so the triggers would work
 - 1.0.5 - Added a condition to allow the modal to open when clicking the button.
+- 1.0.6 - Fixed responsiveness
+- 1.1.0 - Add a small animation when you open the modal.
