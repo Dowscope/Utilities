@@ -23,7 +23,7 @@ jQuery(document).ready(function() {
 
     jQuery(document.body).click(function(event) {
         target = jQuery(event.target);
-        if (target.parents('.dowm_modal').length == 0 && !target.hasClass('dowm_trigger')) {
+        if (target.parents('.dowm_modal').length == 0 && !target.hasClass('dowm_trigger') && !target.hasClass('dowm_static_trigger')) {
             dialog = jQuery('.dowm_modal');
             dialog.closeModal();
         }

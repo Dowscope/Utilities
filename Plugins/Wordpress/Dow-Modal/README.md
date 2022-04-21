@@ -8,3 +8,7 @@ This is still a work in progress as I am updating some features.  Currenting it 
 ## Change Log
 - 1.0.0 - Initial Realease
 - 1.0.1 - Added static button.  Set on by default, but can be turned off in settings.
+- 1.0.2 - Made changes to the CSS code.
+- 1.0.3 - Missing JS, added script to the static button
+- 1.0.4 - Corrected spelling of naming so the triggers would work
+- 1.0.5 - Added a condition to allow the modal to open when clicking the button.
