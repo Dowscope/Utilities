@@ -16,8 +16,8 @@ jQuery(document).ready(function() {
         dialog.showModal();
     });
 
-    jQuery('.wpps_static_trigger').click(function() {
-        dialog = jQuery('.wpps_modal');
+    jQuery('.dowm_static_trigger').click(function() {
+        dialog = jQuery('.dowm_modal');
         dialog.showModal();
     });
 

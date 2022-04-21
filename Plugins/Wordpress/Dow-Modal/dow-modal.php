@@ -3,7 +3,7 @@
 Plugin Name:  Dow Modal
 Plugin URI:   http://dowscopemedia.ca/#/plugins/wordpress/dowmodal
 Description:  A simple modal plugin
-Version:      1.0.2
+Version:      1.0.4
 Author:       DowScope Media 
 Author URI:   http://dowscopemedia.ca
 License:      GPL2
