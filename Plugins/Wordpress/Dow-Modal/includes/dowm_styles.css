@@ -1,0 +1,35 @@
+.dowm_modal {
+    position: fixed;
+    top: 30vh;
+    left: 30vw;
+    width: 60rem;
+    min-height: 20rem;
+    box-shadow: 1px 1px 5px 1px black;
+    border: none;
+}
+
+.dowm_modal::backdrop{
+    background: rgba(0, 0, 0, 0.428);
+}
+
+.dowm_content {
+    padding: 0.5rem;
+    font-style: italic;
+}
+
+.dowm_cancel {
+    position: relative;
+    bottom: 0;
+    float: right;
+    margin-right: 1rem;
+    margin-bottom: 1rem;
+}
+
+.dowm_shortcode {
+    position: relative;
+    height: 5rem;
+    width: 20rem;
+    bottom: 0;
+    margin-left: 1rem;
+    margin-bottom: 1rem;
+}
