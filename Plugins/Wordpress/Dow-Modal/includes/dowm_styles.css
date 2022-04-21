@@ -18,18 +18,52 @@ button.dowm_static_trigger.dowm_hide {
     visibility: hidden;
 }
 
-.dowm_modal {
-    position: fixed;
-    top: 30vh;
-    left: 30vw;
-    width: 60rem;
-    min-height: 20rem;
-    box-shadow: 1px 1px 5px 1px black;
-    border: none;
+@media only screen and (min-width: 751px){
+    .dowm_modal {
+        position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 60rem;
+            width: 90%;
+            min-height: 20rem;
+            max-height: 80%;
+            box-shadow: 1px 1px 5px 1px black;
+            border: none;
+    }
+    .wpps_modal[open] {
+        animation: dm-fade-in 500ms forwards;
+    }
+}    
+
+@media only screen and (max-width: 750px) {
+    .dowm_modal {
+        position: fixed;
+        max-height: 80%;
+        margin: 1rem auto;
+    }
+}
+
+@keyframes dm-fade-in {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes dm-fade-out {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
 }
 
 .dowm_modal::backdrop{
-    background: rgba(0, 0, 0, 0.428);
+    background: rgba(0, 0, 0, 0.501);
 }
 
 .dowm_content {
