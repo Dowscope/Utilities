@@ -17,6 +17,8 @@ class DOWMPluginAdmin {
         register_setting('dowm','dowm_text3',array('sanitize_callback' => 'sanitize_text_field','default' => '0'));
         add_settings_field( 'dowm_text4', 'Public 4th Paragragh', array($this, 'textHTML4'), 'dowm-settings', 'dowm-primary-section');
         register_setting('dowm','dowm_text4',array('sanitize_callback' => 'sanitize_text_field','default' => '0'));
+        add_settings_field( 'dowm_staticTrigger', 'Use Static Button', array($this, 'staticHTML'), 'dowm-settings', 'dowm-primary-section');
+        register_setting('dowm','dowm_staticTrigger', array('sanitize_callback' => 'sanitize_text_field','default' => '1'));
         // TODO: Add Dynamic Shortcode
     }
 
@@ -32,11 +34,14 @@ class DOWMPluginAdmin {
     function textHTML4() { ?>
         <textarea name="dowm_text4" id="desc_text4" cols="90" rows="5"><?php echo get_option('dowm_text4') ?></textarea>
     <?php }
+    function staticHTML() { ?>
+        <input type="checkbox" name="dowm_staticTrigger" id="dowm_staticTrigger" value="1" <?php checked(get_option('dowm_staticTrigger'),'1') ?>"/>
+    <?php }
 
     function adminPage() {
         add_options_page(
             'dowm Settings',
-            'dowm',
+            'DOWModal',
             'manage_options',
             'dowm-settings',
             array($this, 'html')

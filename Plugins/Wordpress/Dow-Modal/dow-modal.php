@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name:  Dow Modal
-Plugin URI:   http://dowscopemedia.ca/plugins
+Plugin URI:   http://dowscopemedia.ca/#/plugins/wordpress/dowmodal
 Description:  A simple modal plugin
 Version:      1.0
 Author:       DowScope Media 
@@ -54,6 +54,14 @@ class DOWMPlugin {
             </div>
             <button class="dowm_cancel">Close</button>
         </dialog>
+        <button class="dowm_static_trigger <?php
+            if (get_option( 'dowm_staticTrigger', '1')){
+                echo 'dowm_show';
+            } else {
+                echo 'dowm_hide';
+            } ?>">
+            Translate
+        </button>
     <?php 
     }
 
