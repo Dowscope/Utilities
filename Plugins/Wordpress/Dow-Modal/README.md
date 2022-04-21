@@ -4,3 +4,7 @@ This wordpress plugin is designed for the google translotor.  We needed to displ
 It does require the Google Traslator Plugin to be installed and activated first.
 
 This is still a work in progress as I am updating some features.  Currenting it allows you to only add four papagraphs and the link to the google translator is hard coded in.  The goal is to make it more dynamic and allow the user to add the shortcode they wish.
+
+## Change Log
+- 1.0.0 - Initial Realease
+- 1.0.1 - Added static button.  Set on by default, but can be turned off in settings.

@@ -3,7 +3,7 @@
 Plugin Name:  Dow Modal
 Plugin URI:   http://dowscopemedia.ca/#/plugins/wordpress/dowmodal
 Description:  A simple modal plugin
-Version:      1.0
+Version:      1.0.1
 Author:       DowScope Media 
 Author URI:   http://dowscopemedia.ca
 License:      GPL2
@@ -29,14 +29,7 @@ class DOWMPlugin {
 
     // Using a shortcode
     function shortcode($atts) {
-        $content = '<style>';
-        $content .= 'button.dowm_trigger {';
-        $content .= 'background-color: #0177c1;';
-        $content .= 'color: #FFF;';
-        $content .= 'padding: 0.25rem 1rem;';
-        $content .= '}';
-        $content .= '</style>';
-        $content .= '<button class="dowm_trigger">Translate</button>';
+        $content = '<button class="dowm_trigger">Translate</button>';
         return $content;
     }
 
