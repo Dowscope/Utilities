@@ -3,7 +3,7 @@
 Plugin Name:  Dow Modal
 Plugin URI:   http://dowscopemedia.ca/#/plugins/wordpress/dowmodal
 Description:  A simple modal plugin
-Version:      1.1.0
+Version:      1.1.3
 Author:       DowScope Media 
 Author URI:   http://dowscopemedia.ca
 License:      GPL2
@@ -22,7 +22,7 @@ class DOWMPlugin {
         register_uninstall_hook(__FILE__, array($this, 'uninstall'));
         
         add_shortcode('dowm_sc', array($this, 'shortcode'));
-        add_action('init', array($this, 'html'), 2000, 1);
+        add_action('wp_loaded', array($this, 'html'), 2000, 1);
         add_action('wp_enqueue_scripts', array($this, 'add_styles'));
         add_action('wp_enqueue_scripts', array($this, 'add_scripts'));
     }
@@ -72,6 +72,10 @@ class DOWMPlugin {
             true
         );
     }
+
+    function activate() {}
+    function deactivate() {}
+    function uninstall() {}
 }
 
 $dowmPlugin = new DOWMPlugin();
