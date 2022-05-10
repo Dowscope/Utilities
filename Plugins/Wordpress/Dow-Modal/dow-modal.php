@@ -3,7 +3,7 @@
 Plugin Name:  Dow Modal
 Plugin URI:   http://dowscopemedia.ca/#/plugins/wordpress/dowmodal
 Description:  A simple modal plugin
-Version:      1.1.3
+Version:      1.1.33
 Author:       DowScope Media 
 Author URI:   http://dowscopemedia.ca
 License:      GPL2
@@ -21,41 +21,62 @@ class DOWMPlugin {
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
         register_uninstall_hook(__FILE__, array($this, 'uninstall'));
         
-        add_shortcode('dowm_sc', array($this, 'shortcode'));
-        add_action('wp_loaded', array($this, 'html'), 2000, 1);
+        add_action('wp_footer', array($this, 'html'), 2000, 1);
+        add_action('wp_footer', array($this, 'buttonHTML'), 2000, 1);
+        add_action('wp_footer', array($this, 'shortcodeHTML'), 2000, 1);
         add_action('wp_enqueue_scripts', array($this, 'add_styles'));
         add_action('wp_enqueue_scripts', array($this, 'add_scripts'));
+        add_shortcode('dowm_sc', array($this, 'shortcode'));
     }
 
     // Using a shortcode
     function shortcode($atts) {
         $content = '<button class="dowm_trigger">Translate</button>';
-        return $content;
+        echo $content;
+    }
+
+    function buttonHTML() {
+        if (!is_admin()) {
+            ?>
+            <button class="dowm_static_trigger <?php
+                if (get_option( 'dowm_staticTrigger', '1')){
+                    echo 'dowm_show';
+                } else {
+                    echo 'dowm_hide';
+                } ?>">
+                Translate
+            </button>
+            <?php
+        }
+    }
+
+    function shortcodeHTML() {
+        ?>
+        <div class="dowm_shortcode">
+            <?php
+                if (class_exists("google_language_translator")){
+                    echo do_shortcode("[google-translator]"); ?>
+                } 
+        </div>
+        <?php
     }
 
     function html() { 
     ?>
         <dialog class="dowm_modal">
             <div class="dowm_content">
-                <p><?php echo get_option('dowm_text'); ?></p>
-                <p><?php echo get_option('dowm_text2'); ?></p>
-                <p><?php echo get_option('dowm_text3'); ?></p>
-                <p><?php echo get_option('dowm_text4'); ?></p>
-            </div>
-            <div class="dowm_shortcode">
-                <?php echo do_shortcode('[google-translator]'); ?>
+                <p><?php echo get_option("dowm_text")?></p>
+                <p><?php echo get_option("dowm_text2")?></p>
+                <p><?php echo get_option("dowm_text3")?></p>
+                <p><?php echo get_option("dowm_text4")?></p>
             </div>
             <button class="dowm_cancel">Close</button>
         </dialog>
-        <button class="dowm_static_trigger <?php
-            if (get_option( 'dowm_staticTrigger', '1')){
-                echo 'dowm_show';
-            } else {
-                echo 'dowm_hide';
-            } ?>">
-            Translate
-        </button>
-    <?php 
+    <?php
+    }
+
+    function add_plugin_shortcode(){
+        
     }
 
     function add_styles() {

@@ -13,11 +13,17 @@ jQuery(document).ready(function() {
     }
     jQuery('.dowm_trigger').click(function() {
         dialog = jQuery('.dowm_modal');
+        shortc = jQuery('.dowm_shortcode');
+        shortc.css('visibility', 'visible');
+        dialog.append(shortc)
         dialog.showModal();
     });
 
     jQuery('.dowm_static_trigger').click(function() {
         dialog = jQuery('.dowm_modal');
+        shortc = jQuery('.dowm_shortcode');
+        shortc.css('visibility', 'visible');
+        dialog.append(shortc)
         dialog.showModal();
     });
 
@@ -33,4 +39,6 @@ jQuery(document).ready(function() {
         dialog = jQuery('.dowm_modal');
         dialog.closeModal();
     });
+
+    modal = jQuery('.dowm_modal');
 });
