@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cinemachine;
 
 public class CameraSystem : MonoBehaviour
 {
@@ -26,103 +27,135 @@ public class CameraSystem : MonoBehaviour
      * trigger the camera to start moving in that direction.  Default size is 20.
      */
     [SerializeField] private bool UseEgdeScrolling = false;
-    private int edgeScrollSize = 20;
+    private int _edgeScrollSize = 20;
 
     /*
      * Drag Pan Scrolling is using the mouse to move the camera. 
      * Hold the right mouse button and mouse the cursor to move the camera.
      */
     [SerializeField] private bool UseDragPanScrolling = true;
-    private bool dragPanMoveActive = false;
-    private Vector2 lastMousePosition;
-    private float dragPanSpeed = 0.01f;
+    private bool _dragPanMoveActive = false;
+    private Vector2 _lastMousePosition;
+    private float _dragPanSpeed = 0.01f;
 
+    /* 
+     * This is the reference to the virtual camera object.
+     * Make sure in the editor to add the camera to this field.
+     */
+    [SerializeField] private CinemachineVirtualCamera cinemachineVirtualCamera;
+    private float _targetFieldOfView = 50f;
+    private float _FieldOfViewMax = 50f;
+    private float _FieldOfViewMin = 10f;
 
-    private float moveSpeed = 50f;
-    private float rotateSpeed = 100f;
+    /*
+     * Zooming is used by the mouse wheel. The default is ON
+     */
+    [SerializeField] private bool UseMouseZooming = true;
+    private float _zoomStep = 5f;
+    private float _zoomSpeed = 10f;
+
+    private float _moveSpeed = 50f;
+    private float _rotateSpeed = 100f;
 
 
 
     // Update is called once per frame
     private void Update()
     {
-        if (UseKeyboardScrolling) HandleCameraKeyBoardMovement();
-        if (UseEgdeScrolling) HandleCameraMovementEdgeScrolling();
-        if (UseDragPanScrolling) HandleCameraMoveDragPan();
-        if (UseKeyboardRotating) HandleCameraKeyboardRotation();
+        if (UseKeyboardScrolling) _HandleCameraKeyBoardMovement();
+        if (UseEgdeScrolling) _HandleCameraMovementEdgeScrolling();
+        if (UseDragPanScrolling) _HandleCameraMoveDragPan();
+        if (UseKeyboardRotating) _HandleCameraKeyboardRotation();
+        if (UseMouseZooming) _HandleCameraZoom();
     }
 
-    private void HandleCameraMovementEdgeScrolling()
+    private void _HandleCameraMovementEdgeScrolling()
     {
         Vector3 InputDir = new Vector3(0, 0, 0);
 
-        if (Input.mousePosition.x < edgeScrollSize)
+        if (Input.mousePosition.x < _edgeScrollSize)
         {
             InputDir.x = -1f;
         }
-        if (Input.mousePosition.y < edgeScrollSize)
+        if (Input.mousePosition.y < _edgeScrollSize)
         {
             InputDir.z = -1f;
         }
-        if (Input.mousePosition.x > Screen.width - edgeScrollSize)
+        if (Input.mousePosition.x > Screen.width - _edgeScrollSize)
         {
             InputDir.x = +1f;
         }
-        if (Input.mousePosition.y > Screen.height - edgeScrollSize)
+        if (Input.mousePosition.y > Screen.height - _edgeScrollSize)
         {
             InputDir.z = +1f;
         }
 
         Vector3 moveDir = transform.forward * InputDir.z + transform.right * InputDir.x;
-        transform.position += moveDir * moveSpeed * Time.deltaTime;
+        transform.position += moveDir * _moveSpeed * Time.deltaTime;
     }
 
-    private void HandleCameraMoveDragPan()
+    private void _HandleCameraMoveDragPan()
     {
         Vector3 InputDir = new Vector3(0, 0, 0);
 
         if (Input.GetMouseButtonDown(1))
         {
-            dragPanMoveActive = true;
-            lastMousePosition = Input.mousePosition;
+            _dragPanMoveActive = true;
+            _lastMousePosition = Input.mousePosition;
         }
         if (Input.GetMouseButtonUp(1))
         {
-            dragPanMoveActive = false;
+            _dragPanMoveActive = false;
         }
-        if (dragPanMoveActive)
+        if (_dragPanMoveActive)
         {
-            Vector2 mouseMovementDelta = (Vector2)Input.mousePosition - lastMousePosition;
+            Vector2 mouseMovementDelta = (Vector2)Input.mousePosition - _lastMousePosition;
 
-            InputDir.x = mouseMovementDelta.x * dragPanSpeed;
-            InputDir.z = mouseMovementDelta.y * dragPanSpeed;
+            InputDir.x = mouseMovementDelta.x * _dragPanSpeed;
+            InputDir.z = mouseMovementDelta.y * _dragPanSpeed;
 
-            lastMousePosition = Input.mousePosition;
+            _lastMousePosition = Input.mousePosition;
         }
 
         Vector3 moveDir = transform.forward * InputDir.z + transform.right * InputDir.x;
-        transform.position += moveDir * moveSpeed * Time.deltaTime;
+        transform.position += moveDir * _moveSpeed * Time.deltaTime;
     }
 
-    private void HandleCameraKeyBoardMovement()
+    private void _HandleCameraKeyBoardMovement()
     {
         Vector3 InputDir = new Vector3(0, 0, 0);
 
-        if (Input.GetKey(KeyCode.W)) InputDir.z = +1f;
-        if (Input.GetKey(KeyCode.S)) InputDir.z = -1f;
-        if (Input.GetKey(KeyCode.A)) InputDir.x = -1f;
-        if (Input.GetKey(KeyCode.D)) InputDir.x = +1f;
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) InputDir.z = +1f;
+        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) InputDir.z = -1f;
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) InputDir.x = -1f;
+        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) InputDir.x = +1f;
 
         Vector3 moveDir = transform.forward * InputDir.z + transform.right * InputDir.x;
-        transform.position += moveDir * moveSpeed * Time.deltaTime;
+        transform.position += moveDir * _moveSpeed * Time.deltaTime;
     }
 
-    private void HandleCameraKeyboardRotation()
+    private void _HandleCameraKeyboardRotation()
     {
         float rotateDir = 0f;
         if (Input.GetKey(KeyCode.Q)) rotateDir = +1f;
         if (Input.GetKey(KeyCode.E)) rotateDir = -1f;
 
-        transform.eulerAngles += new Vector3(0, rotateDir * rotateSpeed * Time.deltaTime, 0);
+        transform.eulerAngles += new Vector3(0, rotateDir * _rotateSpeed * Time.deltaTime, 0);
+    }
+
+    private void _HandleCameraZoom()
+    {
+        if (Input.mouseScrollDelta.y > 0)
+        {
+            _targetFieldOfView -= _zoomStep;
+        }
+        if (Input.mouseScrollDelta.y < 0)
+        {
+            _targetFieldOfView += _zoomStep;
+        }
+        _targetFieldOfView = Mathf.Clamp(_targetFieldOfView, _FieldOfViewMin, _FieldOfViewMax);
+
+        Mathf.Lerp(cinemachineVirtualCamera.m_Lens.FieldOfView, _targetFieldOfView, _zoomSpeed * Time.deltaTime);
+        cinemachineVirtualCamera.m_Lens.FieldOfView = _targetFieldOfView;
     }
 }
