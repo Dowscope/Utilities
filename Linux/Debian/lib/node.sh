@@ -7,7 +7,9 @@ install_node() {
 
     log "Installing Node.js (LTS)"
 
-    curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+    # install repo setup WITHOUT sudo
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | run bash -
+
     run apt install -y nodejs
 
     echo "Node: $(node -v)"
