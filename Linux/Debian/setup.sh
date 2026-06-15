@@ -19,6 +19,7 @@ MODE="install"
 
 cleanup() {
     rm -rf "$RUN_TMP"
+    rm -rf "$BOOT_TMP"
 }
 
 trap cleanup EXIT INT TERM
