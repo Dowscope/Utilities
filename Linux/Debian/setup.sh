@@ -2,10 +2,9 @@
 set -euo pipefail
 
 ########################################
-# Version + Repo
+# Repo
 ########################################
 
-SCRIPT_VERSION="1.0.3"
 REPO_BASE="https://raw.githubusercontent.com/Dowscope/Utilities/main/Linux/Debian"
 
 BOOT_TMP="/tmp/dowscope-bootstrap"
@@ -13,10 +12,6 @@ RUN_TMP="/tmp/dowscope-setup"
 
 USE_SUDO=true
 MODE="install"
-SKIP_UPDATE=false
-
-# Preserve original args for re-exec
-original_args=("$@")
 
 ########################################
 # Cleanup (runtime only)
@@ -37,11 +32,11 @@ while [[ $# -gt 0 ]]; do
         --remove)
             MODE="remove"
             ;;
+        --install)
+            MODE="install"
+            ;;
         --root)
             USE_SUDO=false
-            ;;
-        --no-update)
-            SKIP_UPDATE=true
             ;;
         *)
             echo "Unknown flag: $1"
@@ -52,61 +47,20 @@ while [[ $# -gt 0 ]]; do
 done
 
 ########################################
-# Version check + auto update
+# Helpers
 ########################################
 
-check_update() {
-
-    if [[ "$SKIP_UPDATE" == true ]]; then
-        return
+run() {
+    if [[ "$USE_SUDO" == true ]]; then
+        sudo "$@"
+    else
+        "$@"
     fi
-
-    local remote_version
-    remote_version=$(curl -fsSL "$REPO_BASE/VERSION" || true)
-
-    if [[ -z "$remote_version" ]]; then
-        echo "Unable to check version (offline or missing VERSION file)"
-        return
-    fi
-
-    if [[ "$remote_version" == "$SCRIPT_VERSION" ]]; then
-        return
-    fi
-
-    echo
-    echo "======================================"
-    echo " Update available"
-    echo " Local:  $SCRIPT_VERSION"
-    echo " Remote: $remote_version"
-    echo "======================================"
-    echo
-
-    read -rp "Update setup.sh now? [Y/n]: " choice
-    choice="${choice:-Y}"
-
-    if [[ "$choice" =~ ^[Nn]$ ]]; then
-        echo "Skipping update..."
-        return
-    fi
-
-    echo "Updating setup.sh..."
-
-    mkdir -p "$BOOT_TMP"
-    local tmp_file="$BOOT_TMP/setup.sh"
-
-    curl -fsSL "$REPO_BASE/setup.sh" -o "$tmp_file"
-    chmod +x "$tmp_file"
-
-    echo "Restarting updated script..."
-
-    exec "$tmp_file" "${original_args[@]}"
 }
 
-########################################
-# RUN UPDATE FIRST (critical)
-########################################
-
-check_update "$@"
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
 ########################################
 # Prepare runtime environment
