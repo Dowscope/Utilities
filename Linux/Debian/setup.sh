@@ -1,17 +1,21 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 set -e
+
+#########################################
+# Logging
+#########################################
 
 LOG_FILE="setup.log"
 exec > >(tee -i "$LOG_FILE")
 exec 2>&1
-
 
 #########################################
 # Flags
 #########################################
 
 USE_SUDO=true
+MODE="install"   # default
 
 for arg in "$@"; do
     case $arg in
@@ -19,7 +23,9 @@ for arg in "$@"; do
             USE_SUDO=false
             shift
             ;;
-        *)
+        --remove)
+            MODE="remove"
+            shift
             ;;
     esac
 done
@@ -36,31 +42,23 @@ run() {
     fi
 }
 
-
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+#########################################
+# INSTALL FUNCTION
+#########################################
 
-#########################################
-# Start
-#########################################
+install() {
 
 echo "================================="
-echo " Debian Bootstrap Script Starting"
+echo " Starting INSTALL"
 echo "================================="
-
-#########################################
-# System Update
-#########################################
 
 echo "==== Updating system ===="
 run apt update
 run apt upgrade -y
-
-#########################################
-# Core Packages
-#########################################
 
 echo "==== Installing core packages ===="
 
@@ -70,7 +68,6 @@ PACKAGES=(
     unzip
 )
 
-# Install only if missing
 for pkg in "${PACKAGES[@]}"; do
     if ! dpkg -s "$pkg" >/dev/null 2>&1; then
         echo "Installing $pkg..."
@@ -81,29 +78,27 @@ for pkg in "${PACKAGES[@]}"; do
 done
 
 #########################################
-# Install Latest Neovim (AppImage)
+# Install Neovim 
 #########################################
-
 
 echo "==== Installing Neovim (tarball) ===="
 
-if ! command -v nvim &> /dev/null; then
+if ! command_exists nvim; then
     curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
     tar xzf nvim-linux-x86_64.tar.gz
+
     run cp -r nvim-linux-x86_64/* /usr/local/
+
     rm -rf nvim-linux-x86_64*
 else
     echo "Neovim already installed"
 fi
 
-
 echo "Neovim version:"
-nvim --version | head -n 1
-
-# Using AppImage ensures latest stable instead of Debian's older package versions 【1-f7d5b1】
+nvim --version | head -n 1 || true
 
 #########################################
-# Neovim Config Setup
+# Neovim Config
 #########################################
 
 echo "==== Setting up Neovim config ===="
@@ -111,21 +106,70 @@ echo "==== Setting up Neovim config ===="
 NVIM_DIR="$HOME/.config/nvim"
 
 if [ -d "$NVIM_DIR" ]; then
-    echo "Existing config found — backing up..."
+    echo "Backing up existing config..."
     mv "$NVIM_DIR" "$NVIM_DIR.bak.$(date +%s)"
 fi
 
-echo "Cloning Neovim config..."
 git clone https://github.com/dowscope/Neovim-Configs.git "$NVIM_DIR"
 
 #########################################
-# Done
+
+echo "INSTALL COMPLETE"
+}
+
+#########################################
+# REMOVE FUNCTION
 #########################################
 
-echo "================================="
-echo " Setup Complete!"
-echo "================================="
-echo ""
-echo "Run: nvim"
-echo "Logs saved to: $LOG_FILE"
+remove() {
 
+echo "================================="
+echo " Starting REMOVE"
+echo "================================="
+
+echo "==== Removing Neovim ===="
+
+# Remove binary
+if command_exists nvim; then
+    run rm -f /usr/local/bin/nvim
+    echo "Removed /usr/local/bin/nvim"
+else
+    echo "Neovim not found"
+fi
+
+# Remove shared files (tarball install)
+run rm -rf /usr/local/lib/nvim || true
+run rm -rf /usr/local/share/nvim || true
+
+#########################################
+# Remove config
+#########################################
+
+echo "==== Removing Neovim config ===="
+
+NVIM_DIR="$HOME/.config/nvim"
+
+if [ -d "$NVIM_DIR" ]; then
+    rm -rf "$NVIM_DIR"
+    echo "Removed config"
+else
+    echo "No config found"
+fi
+
+#########################################
+
+echo "REMOVE COMPLETE"
+}
+
+#########################################
+# EXECUTE MODE
+#########################################
+
+if [ "$MODE" = "install" ]; then
+    install
+elif [ "$MODE" = "remove" ]; then
+    remove
+else
+    echo "Unknown mode"
+    exit 1
+fi
