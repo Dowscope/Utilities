@@ -84,24 +84,18 @@ done
 # Install Latest Neovim (AppImage)
 #########################################
 
-echo "==== Installing latest Neovim ===="
 
-if ! command_exists nvim; then
-    NVIM_URL="https://github.com/neovim/neovim/releases/download/stable/nvim-linux-x86_64.appimage"
-    NVIM_FILE="nvim-linux-x86_64.appimage"
+echo "==== Installing Neovim (tarball) ===="
 
-    echo "Downloading Neovim..."
-    curl -LO "$NVIM_URL"
-
-    echo "Making executable..."
-    chmod +x "$NVIM_FILE"
-
-    echo "Installing to /usr/local/bin..."
-    run mv "$NVIM_FILE" /usr/local/bin/nvim
-
+if ! command -v nvim &> /dev/null; then
+    curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+    tar xzf nvim-linux-x86_64.tar.gz
+    run cp -r nvim-linux-x86_64/* /usr/local/
+    rm -rf nvim-linux-x86_64*
 else
-    echo "Neovim already installed — skipping install"
+    echo "Neovim already installed"
 fi
+
 
 echo "Neovim version:"
 nvim --version | head -n 1
