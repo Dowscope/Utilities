@@ -1,20 +1,21 @@
 install_treesitter() {
 
-    if command_exists tree-sitter; then
-        echo "Tree-sitter already installed"
+    if ! command_exists npm; then
+        echo "npm not installed — skipping tree-sitter"
         return
     fi
 
-    log "Installing Tree-sitter CLI"
+    command_exists tree-sitter && return
 
     npm install -g tree-sitter-cli
-
-    echo "tree-sitter: $(tree-sitter --version)"
 }
 
 remove_treesitter() {
 
-    log "Removing Tree-sitter CLI"
+    if ! command_exists npm; then
+        echo "npm not installed — skipping remove"
+        return
+    fi
 
     npm uninstall -g tree-sitter-cli || true
 }

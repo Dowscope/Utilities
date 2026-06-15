@@ -15,8 +15,11 @@ install_node() {
 }
 
 remove_node() {
+
     log "Removing Node.js"
 
-    run apt remove -y nodejs
-    run apt autoremove -y
+    if command_exists apt; then
+        run apt remove -y nodejs || true
+        run apt autoremove -y || true
+    fi
 }
