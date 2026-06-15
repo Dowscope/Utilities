@@ -2,72 +2,44 @@
 
 set -euo pipefail
 
-#########################################
-# Logging
-#########################################
+########################################
+# Configuration
+########################################
 
 LOG_FILE="setup.log"
-exec > >(tee -i "$LOG_FILE")
-exec 2>&1
-
-#########################################
-# Flags
-#########################################
-
 USE_SUDO=true
 MODE="install"
 
-for arg in "$@"; do
-    case "$arg" in
-        --rootuser)
-            USE_SUDO=false
-            ;;
-        --remove)
-            MODE="remove"
-            ;;
-    esac
-done
+########################################
+# Packages
+########################################
 
-#########################################
-# Global package definitions
-#########################################
-
-# Core packages required by the script itself
 CORE_PACKAGES=(
     git
     curl
     unzip
-    tar
 )
 
-# User-defined packages for your environment
-# Add or remove packages here as needed
-USERDEF_PACKAGES=(
-    build-essential
-    gcc
-    make
-    cmake
-    nodejs
-    npm
+USER_PACKAGES=(
+    ripgrep
+    fd-find
+    fzf
 )
+# add lazygit here if you're installing it elsewhere
 
-#########################################
-# Global paths and URLs
-#########################################
+########################################
+# Logging
+########################################
 
-NVIM_TARBALL_URL="https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz"
-NVIM_TARBALL_FILE="nvim-linux-x86_64.tar.gz"
-NVIM_EXTRACT_DIR="nvim-linux-x86_64"
+exec > >(tee -i "$LOG_FILE")
+exec 2>&1
 
-NVIM_CONFIG_REPO="https://github.com/dowscope/Neovim-Configs.git"
-NVIM_CONFIG_DIR="$HOME/.config/nvim"
-
-#########################################
+########################################
 # Helpers
-#########################################
+########################################
 
 run() {
-    if [ "$USE_SUDO" = true ]; then
+    if [[ "$USE_SUDO" == true ]]; then
         sudo "$@"
     else
         "$@"
@@ -78,183 +50,221 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-install_package_group() {
-    local group_name="$1"
-    shift
-    local packages=("$@")
-
-    echo "Installing ${group_name} packages"
-
-    for pkg in "${packages[@]}"; do
-        if ! dpkg -s "$pkg" >/dev/null 2>&1; then
-            echo "Installing package: $pkg"
-            run apt install -y "$pkg"
-        else
-            echo "Package already installed: $pkg"
-        fi
-    done
+log_section() {
+    echo
+    echo "========================================"
+    echo " $1"
+    echo "========================================"
 }
 
-remove_package_group() {
-    local group_name="$1"
-    shift
-    local packages=("$@")
+usage() {
+    cat <<EOF
+Usage: $0 [options]
 
-    echo "Removing ${group_name} packages"
+Options:
+  --rootuser    Run commands without sudo
+  --remove      Remove user-installed packages and configs
+  --help        Show this help
+
+Examples:
+  $0
+  $0 --remove
+  $0 --rootuser
+EOF
+}
+
+########################################
+# Package Functions
+########################################
+
+install_packages() {
+    local packages=("$@")
 
     for pkg in "${packages[@]}"; do
         if dpkg -s "$pkg" >/dev/null 2>&1; then
-            echo "Removing package: $pkg"
-            run apt remove -y "$pkg" || true
+            echo "$pkg already installed"
         else
-            echo "Package not installed: $pkg"
+            echo "Installing $pkg..."
+            run apt install -y "$pkg"
         fi
     done
 }
 
-install_tree_sitter_cli() {
-    echo "Installing tree-sitter CLI"
+remove_packages() {
+    local packages=("$@")
 
-    if command_exists tree-sitter; then
-        echo "tree-sitter CLI already installed"
-    else
-        run npm install -g tree-sitter-cli
-    fi
+    for pkg in "${packages[@]}"; do
+        if dpkg -s "$pkg" >/dev/null 2>&1; then
+            echo "Removing $pkg..."
+            run apt remove -y "$pkg"
+        else
+            echo "$pkg not installed"
+        fi
+    done
+
+    run apt autoremove -y
 }
 
-remove_tree_sitter_cli() {
-    echo "Removing tree-sitter CLI"
-
-    if command_exists npm; then
-        run npm uninstall -g tree-sitter-cli || true
-    else
-        echo "npm not found, skipping tree-sitter CLI removal"
-    fi
-}
+########################################
+# Neovim
+########################################
 
 install_neovim() {
-    echo "Installing Neovim"
+
+    log_section "Installing Neovim"
 
     if command_exists nvim; then
         echo "Neovim already installed"
-        nvim --version | head -n 1 || true
         return
     fi
 
-    rm -rf "$NVIM_EXTRACT_DIR" "$NVIM_TARBALL_FILE"
+    local archive="nvim-linux-x86_64.tar.gz"
+    local directory="nvim-linux-x86_64"
 
-    curl -LO "$NVIM_TARBALL_URL"
-    tar xzf "$NVIM_TARBALL_FILE"
+    curl -LO \
+        https://github.com/neovim/neovim/releases/latest/download/${archive}
 
-    run cp -r "${NVIM_EXTRACT_DIR}/"* /usr/local/
+    tar xzf "$archive"
 
-    rm -rf "$NVIM_EXTRACT_DIR" "$NVIM_TARBALL_FILE"
+    run cp -a "${directory}/." /usr/local/
 
-    echo "Installed Neovim version:"
+    rm -rf "$archive" "$directory"
+
+    echo
+    echo "Installed version:"
     nvim --version | head -n 1 || true
 }
 
 remove_neovim() {
-    echo "Removing Neovim"
 
-    run rm -f /usr/local/bin/nvim || true
-    run rm -rf /usr/local/lib/nvim || true
+    log_section "Removing Neovim"
 
-    run rm -f /usr/local/share/applications/nvim.desktop || true
-    run rm -f /usr/local/share/man/man1/nvim.1 || true
+    run rm -f /usr/local/bin/nvim
+    run rm -rf /usr/local/lib/nvim
+    run rm -rf /usr/local/share/nvim
 
-    run find /usr/local/share/icons -type f \( -name 'nvim.png' -o -name 'nvim.svg' \) -delete 2>/dev/null || true
+    echo "Neovim removed"
+}
 
-    if command_exists nvim; then
-        echo "Neovim is still present in PATH:"
-        command -v nvim || true
+########################################
+# Neovim Config
+########################################
+
+install_nvim_config() {
+
+    log_section "Installing Neovim Config"
+
+    local nvim_dir="$HOME/.config/nvim"
+
+    if [[ -d "$nvim_dir" ]]; then
+        local backup="${nvim_dir}.bak.$(date +%s)"
+        echo "Backing up existing config to:"
+        echo "  $backup"
+        mv "$nvim_dir" "$backup"
+    fi
+
+    mkdir -p "$HOME/.config"
+
+    git clone \
+        https://github.com/dowscope/Neovim-Configs.git \
+        "$nvim_dir"
+}
+
+remove_nvim_config() {
+
+    log_section "Removing Neovim Config"
+
+    local nvim_dir="$HOME/.config/nvim"
+
+    if [[ -d "$nvim_dir" ]]; then
+        rm -rf "$nvim_dir"
+        echo "Removed $nvim_dir"
     else
-        echo "Neovim removed from PATH"
+        echo "No Neovim config found"
     fi
 }
 
-install_neovim_config() {
-    echo "Setting up Neovim config"
+########################################
+# Install Mode
+########################################
 
-    if [ -d "$NVIM_CONFIG_DIR" ]; then
-        echo "Backing up existing config"
-        mv "$NVIM_CONFIG_DIR" "${NVIM_CONFIG_DIR}.bak.$(date +%s)"
-    fi
+install_mode() {
 
-    git clone "$NVIM_CONFIG_REPO" "$NVIM_CONFIG_DIR"
-}
+    log_section "Starting INSTALL"
 
-remove_neovim_config() {
-    echo "Removing Neovim config"
-
-    if [ -d "$NVIM_CONFIG_DIR" ]; then
-        rm -rf "$NVIM_CONFIG_DIR"
-        echo "Removed config directory: $NVIM_CONFIG_DIR"
-    else
-        echo "No Neovim config directory found"
-    fi
-}
-
-#########################################
-# Install
-#########################################
-
-install() {
-    echo "---------------------------------"
-    echo "Starting install"
-    echo "---------------------------------"
-
-    echo "Updating system"
+    echo "Updating package lists..."
     run apt update
+
+    echo "Upgrading packages..."
     run apt upgrade -y
 
-    install_package_group "CORE" "${CORE_PACKAGES[@]}"
-    install_package_group "USERDEF" "${USERDEF_PACKAGES[@]}"
+    log_section "Installing Core Packages"
+    install_packages "${CORE_PACKAGES[@]}"
 
-    install_tree_sitter_cli
+    log_section "Installing User Packages"
+    install_packages "${USER_PACKAGES[@]}"
+
     install_neovim
-    install_neovim_config
+    install_nvim_config
 
-    echo "Install complete"
-    echo "Log file: $LOG_FILE"
+    log_section "INSTALL COMPLETE"
 }
 
-#########################################
-# Remove
-#########################################
+########################################
+# Remove Mode
+########################################
 
-remove() {
-    echo "---------------------------------"
-    echo "Starting remove"
-    echo "---------------------------------"
+remove_mode() {
 
-    remove_tree_sitter_cli
+    log_section "Starting REMOVE"
+
     remove_neovim
-    remove_neovim_config
+    remove_nvim_config
 
-    remove_package_group "USERDEF" "${USERDEF_PACKAGES[@]}"
-    remove_package_group "CORE" "${CORE_PACKAGES[@]}"
+    log_section "Removing User Packages"
+    remove_packages "${USER_PACKAGES[@]}"
 
-    run apt autoremove -y || true
-
-    echo "Remove complete"
-    echo "Log file: $LOG_FILE"
+    log_section "REMOVE COMPLETE"
 }
 
-#########################################
-# Execute mode
-#########################################
+########################################
+# Parse Arguments
+########################################
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --rootuser)
+            USE_SUDO=false
+            ;;
+        --remove)
+            MODE="remove"
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+########################################
+# Main
+########################################
 
 case "$MODE" in
     install)
-        install
+        install_mode
         ;;
     remove)
-        remove
+        remove_mode
         ;;
     *)
         echo "Unknown mode: $MODE"
         exit 1
         ;;
 esac
-
