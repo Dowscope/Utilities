@@ -8,18 +8,22 @@ set -euo pipefail
 SCRIPT_VERSION="1.0.1"
 REPO_BASE="https://raw.githubusercontent.com/Dowscope/Utilities/main/Linux/Debian"
 
-TMP_DIR="/tmp/dowscope-setup"
+BOOT_TMP="/tmp/dowscope-bootstrap"
+RUN_TMP="/tmp/dowscope-setup"
 
 USE_SUDO=true
 MODE="install"
 SKIP_UPDATE=false
 
+# Preserve original args for re-exec
+original_args=("$@")
+
 ########################################
-# Cleanup (always runs on exit/crash)
+# Cleanup (runtime only)
 ########################################
 
 cleanup() {
-    rm -rf "$TMP_DIR"
+    rm -rf "$RUN_TMP"
 }
 
 trap cleanup EXIT INT TERM
@@ -87,31 +91,31 @@ check_update() {
 
     echo "Updating setup.sh..."
 
-    mkdir -p "$TMP_DIR"
-    local tmp_file="$TMP_DIR/setup.sh"
+    mkdir -p "$BOOT_TMP"
+    local tmp_file="$BOOT_TMP/setup.sh"
 
     curl -fsSL "$REPO_BASE/setup.sh" -o "$tmp_file"
     chmod +x "$tmp_file"
 
     echo "Restarting updated script..."
 
-    exec "$tmp_file" "$@"
+    exec "$tmp_file" "${original_args[@]}"
 }
 
 ########################################
-# Run update check FIRST
+# RUN UPDATE FIRST (critical)
 ########################################
 
 check_update "$@"
 
 ########################################
-# Prepare temp directory (fresh every run)
+# Prepare runtime environment
 ########################################
 
 echo "Preparing environment..."
 
-rm -rf "$TMP_DIR"
-mkdir -p "$TMP_DIR/lib"
+rm -rf "$RUN_TMP"
+mkdir -p "$RUN_TMP/lib"
 
 ########################################
 # Download modules
@@ -130,21 +134,21 @@ files=(
 echo "Downloading modules..."
 
 for f in "${files[@]}"; do
-    mkdir -p "$TMP_DIR/$(dirname "$f")"
-    curl -fsSL "$REPO_BASE/$f" -o "$TMP_DIR/$f"
+    mkdir -p "$RUN_TMP/$(dirname "$f")"
+    curl -fsSL "$REPO_BASE/$f" -o "$RUN_TMP/$f"
 done
 
 ########################################
 # Load modules
 ########################################
 
-source "$TMP_DIR/config.sh"
-source "$TMP_DIR/lib/core.sh"
-source "$TMP_DIR/lib/packages.sh"
-source "$TMP_DIR/lib/node.sh"
-source "$TMP_DIR/lib/neovim.sh"
-source "$TMP_DIR/lib/treesitter.sh"
-source "$TMP_DIR/lib/orchestrator.sh"
+source "$RUN_TMP/config.sh"
+source "$RUN_TMP/lib/core.sh"
+source "$RUN_TMP/lib/packages.sh"
+source "$RUN_TMP/lib/node.sh"
+source "$RUN_TMP/lib/neovim.sh"
+source "$RUN_TMP/lib/treesitter.sh"
+source "$RUN_TMP/lib/orchestrator.sh"
 
 ########################################
 # Export runtime flags
