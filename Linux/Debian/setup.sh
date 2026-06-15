@@ -5,7 +5,7 @@ set -euo pipefail
 # Version + Repo
 ########################################
 
-SCRIPT_VERSION="1.0.2"
+SCRIPT_VERSION="1.0.3"
 REPO_BASE="https://raw.githubusercontent.com/Dowscope/Utilities/main/Linux/Debian"
 
 BOOT_TMP="/tmp/dowscope-bootstrap"
