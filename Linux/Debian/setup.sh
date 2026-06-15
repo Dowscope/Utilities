@@ -17,15 +17,10 @@ MODE="install"
 CORE_PACKAGES=(
     git
     curl
-    unzip
 )
 
 USER_PACKAGES=(
-    ripgrep
-    fd-find
-    fzf
 )
-# add lazygit here if you're installing it elsewhere
 
 ########################################
 # Logging
