@@ -36,8 +36,11 @@ run() {
     fi
 }
 
+
 command_exists() {
-    com
+    command -v "$1" >/dev/null 2>&1
+}
+
 
 #########################################
 # Start
