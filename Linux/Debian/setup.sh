@@ -58,6 +58,7 @@ while [[ $# -gt 0 ]]; do
         --*)
             flag="${1#--}"
             var="INSTALL_${flag^^}"
+
             if [[ -v "$var" ]]; then
                 printf -v "$var" true
             else
@@ -70,15 +71,19 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
     esac
+
     shift
 done
 
 ########################################
-# Enable optional modules
+# Build module lists
 ########################################
+
+ALL_MODULES=("${MODULES[@]}" "${OPTIONAL_MODULES[@]}")
 
 for module in "${OPTIONAL_MODULES[@]}"; do
     flag="INSTALL_${module^^}"
+
     if [[ "${!flag:-false}" == true ]]; then
         MODULES+=("$module")
     fi
@@ -109,7 +114,7 @@ done
 
 echo "Downloading modules..."
 
-for module in "${MODULES[@]}"; do
+for module in "${ALL_MODULES[@]}"; do
     file="lib/${module}.sh"
     echo "Downloading $file"
     curl -fsSL "$REPO_BASE/$file" -o "$RUN_TMP/$file"
@@ -127,7 +132,7 @@ source "$RUN_TMP/lib/core.sh"
 
 echo "Loading modules..."
 
-for module in "${MODULES[@]}"; do
+for module in "${ALL_MODULES[@]}"; do
     source "$RUN_TMP/lib/${module}.sh"
 done
 
