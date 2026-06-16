@@ -1,5 +1,5 @@
 install_freeswitch() {
-    echo "Installing FreeSWITCH..."
+    log "Installing FreeSWITCH..."
 
     installed=false
 
@@ -43,7 +43,7 @@ install_freeswitch() {
 
 
 remove_freeswitch() {
-    echo "Removing FreeSWITCH..."
+    log "Removing FreeSWITCH..."
 
     installed=()
 

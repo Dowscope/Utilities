@@ -1,11 +1,10 @@
 install_node() {
+    log "Installing Node.js (LTS)"
 
     if command_exists node; then
         echo "Node already installed: $(node -v)"
         return
     fi
-
-    log "Installing Node.js (LTS)"
 
     # install repo setup WITHOUT sudo
     curl -fsSL https://deb.nodesource.com/setup_lts.x | run bash -
@@ -17,7 +16,6 @@ install_node() {
 }
 
 remove_node() {
-
     log "Removing Node.js"
 
     if command_exists apt; then

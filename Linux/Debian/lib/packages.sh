@@ -1,4 +1,5 @@
 install_packages() {
+    log "Installing Packages"
     for pkg in "$@"; do
         if dpkg -s "$pkg" >/dev/null 2>&1; then
             echo "$pkg already installed"
@@ -10,6 +11,7 @@ install_packages() {
 }
 
 remove_packages() {
+    log "Removing Packages"
     installed=()
 
     for pkg in "$@"; do

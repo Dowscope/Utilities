@@ -1,4 +1,5 @@
 install_treesitter() {
+    log "Installing Treesitter..."
 
     if ! command_exists npm; then
         echo "npm not installed — skipping tree-sitter"
@@ -11,6 +12,7 @@ install_treesitter() {
 }
 
 remove_treesitter() {
+    log "Removing Treesitter..."
 
     if ! command_exists npm; then
         echo "npm not installed — skipping remove"

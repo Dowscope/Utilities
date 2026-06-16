@@ -1,11 +1,10 @@
 install_neovim() {
+    log "Installing Neovim"
 
     if command_exists nvim; then
         echo "Neovim already installed"
         return
     fi
-
-    log "Installing Neovim"
 
     local archive="nvim-linux-x86_64.tar.gz"
     local folder="nvim-linux-x86_64"
@@ -21,7 +20,6 @@ install_neovim() {
 }
 
 remove_neovim() {
-
     log "Removing Neovim"
 
     run rm -f /usr/local/bin/nvim
