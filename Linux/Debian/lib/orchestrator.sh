@@ -22,8 +22,10 @@ install_all() {
 remove_all() {
     log "REMOVE START"
 
-    for ((idx=${#MODULES[@]}-1; idx>=0; idx--)); do
-        module="${MODULES[idx]}"
+    REMOVE_MODULES=("${MODULES[@]}" "${OPTIONAL_MODULES[@]}")
+
+    for ((idx=${#REMOVE_MODULES[@]}-1; idx>=0; idx--)); do
+        module="${REMOVE_MODULES[idx]}"
         func="remove_${module}"
 
         if declare -f "$func" >/dev/null; then
