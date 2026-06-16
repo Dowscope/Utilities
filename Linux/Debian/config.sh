@@ -3,13 +3,9 @@
 ########################################
 
 CORE_PACKAGES=(
-    git
-    curl
-    unzip
+  git
+  curl
 )
 
 USER_PACKAGES=(
-    ripgrep
-    fd-find
-    fzf
 )

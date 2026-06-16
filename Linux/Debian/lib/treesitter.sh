@@ -7,7 +7,7 @@ install_treesitter() {
 
     command_exists tree-sitter && return
 
-    npm install -g tree-sitter-cli
+    npm install -g tree-sitter-cli@0.24.7
 }
 
 remove_treesitter() {
