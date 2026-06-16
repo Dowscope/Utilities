@@ -66,7 +66,7 @@ install_freeswitch() {
 ########################################
 
 remove_freeswitch() {
-    log "Removing FreeSWITCH..."
+    log "Removing FreeSWITCH"
 
     installed=()
 
@@ -76,19 +76,27 @@ remove_freeswitch() {
         fi
     done
 
-    if [[ ${#installed[@]} -eq 0 ]]; then
-        echo "FreeSWITCH not installed — skipping"
-        return
+    if [[ ${#installed[@]} -gt 0 ]]; then
+        run systemctl stop freeswitch || true
+        run systemctl disable freeswitch || true
+
+        echo "Removing packages..."
+
+        run apt remove -y "${installed[@]}" || true
+        run apt autoremove -y || true
+    else
+        echo "FreeSWITCH packages not installed"
     fi
 
-    if systemctl list-unit-files | grep -q "$FREESWITCH_SERVICE"; then
-        run systemctl stop "$FREESWITCH_SERVICE" || true
-        run systemctl disable "$FREESWITCH_SERVICE" || true
+    if [[ -f /etc/apt/sources.list.d/freeswitch.list ]]; then
+        echo "Removing FreeSWITCH repository..."
+        run rm -f /etc/apt/sources.list.d/freeswitch.list
     fi
 
-    echo "Removing packages..."
-    run apt remove -y "${installed[@]}" || true
-    run apt autoremove -y || true
+    if [[ -f /usr/share/keyrings/signalwire-freeswitch.gpg ]]; then
+        echo "Removing FreeSWITCH signing key..."
+        run rm -f /usr/share/keyrings/signalwire-freeswitch.gpg
+    fi
 
-    echo "FreeSWITCH removed."
+    echo "FreeSWITCH cleanup complete."
 }
