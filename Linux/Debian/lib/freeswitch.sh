@@ -9,7 +9,7 @@ FREESWITCH_REPO_FILE="/etc/apt/sources.list.d/freeswitch.list"
 FREESWITCH_REPO_URL="http://deb.freeswitch.org/repo/deb/debian-release/"
 FREESWITCH_REPO_DIST="bookworm"
 FREESWITCH_REPO_COMPONENT="main"
-FREESWITCH_KEY_URL="https://raw.githubusercontent.com/signalwire/freeswitch/master/docker/release/keys/signalwire-signing-key.pub"
+FREESWITCH_KEY_URL="https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg"
 FREESWITCH_SERVICE="freeswitch.service"
 
 ########################################
@@ -33,12 +33,9 @@ install_freeswitch() {
         return
     fi
 
-    if [[ ! -f "$FREESWITCH_KEYRING" ]]; then
+    if [[ ! -s "$FREESWITCH_KEYRING" ]]; then
         echo "Adding FreeSWITCH signing key..."
-
-        curl -fsSL "$FREESWITCH_KEY_URL" \
-        | gpg --dearmor \
-        | run tee "$FREESWITCH_KEYRING" >/dev/null
+        curl -fsSL "$FREESWITCH_KEY_URL" | run tee "$FREESWITCH_KEYRING" >/dev/null
     fi
 
     if [[ ! -f "$FREESWITCH_REPO_FILE" ]]; then
