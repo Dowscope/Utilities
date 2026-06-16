@@ -42,24 +42,28 @@ install_freeswitch() {
     if [[ ! -s "$FREESWITCH_KEYRING" ]]; then
         echo "Adding FreeSWITCH signing key..."
 
-        curl -u "signalwire:${SIGNALWIRE_TOKEN}" \
-        -fsSL "$FREESWITCH_KEY_URL" \
+        curl -fsSL "$FREESWITCH_KEY_URL" \
         | run tee "$FREESWITCH_KEYRING" >/dev/null
     fi
 
-    echo "Configuring FreeSWITCH repository..."
+    echo "Configuring FreeSWITCH authentication..."
+
+    run mkdir -p /etc/apt/auth.conf.d
 
     echo "machine freeswitch.signalwire.com login signalwire password ${SIGNALWIRE_TOKEN}" \
     | run tee "$FREESWITCH_AUTH_FILE" >/dev/null
 
     run chmod 600 "$FREESWITCH_AUTH_FILE"
 
+    echo "Configuring FreeSWITCH repository..."
+
     echo "deb [signed-by=$FREESWITCH_KEYRING] $FREESWITCH_REPO_URL $FREESWITCH_REPO_DIST $FREESWITCH_REPO_COMPONENT" \
     | run tee "$FREESWITCH_REPO_FILE" >/dev/null
 
-    run apt update
+    run apt update || return 1
 
     echo "Installing FreeSWITCH packages..."
+
     run apt install -y "${FREESWITCH_PACKAGES[@]}"
 
     if systemctl list-unit-files | grep -q "$FREESWITCH_SERVICE"; then
