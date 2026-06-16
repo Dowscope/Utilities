@@ -6,10 +6,11 @@
 
 FREESWITCH_KEYRING="/usr/share/keyrings/signalwire-freeswitch.gpg"
 FREESWITCH_REPO_FILE="/etc/apt/sources.list.d/freeswitch.list"
-FREESWITCH_REPO_URL="http://deb.freeswitch.org/repo/deb/debian-release/"
+FREESWITCH_REPO_URL="https://freeswitch.signalwire.com/repo/deb/debian-release/"
 FREESWITCH_REPO_DIST="bookworm"
 FREESWITCH_REPO_COMPONENT="main"
 FREESWITCH_KEY_URL="https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg"
+FREESWITCH_AUTH_FILE="/etc/apt/auth.conf.d/freeswitch.conf"
 FREESWITCH_SERVICE="freeswitch.service"
 
 ########################################
@@ -33,17 +34,28 @@ install_freeswitch() {
         return
     fi
 
+    if [[ -z "${SIGNALWIRE_TOKEN:-}" ]]; then
+        echo "SIGNALWIRE_TOKEN is required for FreeSWITCH"
+        return 1
+    fi
+
     if [[ ! -s "$FREESWITCH_KEYRING" ]]; then
         echo "Adding FreeSWITCH signing key..."
-        curl -fsSL "$FREESWITCH_KEY_URL" | run tee "$FREESWITCH_KEYRING" >/dev/null
+
+        curl -u "signalwire:${SIGNALWIRE_TOKEN}" \
+        -fsSL "$FREESWITCH_KEY_URL" \
+        | run tee "$FREESWITCH_KEYRING" >/dev/null
     fi
 
-    if [[ ! -f "$FREESWITCH_REPO_FILE" ]]; then
-        echo "Adding FreeSWITCH repository..."
+    echo "Configuring FreeSWITCH repository..."
 
-        echo "deb [signed-by=$FREESWITCH_KEYRING] $FREESWITCH_REPO_URL $FREESWITCH_REPO_DIST $FREESWITCH_REPO_COMPONENT" \
-        | run tee "$FREESWITCH_REPO_FILE" >/dev/null
-    fi
+    echo "machine freeswitch.signalwire.com login signalwire password ${SIGNALWIRE_TOKEN}" \
+    | run tee "$FREESWITCH_AUTH_FILE" >/dev/null
+
+    run chmod 600 "$FREESWITCH_AUTH_FILE"
+
+    echo "deb [signed-by=$FREESWITCH_KEYRING] $FREESWITCH_REPO_URL $FREESWITCH_REPO_DIST $FREESWITCH_REPO_COMPONENT" \
+    | run tee "$FREESWITCH_REPO_FILE" >/dev/null
 
     run apt update
 
@@ -74,8 +86,8 @@ remove_freeswitch() {
     done
 
     if [[ ${#installed[@]} -gt 0 ]]; then
-        run systemctl stop freeswitch || true
-        run systemctl disable freeswitch || true
+        run systemctl stop "$FREESWITCH_SERVICE" || true
+        run systemctl disable "$FREESWITCH_SERVICE" || true
 
         echo "Removing packages..."
 
@@ -85,14 +97,19 @@ remove_freeswitch() {
         echo "FreeSWITCH packages not installed"
     fi
 
-    if [[ -f /etc/apt/sources.list.d/freeswitch.list ]]; then
+    if [[ -f "$FREESWITCH_REPO_FILE" ]]; then
         echo "Removing FreeSWITCH repository..."
-        run rm -f /etc/apt/sources.list.d/freeswitch.list
+        run rm -f "$FREESWITCH_REPO_FILE"
     fi
 
-    if [[ -f /usr/share/keyrings/signalwire-freeswitch.gpg ]]; then
+    if [[ -f "$FREESWITCH_AUTH_FILE" ]]; then
+        echo "Removing FreeSWITCH authentication..."
+        run rm -f "$FREESWITCH_AUTH_FILE"
+    fi
+
+    if [[ -f "$FREESWITCH_KEYRING" ]]; then
         echo "Removing FreeSWITCH signing key..."
-        run rm -f /usr/share/keyrings/signalwire-freeswitch.gpg
+        run rm -f "$FREESWITCH_KEYRING"
     fi
 
     echo "FreeSWITCH cleanup complete."
