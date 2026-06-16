@@ -6,12 +6,7 @@ set -euo pipefail
 ########################################
 
 REPO_BASE="https://raw.githubusercontent.com/Dowscope/Utilities/main/Linux/Debian"
-
 RUN_TMP="/tmp/dowscope-setup"
-
-USE_SUDO=true
-MODE="install"
-INSTALL_FREESWITCH=false
 
 ########################################
 # Cleanup
@@ -22,6 +17,25 @@ cleanup() {
 }
 
 trap cleanup EXIT INT TERM
+
+########################################
+# Prepare runtime environment
+########################################
+
+echo "Preparing environment..."
+
+rm -rf "$RUN_TMP"
+mkdir -p "$RUN_TMP/lib"
+
+########################################
+# Download config
+########################################
+
+echo "Downloading config.sh"
+
+curl -fsSL "$REPO_BASE/config.sh" -o "$RUN_TMP/config.sh"
+
+source "$RUN_TMP/config.sh"
 
 ########################################
 # Parse flags
@@ -38,11 +52,21 @@ while [[ $# -gt 0 ]]; do
         --root)
             USE_SUDO=false
             ;;
-        --freeswitch)
-            INSTALL_FREESWITCH=true
+        --sudo)
+            USE_SUDO=true
+            ;;
+        --*)
+            flag="${1#--}"
+            var="INSTALL_${flag^^}"
+            if [[ -v "$var" ]]; then
+                printf -v "$var" true
+            else
+                echo "Unknown flag: $1"
+                exit 1
+            fi
             ;;
         *)
-            echo "Unknown flag: $1"
+            echo "Unknown argument: $1"
             exit 1
             ;;
     esac
@@ -50,20 +74,24 @@ while [[ $# -gt 0 ]]; do
 done
 
 ########################################
-# Prepare runtime environment
+# Enable optional modules
 ########################################
 
-echo "Preparing environment..."
+for module in "${OPTIONAL_MODULES[@]}"; do
+    flag="INSTALL_${module^^}"
+    if [[ "${!flag:-false}" == true ]]; then
+        MODULES+=("$module")
+    fi
+done
 
-rm -rf "$RUN_TMP"
-mkdir -p "$RUN_TMP/lib"
+export USE_SUDO
+export MODE
 
 ########################################
 # Download base files
 ########################################
 
 BASE_FILES=(
-    config.sh
     lib/core.sh
     lib/orchestrator.sh
 )
@@ -74,12 +102,6 @@ for f in "${BASE_FILES[@]}"; do
     echo "Downloading $f"
     curl -fsSL "$REPO_BASE/$f" -o "$RUN_TMP/$f"
 done
-
-########################################
-# Load configuration
-########################################
-
-source "$RUN_TMP/config.sh"
 
 ########################################
 # Download modules
@@ -116,15 +138,7 @@ done
 source "$RUN_TMP/lib/orchestrator.sh"
 
 ########################################
-# Export runtime flags
-########################################
-
-export USE_SUDO
-export MODE
-export INSTALL_FREESWITCH
-
-########################################
-# Execute main flow
+# Execute
 ########################################
 
 if [[ "$MODE" == "install" ]]; then

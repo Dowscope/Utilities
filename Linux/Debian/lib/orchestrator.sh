@@ -1,5 +1,4 @@
 install_all() {
-
     log "INSTALL START"
 
     run apt update
@@ -20,14 +19,13 @@ install_all() {
     log "INSTALL COMPLETE"
 }
 
-
 remove_all() {
-
     log "REMOVE START"
 
-    for (( idx=${#MODULES[@]}-1 ; idx>=0 ; idx-- )); do
+    for ((idx=${#MODULES[@]}-1; idx>=0; idx--)); do
         module="${MODULES[idx]}"
         func="remove_${module}"
+
         if declare -f "$func" >/dev/null; then
             "$func"
         else

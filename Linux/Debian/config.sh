@@ -1,5 +1,14 @@
 ########################################
-# Packages
+# Runtime Defaults
+########################################
+
+USE_SUDO=true
+MODE="install"
+
+INSTALL_FREESWITCH=false
+
+########################################
+# Modules
 ########################################
 
 MODULES=(
@@ -7,8 +16,15 @@ MODULES=(
   node
   neovim
   treesitter
+)
+
+OPTIONAL_MODULES=(
   freeswitch
 )
+
+########################################
+# Packages
+########################################
 
 CORE_PACKAGES=(
   git
