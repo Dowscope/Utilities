@@ -7,19 +7,18 @@ set -euo pipefail
 
 REPO_BASE="https://raw.githubusercontent.com/Dowscope/Utilities/main/Linux/Debian"
 
-BOOT_TMP="/tmp/dowscope-bootstrap"
 RUN_TMP="/tmp/dowscope-setup"
 
 USE_SUDO=true
 MODE="install"
+INSTALL_FREESWITCH=false
 
 ########################################
-# Cleanup (runtime only)
+# Cleanup
 ########################################
 
 cleanup() {
     rm -rf "$RUN_TMP"
-    rm -rf "$BOOT_TMP"
 }
 
 trap cleanup EXIT INT TERM
@@ -39,6 +38,9 @@ while [[ $# -gt 0 ]]; do
         --root)
             USE_SUDO=false
             ;;
+        --freeswitch)
+            INSTALL_FREESWITCH=true
+            ;;
         *)
             echo "Unknown flag: $1"
             exit 1
@@ -46,22 +48,6 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
-
-########################################
-# Helpers
-########################################
-
-run() {
-    if [[ "$USE_SUDO" == true ]]; then
-        sudo "$@"
-    else
-        "$@"
-    fi
-}
-
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
-}
 
 ########################################
 # Prepare runtime environment
@@ -73,36 +59,60 @@ rm -rf "$RUN_TMP"
 mkdir -p "$RUN_TMP/lib"
 
 ########################################
-# Download modules
+# Download base files
 ########################################
 
-files=(
+BASE_FILES=(
     config.sh
     lib/core.sh
-    lib/packages.sh
-    lib/node.sh
-    lib/neovim.sh
-    lib/treesitter.sh
     lib/orchestrator.sh
 )
 
-echo "Downloading modules..."
+echo "Downloading base files..."
 
-for f in "${files[@]}"; do
-    mkdir -p "$RUN_TMP/$(dirname "$f")"
+for f in "${BASE_FILES[@]}"; do
+    echo "Downloading $f"
     curl -fsSL "$REPO_BASE/$f" -o "$RUN_TMP/$f"
 done
+
+########################################
+# Load configuration
+########################################
+
+source "$RUN_TMP/config.sh"
+
+########################################
+# Download modules
+########################################
+
+echo "Downloading modules..."
+
+for module in "${MODULES[@]}"; do
+    file="lib/${module}.sh"
+    echo "Downloading $file"
+    curl -fsSL "$REPO_BASE/$file" -o "$RUN_TMP/$file"
+done
+
+########################################
+# Load core
+########################################
+
+source "$RUN_TMP/lib/core.sh"
 
 ########################################
 # Load modules
 ########################################
 
-source "$RUN_TMP/config.sh"
-source "$RUN_TMP/lib/core.sh"
-source "$RUN_TMP/lib/packages.sh"
-source "$RUN_TMP/lib/node.sh"
-source "$RUN_TMP/lib/neovim.sh"
-source "$RUN_TMP/lib/treesitter.sh"
+echo "Loading modules..."
+
+for module in "${MODULES[@]}"; do
+    source "$RUN_TMP/lib/${module}.sh"
+done
+
+########################################
+# Load orchestrator
+########################################
+
 source "$RUN_TMP/lib/orchestrator.sh"
 
 ########################################
@@ -111,6 +121,7 @@ source "$RUN_TMP/lib/orchestrator.sh"
 
 export USE_SUDO
 export MODE
+export INSTALL_FREESWITCH
 
 ########################################
 # Execute main flow
