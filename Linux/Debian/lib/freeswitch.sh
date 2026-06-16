@@ -1,3 +1,21 @@
+#!/usr/bin/env bash
+
+########################################
+# FreeSWITCH Configuration
+########################################
+
+FREESWITCH_KEYRING="/usr/share/keyrings/signalwire-freeswitch.gpg"
+FREESWITCH_REPO_FILE="/etc/apt/sources.list.d/freeswitch.list"
+FREESWITCH_REPO_URL="http://deb.freeswitch.org/repo/deb/debian-release/"
+FREESWITCH_REPO_DIST="bookworm"
+FREESWITCH_REPO_COMPONENT="main"
+FREESWITCH_KEY_URL="https://raw.githubusercontent.com/signalwire/freeswitch/master/docker/release/keys/signalwire-signing-key.pub"
+FREESWITCH_SERVICE="freeswitch.service"
+
+########################################
+# Install
+########################################
+
 install_freeswitch() {
     log "Installing FreeSWITCH..."
 
@@ -15,17 +33,19 @@ install_freeswitch() {
         return
     fi
 
-    if [[ ! -f /usr/share/keyrings/signalwire-freeswitch.gpg ]]; then
+    if [[ ! -f "$FREESWITCH_KEYRING" ]]; then
         echo "Adding FreeSWITCH signing key..."
-        curl -fsSL https://raw.githubusercontent.com/signalwire/freeswitch/master/docker/release/keys/signalwire-signing-key.pub \
+
+        curl -fsSL "$FREESWITCH_KEY_URL" \
         | gpg --dearmor \
-        | run tee /usr/share/keyrings/signalwire-freeswitch.gpg >/dev/null
+        | run tee "$FREESWITCH_KEYRING" >/dev/null
     fi
 
-    if [[ ! -f /etc/apt/sources.list.d/freeswitch.list ]]; then
+    if [[ ! -f "$FREESWITCH_REPO_FILE" ]]; then
         echo "Adding FreeSWITCH repository..."
-        echo "deb [signed-by=/usr/share/keyrings/signalwire-freeswitch.gpg] http://deb.freeswitch.org/repo/deb/debian-release/ bookworm main" \
-        | run tee /etc/apt/sources.list.d/freeswitch.list >/dev/null
+
+        echo "deb [signed-by=$FREESWITCH_KEYRING] $FREESWITCH_REPO_URL $FREESWITCH_REPO_DIST $FREESWITCH_REPO_COMPONENT" \
+        | run tee "$FREESWITCH_REPO_FILE" >/dev/null
     fi
 
     run apt update
@@ -33,14 +53,17 @@ install_freeswitch() {
     echo "Installing FreeSWITCH packages..."
     run apt install -y "${FREESWITCH_PACKAGES[@]}"
 
-    if systemctl list-unit-files | grep -q freeswitch.service; then
-        run systemctl enable freeswitch
-        run systemctl restart freeswitch
+    if systemctl list-unit-files | grep -q "$FREESWITCH_SERVICE"; then
+        run systemctl enable "$FREESWITCH_SERVICE"
+        run systemctl restart "$FREESWITCH_SERVICE"
     fi
 
     echo "FreeSWITCH installation complete."
 }
 
+########################################
+# Remove
+########################################
 
 remove_freeswitch() {
     log "Removing FreeSWITCH..."
@@ -58,9 +81,9 @@ remove_freeswitch() {
         return
     fi
 
-    if systemctl list-unit-files | grep -q freeswitch.service; then
-        run systemctl stop freeswitch || true
-        run systemctl disable freeswitch || true
+    if systemctl list-unit-files | grep -q "$FREESWITCH_SERVICE"; then
+        run systemctl stop "$FREESWITCH_SERVICE" || true
+        run systemctl disable "$FREESWITCH_SERVICE" || true
     fi
 
     echo "Removing packages..."
