@@ -29,13 +29,13 @@ OPTIONAL_MODULES=(
 CORE_PACKAGES=(
   git
   curl
-)
-
-USER_PACKAGES=(
   gnupg2
   lsb-release
   ca-certificates
   apt-transport-https
+)
+
+USER_PACKAGES=(
 )
 
 FREESWITCH_PACKAGES=(
