@@ -33,7 +33,7 @@ install_freeswitch() {
     installed=false
 
     for pkg in "${FREESWITCH_PACKAGES[@]}"; do
-        if dpkg -s "$pkg" >/dev/null 2>&1; then
+        if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
             installed=true
             break
         fi
@@ -100,7 +100,7 @@ remove_freeswitch() {
     installed=()
 
     for pkg in "${FREESWITCH_PACKAGES[@]}"; do
-        if dpkg -s "$pkg" >/dev/null 2>&1; then
+        if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
             installed+=("$pkg")
         fi
     done
@@ -111,7 +111,7 @@ remove_freeswitch() {
 
         echo "Removing packages..."
 
-        run apt remove -y "${installed[@]}" || true
+        run apt purge -y "${installed[@]}" || true
         run apt autoremove -y || true
     else
         echo "FreeSWITCH packages not installed"
