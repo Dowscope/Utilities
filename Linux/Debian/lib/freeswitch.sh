@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 ########################################
 # FreeSWITCH Configuration
 ########################################
@@ -42,8 +40,14 @@ install_freeswitch() {
     if [[ ! -s "$FREESWITCH_KEYRING" ]]; then
         echo "Adding FreeSWITCH signing key..."
 
-        curl -fsSL "$FREESWITCH_KEY_URL" \
-        | run tee "$FREESWITCH_KEYRING" >/dev/null
+        curl -u "signalwire:${SIGNALWIRE_TOKEN}" \
+        -fsSL "$FREESWITCH_KEY_URL" \
+        -o /tmp/signalwire-freeswitch.gpg || {
+            echo "Failed to download FreeSWITCH signing key"
+            return 1
+        }
+
+        run mv /tmp/signalwire-freeswitch.gpg "$FREESWITCH_KEYRING"
     fi
 
     echo "Configuring FreeSWITCH authentication..."
