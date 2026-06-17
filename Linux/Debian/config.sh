@@ -7,6 +7,8 @@ MODE="install"
 
 INSTALL_FREESWITCH=false
 
+DEBIAN_CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+
 ########################################
 # Modules
 ########################################
@@ -36,16 +38,4 @@ CORE_PACKAGES=(
 )
 
 USER_PACKAGES=(
-)
-
-FREESWITCH_PACKAGES=(
-  freeswitch
-  freeswitch-mod-sofia
-  freeswitch-mod-conference
-  freeswitch-mod-event-socket
-  freeswitch-mod-commands
-  freeswitch-mod-db
-  freeswitch-mod-console
-  freeswitch-sounds-en-us-callie
-  freeswitch-music-default
 )

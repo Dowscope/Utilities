@@ -2,10 +2,22 @@
 # FreeSWITCH Configuration
 ########################################
 
+FREESWITCH_PACKAGES=(
+  freeswitch
+  freeswitch-mod-sofia
+  freeswitch-mod-conference
+  freeswitch-mod-event-socket
+  freeswitch-mod-commands
+  freeswitch-mod-db
+  freeswitch-mod-console
+  freeswitch-sounds-en-us-callie
+  freeswitch-music-default
+)
+
 FREESWITCH_KEYRING="/usr/share/keyrings/signalwire-freeswitch.gpg"
 FREESWITCH_REPO_FILE="/etc/apt/sources.list.d/freeswitch.list"
 FREESWITCH_REPO_URL="https://freeswitch.signalwire.com/repo/deb/debian-release/"
-FREESWITCH_REPO_DIST="bookworm"
+FREESWITCH_REPO_DIST="$DEBIAN_CODENAME"
 FREESWITCH_REPO_COMPONENT="main"
 FREESWITCH_KEY_URL="https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg"
 FREESWITCH_AUTH_FILE="/etc/apt/auth.conf.d/freeswitch.conf"
