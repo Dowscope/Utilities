@@ -4,6 +4,7 @@
 
 FREESWITCH_PACKAGES=(
   freeswitch
+  freeswitch-conf-vanilla
   freeswitch-mod-sofia
   freeswitch-mod-conference
   freeswitch-mod-event-socket
