@@ -23,6 +23,8 @@ FREESWITCH_REPO_COMPONENT="main"
 FREESWITCH_KEY_URL="https://freeswitch.signalwire.com/repo/deb/debian-release/signalwire-freeswitch-repo.gpg"
 FREESWITCH_AUTH_FILE="/etc/apt/auth.conf.d/freeswitch.conf"
 FREESWITCH_SERVICE="freeswitch.service"
+FREESWITCH_SOURCE_CONF="/usr/share/freeswitch/conf/vanilla"
+FREESWITCH_TARGET_CONF="/etc/freeswitch"
 
 ########################################
 # Install
@@ -42,6 +44,7 @@ install_freeswitch() {
 
     if [[ "$installed" == true ]]; then
         echo "FreeSWITCH already installed"
+        configure_freeswitch
         return
     fi
 
@@ -83,6 +86,8 @@ install_freeswitch() {
 
     run apt install -y "${FREESWITCH_PACKAGES[@]}"
 
+    configure_freeswitch
+
     if systemctl list-unit-files | grep -q "$FREESWITCH_SERVICE"; then
         run systemctl enable "$FREESWITCH_SERVICE"
         run systemctl restart "$FREESWITCH_SERVICE"
@@ -92,11 +97,33 @@ install_freeswitch() {
 }
 
 ########################################
+# Configure
+########################################
+
+configure_freeswitch() {
+    echo "Configuring FreeSWITCH files..."
+
+    if [[ ! -f "$FREESWITCH_TARGET_CONF/freeswitch.xml" ]]; then
+        echo "Copying vanilla FreeSWITCH configuration..."
+
+        run mkdir -p "$FREESWITCH_TARGET_CONF"
+        run cp -a "$FREESWITCH_SOURCE_CONF"/* "$FREESWITCH_TARGET_CONF"/
+    else
+        echo "FreeSWITCH configuration already exists"
+    fi
+
+    run chown -R freeswitch:freeswitch "$FREESWITCH_TARGET_CONF"
+}
+
+########################################
 # Remove
 ########################################
 
 remove_freeswitch() {
     log "Removing FreeSWITCH"
+
+    run systemctl stop "$FREESWITCH_SERVICE" || true
+    run systemctl disable "$FREESWITCH_SERVICE" || true
 
     installed=()
 
@@ -107,29 +134,28 @@ remove_freeswitch() {
     done
 
     if [[ ${#installed[@]} -gt 0 ]]; then
-        run systemctl stop "$FREESWITCH_SERVICE" || true
-        run systemctl disable "$FREESWITCH_SERVICE" || true
-
         echo "Removing packages..."
-
         run apt purge -y "${installed[@]}" || true
-        run apt autoremove -y || true
     else
-        echo "FreeSWITCH packages not installed"
+        echo "No FreeSWITCH packages installed"
+    fi
+
+    run apt autoremove -y || true
+
+    if [[ -d "$FREESWITCH_TARGET_CONF" ]]; then
+        echo "Removing FreeSWITCH configuration..."
+        run rm -rf "$FREESWITCH_TARGET_CONF"
     fi
 
     if [[ -f "$FREESWITCH_REPO_FILE" ]]; then
-        echo "Removing FreeSWITCH repository..."
         run rm -f "$FREESWITCH_REPO_FILE"
     fi
 
     if [[ -f "$FREESWITCH_AUTH_FILE" ]]; then
-        echo "Removing FreeSWITCH authentication..."
         run rm -f "$FREESWITCH_AUTH_FILE"
     fi
 
     if [[ -f "$FREESWITCH_KEYRING" ]]; then
-        echo "Removing FreeSWITCH signing key..."
         run rm -f "$FREESWITCH_KEYRING"
     fi
 
