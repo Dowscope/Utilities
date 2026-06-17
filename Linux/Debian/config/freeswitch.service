@@ -1,0 +1,13 @@
+[Unit]
+Description=FreeSWITCH
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/freeswitch -nc
+ExecStop=/usr/bin/fs_cli -x "shutdown"
+Restart=always
+LimitNOFILE=100000
+
+[Install]
+WantedBy=multi-user.target

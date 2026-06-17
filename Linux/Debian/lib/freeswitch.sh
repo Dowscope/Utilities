@@ -25,6 +25,9 @@ FREESWITCH_AUTH_FILE="/etc/apt/auth.conf.d/freeswitch.conf"
 FREESWITCH_SERVICE="freeswitch.service"
 FREESWITCH_SOURCE_CONF="/usr/share/freeswitch/conf/vanilla"
 FREESWITCH_TARGET_CONF="/etc/freeswitch"
+FREESWITCH_SERVICE="freeswitch.service"
+FREESWITCH_SERVICE_URL="$REPO_BASE/config/freeswitch.service"
+FREESWITCH_SERVICE_TARGET="/etc/systemd/system/$FREESWITCH_SERVICE"
 
 ########################################
 # Install
@@ -87,11 +90,7 @@ install_freeswitch() {
     run apt install -y "${FREESWITCH_PACKAGES[@]}"
 
     configure_freeswitch
-
-    if systemctl list-unit-files | grep -q "$FREESWITCH_SERVICE"; then
-        run systemctl enable "$FREESWITCH_SERVICE"
-        run systemctl restart "$FREESWITCH_SERVICE"
-    fi
+    install_freeswitch_service
 
     echo "FreeSWITCH installation complete."
 }
@@ -113,6 +112,21 @@ configure_freeswitch() {
     fi
 
     run chown -R freeswitch:freeswitch "$FREESWITCH_TARGET_CONF"
+}
+
+install_freeswitch_service() {
+    echo "Installing FreeSWITCH service..."
+
+    curl -fsSL "$FREESWITCH_SERVICE_URL" \
+    -o /tmp/$FREESWITCH_SERVICE || {
+        echo "Failed to download FreeSWITCH service"
+        return 1
+    }
+
+    run mv /tmp/$FREESWITCH_SERVICE "$FREESWITCH_SERVICE_TARGET"
+
+    run systemctl daemon-reload
+    run systemctl enable "$FREESWITCH_SERVICE"
 }
 
 ########################################
@@ -141,6 +155,18 @@ remove_freeswitch() {
     fi
 
     run apt autoremove -y || true
+
+    echo "Removing FreeSWITCH service..."
+
+    if [[ -f "/etc/systemd/system/$FREESWITCH_SERVICE" ]]; then
+        run systemctl stop "$FREESWITCH_SERVICE" || true
+        run systemctl disable "$FREESWITCH_SERVICE" || true
+
+        run rm -f "/etc/systemd/system/$FREESWITCH_SERVICE"
+
+        run systemctl daemon-reload
+        run systemctl reset-failed || true
+    fi
 
     if [[ -d "$FREESWITCH_TARGET_CONF" ]]; then
         echo "Removing FreeSWITCH configuration..."
