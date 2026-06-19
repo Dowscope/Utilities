@@ -29,8 +29,8 @@ FREESWITCH_SOURCE_CONF="/usr/share/freeswitch/conf/vanilla"
 FREESWITCH_TARGET_CONF="/etc/freeswitch"
 FREESWITCH_SERVICE_URL="$REPO_BASE/config/freeswitch.service"
 FREESWITCH_SERVICE_TARGET="/etc/systemd/system/$FREESWITCH_SERVICE"
-FREESWITCH_CONFIG_BASE="$REPO_BASE/configs/freeswitch"
-FREESWITCH_CONFIG_TMP="$RUN_TMP/configs/freeswitch"
+FREESWITCH_CONFIG_BASE="$REPO_BASE/config/freeswitch"
+FREESWITCH_CONFIG_TMP="$RUN_TMP/config/freeswitch"
 FREESWITCH_CONFIG_MANIFEST="$FREESWITCH_CONFIG_TMP/manifest.json"
 
 ########################################
@@ -184,7 +184,7 @@ remove_freeswitch(){
         echo "No FreeSWITCH packages installed"
     fi
 
-    run apt autoremove -y || true
+    echo "Skipping apt autoremove"
 
     echo "Removing FreeSWITCH service..."
 
