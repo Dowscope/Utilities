@@ -127,6 +127,8 @@ deploy_freeswitch_configs(){
         run mkdir -p "$(dirname "$target")"
 
         if [[ "$mode" == "template" ]]; then
+            echo "DEBUG ESL_PASSWORD=[$ESL_PASSWORD]"
+            env | grep ESL_PASSWORD || true
             envsubst < "$FREESWITCH_CONFIG_TMP/$source" | run tee "$target" >/dev/null
         else
             run cp "$FREESWITCH_CONFIG_TMP/$source" "$target"
