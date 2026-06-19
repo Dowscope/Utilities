@@ -40,15 +40,6 @@ FREESWITCH_CONFIG_MANIFEST="$FREESWITCH_CONFIG_TMP/manifest.json"
 install_freeswitch(){
     log "Installing FreeSWITCH..."
 
-    if dpkg-query -W -f='${Status}' freeswitch 2>/dev/null | grep -q "install ok installed"; then
-        echo "FreeSWITCH already installed"
-        configure_freeswitch
-        download_freeswitch_configs
-        deploy_freeswitch_configs
-        install_freeswitch_service
-        return
-    fi
-
     if [[ -z "${SIGNALWIRE_TOKEN:-}" ]]; then
         echo "SIGNALWIRE_TOKEN is required for FreeSWITCH"
         return 1
@@ -148,12 +139,12 @@ deploy_freeswitch_configs(){
 install_freeswitch_service(){
     echo "Installing FreeSWITCH service..."
 
-    curl -fsSL "$FREESWITCH_SERVICE_URL" -o /tmp/$FREESWITCH_SERVICE || {
+    curl -fsSL "$FREESWITCH_SERVICE_URL" -o "/tmp/$FREESWITCH_SERVICE" || {
         echo "Failed to download FreeSWITCH service"
         return 1
     }
 
-    run mv /tmp/$FREESWITCH_SERVICE "$FREESWITCH_SERVICE_TARGET"
+    run mv "/tmp/$FREESWITCH_SERVICE" "$FREESWITCH_SERVICE_TARGET"
     run systemctl daemon-reload
     run systemctl enable "$FREESWITCH_SERVICE"
     run systemctl restart "$FREESWITCH_SERVICE"
@@ -169,6 +160,14 @@ remove_freeswitch(){
     run systemctl stop "$FREESWITCH_SERVICE" || true
     run systemctl disable "$FREESWITCH_SERVICE" || true
 
+    if [[ -f "$FREESWITCH_SERVICE_TARGET" ]]; then
+        echo "Removing FreeSWITCH service..."
+        run rm -f "$FREESWITCH_SERVICE_TARGET"
+    fi
+
+    run systemctl daemon-reload || true
+    run systemctl reset-failed || true
+
     installed=()
 
     for pkg in "${FREESWITCH_PACKAGES[@]}"; do
@@ -178,40 +177,26 @@ remove_freeswitch(){
     done
 
     if [[ ${#installed[@]} -gt 0 ]]; then
-        echo "Removing packages..."
+        echo "Removing FreeSWITCH packages..."
         run apt purge -y "${installed[@]}" || true
     else
         echo "No FreeSWITCH packages installed"
     fi
 
-    echo "Skipping apt autoremove"
+    echo "Removing FreeSWITCH files..."
+    run rm -rf "$FREESWITCH_TARGET_CONF" || true
+    run rm -rf /usr/share/freeswitch || true
+    run rm -rf /var/lib/freeswitch || true
+    run rm -rf /var/log/freeswitch || true
+    run rm -rf /run/freeswitch || true
+    run rm -rf "$FREESWITCH_CONFIG_TMP" || true
 
-    echo "Removing FreeSWITCH service..."
+    echo "Removing FreeSWITCH repository files..."
+    run rm -f "$FREESWITCH_REPO_FILE" || true
+    run rm -f "$FREESWITCH_AUTH_FILE" || true
+    run rm -f "$FREESWITCH_KEYRING" || true
 
-    if [[ -f "/etc/systemd/system/$FREESWITCH_SERVICE" ]]; then
-        run systemctl stop "$FREESWITCH_SERVICE" || true
-        run systemctl disable "$FREESWITCH_SERVICE" || true
-        run rm -f "/etc/systemd/system/$FREESWITCH_SERVICE"
-        run systemctl daemon-reload
-        run systemctl reset-failed || true
-    fi
-
-    if [[ -d "$FREESWITCH_TARGET_CONF" ]]; then
-        echo "Removing FreeSWITCH configuration..."
-        run rm -rf "$FREESWITCH_TARGET_CONF"
-    fi
-
-    if [[ -f "$FREESWITCH_REPO_FILE" ]]; then
-        run rm -f "$FREESWITCH_REPO_FILE"
-    fi
-
-    if [[ -f "$FREESWITCH_AUTH_FILE" ]]; then
-        run rm -f "$FREESWITCH_AUTH_FILE"
-    fi
-
-    if [[ -f "$FREESWITCH_KEYRING" ]]; then
-        run rm -f "$FREESWITCH_KEYRING"
-    fi
+    run apt update || true
 
     echo "FreeSWITCH cleanup complete."
 }
