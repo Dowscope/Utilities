@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "SETUP ESL_PASSWORD=[${ESL_PASSWORD:-}]"
+
 ########################################
 # Repo
 ########################################
