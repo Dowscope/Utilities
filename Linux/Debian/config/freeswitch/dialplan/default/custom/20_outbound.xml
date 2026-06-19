@@ -1,0 +1,10 @@
+<include>
+
+  <extension name="outbound">
+    <condition field="destination_number" expression="^9(\d+)$">
+      <action application="log" data="INFO Outbound call to $1"/>
+      <action application="hangup"/>
+    </condition>
+  </extension>
+
+</include>

@@ -1,0 +1,9 @@
+<include>
+
+  <extension name="default_inbound">
+    <condition field="destination_number" expression="^(.*)$">
+      <action application="transfer" data="1000 XML default"/>
+    </condition>
+  </extension>
+
+</include>

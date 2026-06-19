@@ -1,0 +1,11 @@
+<include>
+
+  <extension name="extension_1000">
+    <condition field="destination_number" expression="^1000$">
+      <action application="answer"/>
+      <action application="playback" data="ivr/ivr-welcome_to_freeswitch.wav"/>
+      <action application="hangup"/>
+    </condition>
+  </extension>
+
+</include>

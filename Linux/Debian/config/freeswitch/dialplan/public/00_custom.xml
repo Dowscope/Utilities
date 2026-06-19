@@ -1,0 +1,3 @@
+<include>
+  <X-PRE-PROCESS cmd="include" data="public/custom/*.xml"/>
+</include>

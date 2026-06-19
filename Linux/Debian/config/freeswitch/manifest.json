@@ -43,5 +43,10 @@
     "source": "dialplan/public/custom/20_dids.xml",
     "target": "/etc/freeswitch/dialplan/public/custom/20_dids.xml",
     "mode": "copy"
+  },
+  {
+    "source": "dialplan/default/custom/50_shared.xml",
+    "target": "/etc/freeswitch/dialplan/default/custom/50_shared.xml",
+    "mode": "copy"
   }
 ]
