@@ -1,0 +1,7 @@
+[
+  {
+    "source": "autoload_configs/event_socket.conf.xml",
+    "target": "/etc/freeswitch/autoload_configs/event_socket.conf.xml",
+    "mode": "template"
+  }
+]
