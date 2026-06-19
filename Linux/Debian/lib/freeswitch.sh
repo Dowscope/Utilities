@@ -45,6 +45,11 @@ install_freeswitch(){
         return 1
     fi
 
+    if [[ -z "${ESL_PASSWORD:-}" ]]; then
+        echo "ESL_PASSWORD is required for FreeSWITCH"
+        return 1
+    fi
+
     if [[ ! -s "$FREESWITCH_KEYRING" ]]; then
         echo "Adding FreeSWITCH signing key..."
         curl -u "signalwire:${SIGNALWIRE_TOKEN}" -fsSL "$FREESWITCH_KEY_URL" -o /tmp/signalwire-freeswitch.gpg || {
