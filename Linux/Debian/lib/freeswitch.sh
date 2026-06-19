@@ -3,6 +3,8 @@
 ########################################
 
 FREESWITCH_PACKAGES=(
+  jq
+  gettext-base
   freeswitch
   freeswitch-conf-vanilla
   freeswitch-mod-sofia
@@ -25,9 +27,11 @@ FREESWITCH_AUTH_FILE="/etc/apt/auth.conf.d/freeswitch.conf"
 FREESWITCH_SERVICE="freeswitch.service"
 FREESWITCH_SOURCE_CONF="/usr/share/freeswitch/conf/vanilla"
 FREESWITCH_TARGET_CONF="/etc/freeswitch"
-FREESWITCH_SERVICE="freeswitch.service"
 FREESWITCH_SERVICE_URL="$REPO_BASE/config/freeswitch.service"
 FREESWITCH_SERVICE_TARGET="/etc/systemd/system/$FREESWITCH_SERVICE"
+FREESWITCH_CONFIG_BASE="$REPO_BASE/configs/freeswitch"
+FREESWITCH_CONFIG_TMP="$TMP_DIR/configs/freeswitch"
+FREESWITCH_CONFIG_MANIFEST="$FREESWITCH_CONFIG_TMP/manifest.json"
 
 ########################################
 # Install
@@ -36,18 +40,12 @@ FREESWITCH_SERVICE_TARGET="/etc/systemd/system/$FREESWITCH_SERVICE"
 install_freeswitch() {
     log "Installing FreeSWITCH..."
 
-    installed=false
-
-    for pkg in "${FREESWITCH_PACKAGES[@]}"; do
-        if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
-            installed=true
-            break
-        fi
-    done
-
-    if [[ "$installed" == true ]]; then
+    if dpkg-query -W -f='${Status}' freeswitch 2>/dev/null | grep -q "install ok installed"; then
         echo "FreeSWITCH already installed"
         configure_freeswitch
+        download_freeswitch_configs
+        deploy_freeswitch_configs
+        install_freeswitch_service
         return
     fi
 
@@ -90,6 +88,8 @@ install_freeswitch() {
     run apt install -y "${FREESWITCH_PACKAGES[@]}"
 
     configure_freeswitch
+    download_freeswitch_configs
+    deploy_freeswitch_configs
     install_freeswitch_service
 
     echo "FreeSWITCH installation complete."
@@ -104,7 +104,6 @@ configure_freeswitch() {
 
     if [[ ! -f "$FREESWITCH_TARGET_CONF/freeswitch.xml" ]]; then
         echo "Copying vanilla FreeSWITCH configuration..."
-
         run mkdir -p "$FREESWITCH_TARGET_CONF"
         run cp -a "$FREESWITCH_SOURCE_CONF"/* "$FREESWITCH_TARGET_CONF"/
     else
@@ -112,6 +111,53 @@ configure_freeswitch() {
     fi
 
     run chown -R freeswitch:freeswitch "$FREESWITCH_TARGET_CONF"
+}
+
+download_freeswitch_configs() {
+    echo "Downloading FreeSWITCH configs..."
+
+    run rm -rf "$FREESWITCH_CONFIG_TMP"
+    run mkdir -p "$FREESWITCH_CONFIG_TMP"
+
+    curl -fsSL "$FREESWITCH_CONFIG_BASE/manifest.json" \
+    -o "$FREESWITCH_CONFIG_MANIFEST" || {
+        echo "Failed to download FreeSWITCH config manifest"
+        return 1
+    }
+
+    jq -c '.[]' "$FREESWITCH_CONFIG_MANIFEST" | while read -r item; do
+        local source
+        source=$(echo "$item" | jq -r '.source')
+
+        run mkdir -p "$FREESWITCH_CONFIG_TMP/$(dirname "$source")"
+
+        curl -fsSL "$FREESWITCH_CONFIG_BASE/$source" \
+        -o "$FREESWITCH_CONFIG_TMP/$source" || {
+            echo "Failed to download FreeSWITCH config: $source"
+            return 1
+        }
+    done
+}
+
+deploy_freeswitch_configs() {
+    echo "Deploying FreeSWITCH configs..."
+
+    jq -c '.[]' "$FREESWITCH_CONFIG_MANIFEST" | while read -r item; do
+        local source target mode
+        source=$(echo "$item" | jq -r '.source')
+        target=$(echo "$item" | jq -r '.target')
+        mode=$(echo "$item" | jq -r '.mode')
+
+        run mkdir -p "$(dirname "$target")"
+
+        if [[ "$mode" == "template" ]]; then
+            envsubst < "$FREESWITCH_CONFIG_TMP/$source" | run tee "$target" >/dev/null
+        else
+            run cp "$FREESWITCH_CONFIG_TMP/$source" "$target"
+        fi
+
+        run chown freeswitch:freeswitch "$target"
+    done
 }
 
 install_freeswitch_service() {
@@ -162,9 +208,7 @@ remove_freeswitch() {
     if [[ -f "/etc/systemd/system/$FREESWITCH_SERVICE" ]]; then
         run systemctl stop "$FREESWITCH_SERVICE" || true
         run systemctl disable "$FREESWITCH_SERVICE" || true
-
         run rm -f "/etc/systemd/system/$FREESWITCH_SERVICE"
-
         run systemctl daemon-reload
         run systemctl reset-failed || true
     fi
