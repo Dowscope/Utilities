@@ -76,6 +76,7 @@ install_freeswitch(){
     download_freeswitch_configs
     deploy_freeswitch_configs
     install_freeswitch_service
+    reload_freeswitch_configs
 
     echo "FreeSWITCH installation complete."
 }
@@ -132,15 +133,28 @@ deploy_freeswitch_configs(){
         run mkdir -p "$(dirname "$target")"
 
         if [[ "$mode" == "template" ]]; then
-            echo "DEBUG ESL_PASSWORD=[$ESL_PASSWORD]"
-            env | grep ESL_PASSWORD || true
             envsubst < "$FREESWITCH_CONFIG_TMP/$source" | run tee "$target" >/dev/null
-        else
+        elif [[ "$mode" == "copy" ]]; then
             run cp "$FREESWITCH_CONFIG_TMP/$source" "$target"
+        else
+            echo "Unsupported FreeSWITCH config mode: $mode"
+            return 1
         fi
 
         run chown freeswitch:freeswitch "$target"
+        run chmod 0644 "$target"
     done
+}
+
+reload_freeswitch_configs(){
+    echo "Reloading FreeSWITCH configs..."
+
+    if systemctl is-active --quiet "$FREESWITCH_SERVICE"; then
+        run fs_cli -x "reloadxml" || true
+        run fs_cli -x "reload mod_event_socket" || true
+    else
+        echo "FreeSWITCH is not running, skipping reload"
+    fi
 }
 
 install_freeswitch_service(){
@@ -152,6 +166,7 @@ install_freeswitch_service(){
     }
 
     run mv "/tmp/$FREESWITCH_SERVICE" "$FREESWITCH_SERVICE_TARGET"
+    run chmod 0644 "$FREESWITCH_SERVICE_TARGET"
     run systemctl daemon-reload
     run systemctl enable "$FREESWITCH_SERVICE"
     run systemctl restart "$FREESWITCH_SERVICE"
@@ -163,6 +178,8 @@ install_freeswitch_service(){
 
 remove_freeswitch(){
     log "Removing FreeSWITCH"
+
+    remove_freeswitch_managed_configs
 
     run systemctl stop "$FREESWITCH_SERVICE" || true
     run systemctl disable "$FREESWITCH_SERVICE" || true
@@ -206,4 +223,29 @@ remove_freeswitch(){
     run apt update || true
 
     echo "FreeSWITCH cleanup complete."
+}
+
+remove_freeswitch_managed_configs(){
+    echo "Removing managed FreeSWITCH configs..."
+
+    run rm -rf "$FREESWITCH_CONFIG_TMP"
+    run mkdir -p "$FREESWITCH_CONFIG_TMP"
+
+    curl -fsSL "$FREESWITCH_CONFIG_BASE/manifest.json" -o "$FREESWITCH_CONFIG_MANIFEST" || {
+        echo "Could not download manifest, skipping managed config removal"
+        return 0
+    }
+
+    jq -c '.[]' "$FREESWITCH_CONFIG_MANIFEST" | while read -r item; do
+        local target
+        target=$(echo "$item" | jq -r '.target')
+
+        if [[ -f "$target" ]]; then
+            echo "Removing managed config: $target"
+            run rm -f "$target" || true
+        fi
+    done
+
+    run rmdir "$FREESWITCH_TARGET_CONF/dialplan/default/custom" 2>/dev/null || true
+    run rmdir "$FREESWITCH_TARGET_CONF/dialplan/public/custom" 2>/dev/null || true
 }

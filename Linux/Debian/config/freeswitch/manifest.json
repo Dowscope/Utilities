@@ -3,5 +3,45 @@
     "source": "autoload_configs/event_socket.conf.xml",
     "target": "/etc/freeswitch/autoload_configs/event_socket.conf.xml",
     "mode": "template"
+  },
+  {
+    "source": "dialplan/default/00_custom.xml",
+    "target": "/etc/freeswitch/dialplan/default/00_custom.xml",
+    "mode": "copy"
+  },
+  {
+    "source": "dialplan/default/custom/10_extensions.xml",
+    "target": "/etc/freeswitch/dialplan/default/custom/10_extensions.xml",
+    "mode": "copy"
+  },
+  {
+    "source": "dialplan/default/custom/20_outbound.xml",
+    "target": "/etc/freeswitch/dialplan/default/custom/20_outbound.xml",
+    "mode": "copy"
+  },
+  {
+    "source": "dialplan/default/custom/30_ivrs.xml",
+    "target": "/etc/freeswitch/dialplan/default/custom/30_ivrs.xml",
+    "mode": "copy"
+  },
+  {
+    "source": "dialplan/default/custom/40_queues.xml",
+    "target": "/etc/freeswitch/dialplan/default/custom/40_queues.xml",
+    "mode": "copy"
+  },
+  {
+    "source": "dialplan/public/00_custom.xml",
+    "target": "/etc/freeswitch/dialplan/public/00_custom.xml",
+    "mode": "copy"
+  },
+  {
+    "source": "dialplan/public/custom/10_inbound.xml",
+    "target": "/etc/freeswitch/dialplan/public/custom/10_inbound.xml",
+    "mode": "copy"
+  },
+  {
+    "source": "dialplan/public/custom/20_dids.xml",
+    "target": "/etc/freeswitch/dialplan/public/custom/20_dids.xml",
+    "mode": "copy"
   }
 ]
