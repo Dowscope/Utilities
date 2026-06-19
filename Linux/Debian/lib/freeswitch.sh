@@ -127,6 +127,7 @@ install_freeswitch_service() {
 
     run systemctl daemon-reload
     run systemctl enable "$FREESWITCH_SERVICE"
+    run systemctl restart "$FREESWITCH_SERVICE"
 }
 
 ########################################
