@@ -4,8 +4,9 @@ After=network.target
 
 [Service]
 Type=forking
+PIDFile=/run/freeswitch/freeswitch.pid
 ExecStart=/usr/bin/freeswitch -nc
-ExecStop=/usr/bin/fs_cli -x "shutdown"
+ExecStop=/usr/bin/fs_cli -x shutdown
 Restart=always
 LimitNOFILE=100000
 
