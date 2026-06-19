@@ -12,7 +12,7 @@ RUN_TMP="/tmp/dowscope-setup"
 # Cleanup
 ########################################
 
-cleanup() {
+cleanup(){
     rm -rf "$RUN_TMP"
 }
 
@@ -58,7 +58,6 @@ while [[ $# -gt 0 ]]; do
         --*)
             flag="${1#--}"
             var="INSTALL_${flag^^}"
-
             if [[ -v "$var" ]]; then
                 printf -v "$var" true
             else
@@ -71,7 +70,6 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
     esac
-
     shift
 done
 
@@ -83,14 +81,19 @@ ALL_MODULES=("${MODULES[@]}" "${OPTIONAL_MODULES[@]}")
 
 for module in "${OPTIONAL_MODULES[@]}"; do
     flag="INSTALL_${module^^}"
-
     if [[ "${!flag:-false}" == true ]]; then
         MODULES+=("$module")
     fi
 done
 
+########################################
+# Export runtime variables
+########################################
+
 export USE_SUDO
 export MODE
+export RUN_TMP
+export REPO_BASE
 
 ########################################
 # Download base files

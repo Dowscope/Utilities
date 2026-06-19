@@ -18,7 +18,6 @@ mkdir -p "$TMP_DIR"
 
 validate_setting(){
     local name="$1"
-
     if [[ -z "${!name:-}" ]]; then
         echo "Missing setting: $name"
         MISSING_SETTINGS+=("$name")
@@ -27,7 +26,6 @@ validate_setting(){
 
 download_file(){
     local file="$1"
-
     curl -fsSL "$REPO_BASE/$file" -o "$BASE_DIR/$file"
 }
 
@@ -36,17 +34,13 @@ download_file(){
 ########################################
 
 if [[ ! -f "$SETTINGS_FILE" ]]; then
-
     echo "Downloading settings.sh..."
-
     download_file settings.sh
-
     echo
     echo "Settings file created:"
     echo "$SETTINGS_FILE"
     echo
     echo "Please edit this file and run the installer again."
-
     exit 1
 fi
 
@@ -55,24 +49,22 @@ source "$SETTINGS_FILE"
 MISSING_SETTINGS=()
 
 validate_setting SIGNALWIRE_TOKEN
+validate_setting ESL_PASSWORD
 
 if [[ ${#MISSING_SETTINGS[@]} -gt 0 ]]; then
-
     echo
     echo "Please complete the following settings:"
-
     for setting in "${MISSING_SETTINGS[@]}"; do
         echo " - $setting"
     done
-
     echo
     echo "Edit:"
     echo "$SETTINGS_FILE"
-
     exit 1
 fi
 
 export SIGNALWIRE_TOKEN
+export ESL_PASSWORD
 
 ########################################
 # Bootstrap
