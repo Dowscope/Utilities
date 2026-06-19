@@ -87,7 +87,7 @@ configure_freeswitch(){
         run mkdir -p "$FREESWITCH_TARGET_CONF"
         run cp -a "$FREESWITCH_SOURCE_CONF"/* "$FREESWITCH_TARGET_CONF"/
     else
-        echo "FreeSWITCH configuration already exists"
+        echo "FreeSWITCH configuration already exists, skipping vanilla copy"
     fi
 
     run chown -R freeswitch:freeswitch "$FREESWITCH_TARGET_CONF"
