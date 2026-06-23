@@ -1,0 +1,19 @@
+<include>
+
+  <extension name="test_speaker_bell">
+    <condition field="destination_number" expression="^9000$">
+      <action application="answer"/>
+      <action application="playback" data="/opt/bells/bell.wav"/>
+      <action application="hangup"/>
+    </condition>
+  </extension>
+
+  <extension name="test_speaker_lockdown">
+    <condition field="destination_number" expression="^9001$">
+      <action application="answer"/>
+      <action application="playback" data="/opt/bells/lockdown.wav"/>
+      <action application="hangup"/>
+    </condition>
+  </extension>
+
+</include>

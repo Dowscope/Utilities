@@ -65,6 +65,7 @@ fi
 
 export SIGNALWIRE_TOKEN
 export ESL_PASSWORD
+export SPEAKER_1000_PASSWORD
 
 ########################################
 # Bootstrap
