@@ -147,13 +147,21 @@ deploy_freeswitch_configs(){
 }
 
 reload_freeswitch_configs(){
-    echo "Reloading FreeSWITCH configs..."
+    echo "Waiting for FreeSWITCH..."
 
-    if systemctl is-active --quiet "$FREESWITCH_SERVICE"; then
-        run fs_cli -x "reloadxml" || true
-        run fs_cli -x "reload mod_event_socket" || true
+    for i in {1..30}; do
+        if fs_cli -x status >/dev/null 2>&1; then
+            break
+        fi
+        sleep 1
+    done
+
+    if fs_cli -x status >/dev/null 2>&1; then
+        echo "Reloading FreeSWITCH configs..."
+        run fs_cli -x "reloadxml"
+        run fs_cli -x "reload mod_event_socket"
     else
-        echo "FreeSWITCH is not running, skipping reload"
+        echo "FreeSWITCH did not become ready, skipping reload"
     fi
 }
 
