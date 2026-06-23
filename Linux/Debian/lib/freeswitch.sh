@@ -143,6 +143,7 @@ deploy_freeswitch_configs(){
 
         run chown freeswitch:freeswitch "$target"
         run chmod 0644 "$target"
+        echo "Deployed: $target"
     done
 }
 
