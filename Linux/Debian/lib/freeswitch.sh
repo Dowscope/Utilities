@@ -13,6 +13,7 @@ FREESWITCH_PACKAGES=(
   freeswitch-mod-commands
   freeswitch-mod-db
   freeswitch-mod-console
+  freeswitch-mod-dptools
   freeswitch-sounds-en-us-callie
   freeswitch-music-default
 )
