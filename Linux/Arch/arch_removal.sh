@@ -1,70 +1,78 @@
 #!/bin/bash
-
 set -e
 
 BACKUP_ROOT="/storage/main/backup"
-TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%d_%H-%M-%S)"
+TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
 BACKUP_DIR="$BACKUP_ROOT/$TIMESTAMP"
 SOURCE_HOME="$HOME"
-
-EXCLUDES=(
-  ".cache/"
-  ".local/share/Trash/"
-  ".steam/steam/steamapps/"
-)
-
 RESTORE_SCRIPT_URL="https://raw.githubusercontent.com/Dowscope/Utilities/refs/heads/main/Linux/Arch/arch_restore.sh"
 
-get_size_kb() {
-  du -sk "$1" | awk '{print $1}'
+EXCLUDES=(
+  ".cache"
+  ".local/share/Trash"
+  ".local/share/Steam/steamapps"
+)
+
+build_exclude_args() {
+  EXCLUDE_ARGS=()
+
+  for exclude in "${EXCLUDES[@]}"; do
+    EXCLUDE_ARGS+=(--exclude="$exclude")
+  done
+}
+
+get_backup_size_kb() {
+  du -sk "${EXCLUDE_ARGS[@]}" "$SOURCE_HOME" | awk '{print $1}'
 }
 
 get_free_kb() {
   df -Pk "$1" | awk 'NR==2 {print $4}'
 }
 
+show_largest_items() {
+  echo
+  echo "Largest directories in home:"
+  du -xh --max-depth=1 "$SOURCE_HOME" 2>/dev/null | sort -hr | head -15
+
+  echo
+  echo "Largest files in home:"
+  find "$SOURCE_HOME" -type f -printf '%s %p\n' 2>/dev/null \
+    | sort -nr \
+    | head -20 \
+    | awk '{
+        size=$1
+        $1=""
+        if(size>=1073741824)
+          printf "%.2f GB%s\n",size/1073741824,$0
+        else if(size>=1048576)
+          printf "%.2f MB%s\n",size/1048576,$0
+        else
+          printf "%.2f KB%s\n",size/1024,$0
+      }'
+}
+
 main() {
   echo "==> Preparing home backup..."
 
   mkdir -p "$BACKUP_ROOT"
+  mkdir -p "$BACKUP_DIR"
 
-  required_kb=$(get_size_kb "$SOURCE_HOME")
+  build_exclude_args
+
+  required_kb=$(get_backup_size_kb)
   free_kb=$(get_free_kb "$BACKUP_ROOT")
 
-  echo "Home size required: $((required_kb / 1024)) MB"
-  echo "Backup free space:  $((free_kb / 1024)) MB"
+  echo "Backup size required: $((required_kb / 1024)) MB"
+  echo "Backup free space:    $((free_kb / 1024)) MB"
 
   if [ "$free_kb" -lt "$required_kb" ]; then
-      echo
-      echo "ERROR: Not enough free space."
-      echo
-      echo "Required : $((required_kb / 1024)) MB"
-      echo "Available: $((free_kb / 1024)) MB"
-      echo
-
-      echo "Largest directories:"
-      du -xh --max-depth=1 "$HOME" 2>/dev/null | sort -hr | head -10
-
-      echo
-      echo "Largest files:"
-      find "$HOME" -type f -printf '%s %p\n' 2>/dev/null \
-        | sort -nr \
-        | head -20 \
-        | awk '{
-            size=$1
-            $1=""
-            if(size>1073741824)
-              printf "%.2f GB%s\n",size/1073741824,$0
-            else if(size>1048576)
-              printf "%.2f MB%s\n",size/1048576,$0
-            else
-              printf "%.2f KB%s\n",size/1024,$0
-          }'
-
-      exit 1
-    fi
-
-  mkdir -p "$BACKUP_DIR"
+    echo
+    echo "ERROR: Not enough free space."
+    echo "Required : $((required_kb / 1024)) MB"
+    echo "Available: $((free_kb / 1024)) MB"
+    show_largest_items
+    exit 1
+  fi
 
   echo
   echo "==> Backing up home directory..."
@@ -73,7 +81,7 @@ main() {
   echo
 
   rsync -aHAX --info=progress2 \
-    "${EXCLUDES[@]/#/--exclude=}" \
+    "${EXCLUDE_ARGS[@]}" \
     "$SOURCE_HOME/" "$BACKUP_DIR/home/"
 
   echo
