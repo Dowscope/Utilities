@@ -35,12 +35,34 @@ main() {
   echo "Backup free space:  $((free_kb / 1024)) MB"
 
   if [ "$free_kb" -lt "$required_kb" ]; then
-    echo
-    echo "ERROR: Not enough free space."
-    echo "Required : $((required_kb / 1024)) MB"
-    echo "Available: $((free_kb / 1024)) MB"
-    exit 1
-  fi
+      echo
+      echo "ERROR: Not enough free space."
+      echo
+      echo "Required : $((required_kb / 1024)) MB"
+      echo "Available: $((free_kb / 1024)) MB"
+      echo
+
+      echo "Largest directories:"
+      du -xh --max-depth=1 "$HOME" 2>/dev/null | sort -hr | head -10
+
+      echo
+      echo "Largest files:"
+      find "$HOME" -type f -printf '%s %p\n' 2>/dev/null \
+        | sort -nr \
+        | head -20 \
+        | awk '{
+            size=$1
+            $1=""
+            if(size>1073741824)
+              printf "%.2f GB%s\n",size/1073741824,$0
+            else if(size>1048576)
+              printf "%.2f MB%s\n",size/1048576,$0
+            else
+              printf "%.2f KB%s\n",size/1024,$0
+          }'
+
+      exit 1
+    fi
 
   mkdir -p "$BACKUP_DIR"
 
