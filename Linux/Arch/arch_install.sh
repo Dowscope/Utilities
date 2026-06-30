@@ -42,6 +42,7 @@ ESSENTIAL_PACKAGES=(
   ripgrep
   rsync
   pacman-contrib
+  steam
 )
 
 GNOME_FAVORITES=(
@@ -50,6 +51,24 @@ GNOME_FAVORITES=(
   org.remmina.Remmina.desktop
   org.gnome.Console.desktop
 )
+
+enable_multilib() {
+  echo "==> Enabling multilib repository..."
+
+  if grep -Eq '^\[multilib\]' /etc/pacman.conf; then
+    echo "multilib is already enabled."
+    return
+  fi
+
+  sudo sed -i '/^#\[multilib\]/,/^#Include = \/etc\/pacman.d\/mirrorlist/ s/^#//' /etc/pacman.conf
+
+  if grep -Eq '^\[multilib\]' /etc/pacman.conf; then
+    echo "multilib enabled."
+  else
+    echo "Failed to enable multilib."
+    exit 1
+  fi
+}
 
 setup_gnome_taskbar() {
   echo "==> Setting up GNOME taskbar favorites..."
@@ -72,13 +91,14 @@ setup_gnome_taskbar() {
 }
 
 install_packages() {
+  enable_multilib
+
   echo "==> Updating system..."
   sudo pacman -Syu --noconfirm
 
   echo "==> Installing essential packages..."
   sudo pacman -S --needed --noconfirm "${ESSENTIAL_PACKAGES[@]}"
 }
-
 install_yay() {
   if command -v yay &>/dev/null; then
     echo "==> yay is already installed."

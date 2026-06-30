@@ -11,6 +11,10 @@ EXCLUDES=(
   ".cache"
   ".local/share/Trash"
   ".local/share/Steam/steamapps"
+  ".local/share/Steam/shadercache"
+  ".local/share/Steam/logs"
+  ".local/share/Steam/dumps"
+  ".local/share/Steam/crashreports"
 )
 
 build_exclude_args() {
