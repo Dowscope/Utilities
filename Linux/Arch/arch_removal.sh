@@ -3,7 +3,7 @@
 set -e
 
 BACKUP_ROOT="/storage/main/backup"
-TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+TIMESTAMP="$(date +%Y-%m-%d_%H-%M-%d_%H-%M-%S)"
 BACKUP_DIR="$BACKUP_ROOT/$TIMESTAMP"
 SOURCE_HOME="$HOME"
 
@@ -12,6 +12,8 @@ EXCLUDES=(
   ".local/share/Trash/"
   ".steam/steam/steamapps/"
 )
+
+RESTORE_SCRIPT_URL="https://raw.githubusercontent.com/Dowscope/Utilities/refs/heads/main/Linux/Arch/arch_restore.sh"
 
 get_size_kb() {
   du -sk "$1" | awk '{print $1}'
@@ -22,7 +24,7 @@ get_free_kb() {
 }
 
 main() {
-  echo "==> Preparing full home backup..."
+  echo "==> Preparing home backup..."
 
   mkdir -p "$BACKUP_ROOT"
 
@@ -33,44 +35,39 @@ main() {
   echo "Backup free space:  $((free_kb / 1024)) MB"
 
   if [ "$free_kb" -lt "$required_kb" ]; then
-    echo "Not enough free space."
-    echo "Required: $((required_kb / 1024)) MB"
+    echo
+    echo "ERROR: Not enough free space."
+    echo "Required : $((required_kb / 1024)) MB"
     echo "Available: $((free_kb / 1024)) MB"
     exit 1
   fi
 
   mkdir -p "$BACKUP_DIR"
 
-  echo "==> Backing up entire home folder..."
+  echo
+  echo "==> Backing up home directory..."
   echo "From: $SOURCE_HOME/"
   echo "To:   $BACKUP_DIR/home/"
+  echo
 
-  rsync -aHAX --numeric-ids --info=progress2 \
+  rsync -aHAX --info=progress2 \
     "${EXCLUDES[@]/#/--exclude=}" \
     "$SOURCE_HOME/" "$BACKUP_DIR/home/"
 
-  cat > "$BACKUP_DIR/restore.sh" <<'EOF'
-#!/bin/bash
-
-set -e
-
-BACKUP_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-echo "Restoring home backup from:"
-echo "$BACKUP_DIR/home/"
-
-rsync -aHAX --info=progress2 "$BACKUP_DIR/home/" "$HOME/"
-
-echo "Restore complete."
-EOF
-
-  chmod +x "$BACKUP_DIR/restore.sh"
-
-  echo "==> Backup complete:"
-  echo "$BACKUP_DIR"
   echo
-  echo "Restore later with:"
-  echo "$BACKUP_DIR/restore.sh"
+  echo "========================================"
+  echo " BACKUP COMPLETE"
+  echo "========================================"
+  echo
+  echo "Backup saved to:"
+  echo "  $BACKUP_DIR"
+  echo
+  echo "To restore after reinstalling Arch:"
+  echo
+  echo "curl -fsSL \"$RESTORE_SCRIPT_URL\" -o arch_restore.sh"
+  echo "chmod +x arch_restore.sh"
+  echo "./arch_restore.sh"
+  echo
 }
 
 main
