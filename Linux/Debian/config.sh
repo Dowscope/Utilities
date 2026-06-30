@@ -38,4 +38,5 @@ CORE_PACKAGES=(
 )
 
 USER_PACKAGES=(
+  dotnet-sdk-8.0
 )
