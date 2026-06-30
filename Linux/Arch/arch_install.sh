@@ -44,6 +44,33 @@ ESSENTIAL_PACKAGES=(
   pacman-contrib
 )
 
+GNOME_FAVORITES=(
+  org.gnome.Nautilus.desktop
+  firefox.desktop
+  org.remmina.Remmina.desktop
+  org.gnome.Console.desktop
+)
+
+setup_gnome_taskbar() {
+  echo "==> Setting up GNOME taskbar favorites..."
+
+  local favorites="["
+  local first=true
+
+  for app in "${GNOME_FAVORITES[@]}"; do
+    if $first; then
+      first=false
+    else
+      favorites+=", "
+    fi
+    favorites+="'$app'"
+  done
+
+  favorites+="]"
+
+  gsettings set org.gnome.shell favorite-apps "$favorites"
+}
+
 install_packages() {
   echo "==> Updating system..."
   sudo pacman -Syu --noconfirm
@@ -219,6 +246,7 @@ main_desktop() {
   setup_shell
   setup_git
   setup_ssh
+  setup_gnome_taskbar
   remove_unwanted_packages
   cleanup_packages
   setup_storage_drives
