@@ -43,6 +43,8 @@ ESSENTIAL_PACKAGES=(
   rsync
   pacman-contrib
   steam
+  python-requests
+  python-beautifulsoup4
 )
 
 GNOME_FAVORITES=(
