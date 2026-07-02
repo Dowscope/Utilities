@@ -1,12 +1,6 @@
 ########################################
 # Runtime Defaults
 ########################################
-
-USE_SUDO=true
-MODE="install"
-
-INSTALL_FREESWITCH=false
-
 DEBIAN_CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
 
 ########################################
@@ -22,6 +16,7 @@ MODULES=(
 
 OPTIONAL_MODULES=(
   freeswitch
+  dev
 )
 
 ########################################
