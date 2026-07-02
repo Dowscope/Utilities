@@ -10,6 +10,11 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TMP_DIR="/tmp/dowscope-bootstrap"
 SETTINGS_FILE="$BASE_DIR/settings.sh"
 
+MODE="install"
+USE_SUDO=true
+INSTALL_FREESWITCH=false
+INSTALL_DEV=false
+
 mkdir -p "$TMP_DIR"
 
 ########################################
@@ -30,6 +35,42 @@ download_file(){
 }
 
 ########################################
+# Parse flags
+########################################
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --remove)
+            MODE="remove"
+            ;;
+        --install)
+            MODE="install"
+            ;;
+        --root)
+            USE_SUDO=false
+            ;;
+        --sudo)
+            USE_SUDO=true
+            ;;
+        --*)
+            flag="${1#--}"
+            var="INSTALL_${flag^^}"
+            if [[ -v "$var" ]]; then
+                printf -v "$var" true
+            else
+                echo "Unknown flag: $1"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+########################################
 # Load Settings
 ########################################
 
@@ -48,8 +89,17 @@ source "$SETTINGS_FILE"
 
 MISSING_SETTINGS=()
 
-validate_setting SIGNALWIRE_TOKEN
-validate_setting ESL_PASSWORD
+if [[ "$INSTALL_FREESWITCH" == true ]]; then
+    validate_setting SIGNALWIRE_TOKEN
+    validate_setting ESL_PASSWORD
+    validate_setting SPEAKER_1000_PASSWORD
+fi
+
+if [[ "$INSTALL_DEV" == true ]]; then
+    validate_setting GIT_USER_NAME
+    validate_setting GIT_USER_EMAIL
+    validate_setting GITHUB_SSH_KEY_NAME
+fi
 
 if [[ ${#MISSING_SETTINGS[@]} -gt 0 ]]; then
     echo
@@ -63,9 +113,23 @@ if [[ ${#MISSING_SETTINGS[@]} -gt 0 ]]; then
     exit 1
 fi
 
-export SIGNALWIRE_TOKEN
-export ESL_PASSWORD
-export SPEAKER_1000_PASSWORD
+export MODE
+export USE_SUDO
+export INSTALL_FREESWITCH
+export INSTALL_DEV
+
+if [[ "$INSTALL_FREESWITCH" == true ]]; then
+    export SIGNALWIRE_TOKEN
+    export ESL_PASSWORD
+    export SPEAKER_1000_PASSWORD
+fi
+
+if [[ "$INSTALL_DEV" == true ]]; then
+    export GIT_USER_NAME
+    export GIT_USER_EMAIL
+    export GITHUB_SSH_KEY_NAME
+    export GITHUB_SSH_KEY_SOURCE
+fi
 
 ########################################
 # Bootstrap
@@ -78,4 +142,4 @@ chmod +x "$TMP_DIR/setup.sh"
 
 echo "Launching setup.sh..."
 
-exec "$TMP_DIR/setup.sh" "$@"
+exec "$TMP_DIR/setup.sh"

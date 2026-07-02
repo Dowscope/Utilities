@@ -32,46 +32,8 @@ mkdir -p "$RUN_TMP/lib"
 ########################################
 
 echo "Downloading config.sh"
-
 curl -fsSL "$REPO_BASE/config.sh" -o "$RUN_TMP/config.sh"
-
 source "$RUN_TMP/config.sh"
-
-########################################
-# Parse flags
-########################################
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --remove)
-            MODE="remove"
-            ;;
-        --install)
-            MODE="install"
-            ;;
-        --root)
-            USE_SUDO=false
-            ;;
-        --sudo)
-            USE_SUDO=true
-            ;;
-        --*)
-            flag="${1#--}"
-            var="INSTALL_${flag^^}"
-            if [[ -v "$var" ]]; then
-                printf -v "$var" true
-            else
-                echo "Unknown flag: $1"
-                exit 1
-            fi
-            ;;
-        *)
-            echo "Unknown argument: $1"
-            exit 1
-            ;;
-    esac
-    shift
-done
 
 ########################################
 # Build module lists
@@ -90,8 +52,6 @@ done
 # Export runtime variables
 ########################################
 
-export USE_SUDO
-export MODE
 export RUN_TMP
 export REPO_BASE
 
