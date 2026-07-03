@@ -145,6 +145,7 @@ export GIT_USER_NAME
 export GIT_USER_EMAIL
 export GITHUB_SSH_KEY_NAME
 export GITHUB_SSH_KEY_SOURCE="${GITHUB_SSH_KEY_SOURCE:-$HOME/$GITHUB_SSH_KEY_NAME}"
+export GITHUB_SSH_KEY_PASSPHRASE
 
 ########################################
 # Bootstrap
