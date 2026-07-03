@@ -2,6 +2,13 @@ LAZYGIT_VERSION="latest"
 LAZYGIT_INSTALL_PATH="/usr/local/bin/lazygit"
 LAZYGIT_REPO="https://github.com/jesseduffield/lazygit"
 LAZYGIT_API="https://api.github.com/repos/jesseduffield/lazygit/releases/latest"
+LAZYGIT_TMP_FILE="/tmp/lazygit.tar.gz"
+LAZYGIT_TMP_DIR="/tmp/lazygit-install"
+
+LAZYGIT_REQUIRED_PACKAGES=(
+  curl
+  tar
+)
 
 install_lazygit() {
   log "Installing LazyGit"
@@ -12,7 +19,7 @@ install_lazygit() {
   fi
 
   run apt-get update
-  run apt-get install -y curl tar
+  install_packages "LazyGit Packages" "${LAZYGIT_REQUIRED_PACKAGES[@]}"
 
   LAZYGIT_ARCH="$(uname -m)"
   case "$LAZYGIT_ARCH" in
@@ -32,9 +39,6 @@ install_lazygit() {
   else
     LAZYGIT_DOWNLOAD_VERSION="$LAZYGIT_VERSION"
   fi
-
-  LAZYGIT_TMP_FILE="/tmp/lazygit.tar.gz"
-  LAZYGIT_TMP_DIR="/tmp/lazygit-install"
 
   rm -rf "$LAZYGIT_TMP_DIR"
   mkdir -p "$LAZYGIT_TMP_DIR"
