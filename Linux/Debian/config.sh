@@ -20,6 +20,7 @@ OPTIONAL_MODULES=(
   nginx
   dotnet
   dev
+  lazygit
 )
 
 ########################################
