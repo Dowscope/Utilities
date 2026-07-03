@@ -42,6 +42,8 @@ install_dev(){
     fi
 
     install_dev_packages
+
+    log "Configuring Dev..."
     configure_git
     configure_github_ssh
 
