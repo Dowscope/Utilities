@@ -17,6 +17,7 @@ MODULES=(
 
 OPTIONAL_MODULES=(
   freeswitch
+  nginx
   dotnet
   dev
 )
