@@ -71,8 +71,7 @@ install_freeswitch(){
 
     run apt update || return 1
 
-    echo "Installing FreeSWITCH packages..."
-    run apt install -y "${FREESWITCH_PACKAGES[@]}"
+    install_packages "Installing FreeSWITCH Packages" "${FREESWITCH_PACKAGES[@]}"
 
     configure_freeswitch
     download_freeswitch_configs
@@ -203,20 +202,7 @@ remove_freeswitch(){
     run systemctl daemon-reload || true
     run systemctl reset-failed || true
 
-    installed=()
-
-    for pkg in "${FREESWITCH_PACKAGES[@]}"; do
-        if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
-            installed+=("$pkg")
-        fi
-    done
-
-    if [[ ${#installed[@]} -gt 0 ]]; then
-        echo "Removing FreeSWITCH packages..."
-        run apt purge -y "${installed[@]}" || true
-    else
-        echo "No FreeSWITCH packages installed"
-    fi
+    remove_packages "Removing FreeSWITCH Packages" "${FREESWITCH_PACKAGES[@]}"
 
     echo "Removing FreeSWITCH files..."
     run rm -rf "$FREESWITCH_TARGET_CONF" || true

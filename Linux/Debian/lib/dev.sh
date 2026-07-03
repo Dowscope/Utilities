@@ -52,7 +52,7 @@ install_dev(){
 
 install_dev_packages(){
     echo "Installing development packages..."
-    install_packages "${DEV_PACKAGES[@]}"
+    install_packages "Development Packages" "${DEV_PACKAGES[@]}"
 }
 
 install_dev_dotnet() {

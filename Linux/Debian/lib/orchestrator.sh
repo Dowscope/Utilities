@@ -4,8 +4,8 @@ install_all() {
     run apt update
     run apt upgrade -y
 
-    install_packages "${CORE_PACKAGES[@]}"
-    install_packages "${USER_PACKAGES[@]}"
+    install_packages "Core Packages" "${CORE_PACKAGES[@]}"
+    install_packages "User Packages" "${USER_PACKAGES[@]}"
 
     for module in "${MODULES[@]}"; do
         func="install_${module}"
@@ -35,7 +35,7 @@ remove_all() {
         fi
     done
 
-    remove_packages "${USER_PACKAGES[@]}"
+    remove_packages "User Packages" "${USER_PACKAGES[@]}"
 
     if [[ -n "${DOWSCOPE_STATE_DIR:-}" && -d "$DOWSCOPE_STATE_DIR" ]]; then
         echo "Removing Dowscope state directory..."

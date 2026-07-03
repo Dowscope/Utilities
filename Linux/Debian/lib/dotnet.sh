@@ -32,12 +32,7 @@ install_dotnet_repo() {
   run apt-get update
 }
 
-install_dotnet_packages() {
-  for package in "${DOTNET_PACKAGES[@]}"; do
-    echo "Installing $package..."
-    run apt-get install -y "$package"
-  done
-}
+install_packages() "Dotnet Packages" "${DOTNET_PACKAGES[@]}"
 
 ########################################
 # Remove
@@ -48,14 +43,7 @@ remove_dotnet() {
   remove_dotnet_repo
 }
 
-remove_dotnet_packages() {
-  for package in "${DOTNET_PACKAGES[@]}"; do
-    echo "Removing $package..."
-    run apt-get remove -y "$package" || true
-  done
-
-  run apt-get autoremove -y
-}
+remove_packages() "Dotnet Packages" "${DOTNET_PACKAGES[@]}"
 
 remove_dotnet_repo() {
   echo "Removing Microsoft package repository..."
