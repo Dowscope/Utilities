@@ -1,0 +1,68 @@
+########################################
+# Dotnet Configuration
+########################################
+
+DOTNET_PACKAGES=(
+  dotnet-sdk-8.0
+)
+
+DOTNET_REPO_DEB="/tmp/packages-microsoft-prod.deb"
+DOTNET_REPO_URL="https://packages.microsoft.com/config/debian/$DEBIAN_VERSION_ID/packages-microsoft-prod.deb"
+
+########################################
+# Install
+########################################
+
+install_dotnet() {
+  install_dotnet_repo
+  install_dotnet_packages
+}
+
+install_dotnet_repo() {
+  echo "Installing Microsoft package repository..."
+
+  if [ -f /etc/apt/sources.list.d/microsoft-prod.list ] || [ -f /etc/apt/sources.list.d/microsoft-prod.sources ]; then
+    echo "Microsoft package repository already exists."
+    return 0
+  fi
+
+  curl -fsSL "$DOTNET_REPO_URL" -o "$DOTNET_REPO_DEB"
+  run dpkg -i "$DOTNET_REPO_DEB"
+  rm -f "$DOTNET_REPO_DEB"
+  run apt-get update
+}
+
+install_dotnet_packages() {
+  for package in "${DOTNET_PACKAGES[@]}"; do
+    echo "Installing $package..."
+    run apt-get install -y "$package"
+  done
+}
+
+########################################
+# Remove
+########################################
+
+remove_dotnet() {
+  remove_dotnet_packages
+  remove_dotnet_repo
+}
+
+remove_dotnet_packages() {
+  for package in "${DOTNET_PACKAGES[@]}"; do
+    echo "Removing $package..."
+    run apt-get remove -y "$package" || true
+  done
+
+  run apt-get autoremove -y
+}
+
+remove_dotnet_repo() {
+  echo "Removing Microsoft package repository..."
+
+  run rm -f /etc/apt/sources.list.d/microsoft-prod.list
+  run rm -f /etc/apt/sources.list.d/microsoft-prod.sources
+  run rm -f /etc/apt/trusted.gpg.d/microsoft-prod.gpg
+  run rm -f /usr/share/keyrings/microsoft-prod.gpg
+  run apt-get update || true
+}

@@ -2,6 +2,7 @@
 # Runtime Defaults
 ########################################
 DEBIAN_CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+DEBIAN_VERSION_ID="$(. /etc/os-release && echo "$VERSION_ID")"
 
 ########################################
 # Modules
@@ -16,6 +17,7 @@ MODULES=(
 
 OPTIONAL_MODULES=(
   freeswitch
+  dotnet
   dev
 )
 
@@ -33,5 +35,4 @@ CORE_PACKAGES=(
 )
 
 USER_PACKAGES=(
-  dotnet-sdk-8.0
 )
