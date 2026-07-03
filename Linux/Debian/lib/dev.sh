@@ -61,10 +61,7 @@ install_dev_dotnet() {
     return
   fi
 
-  for package in "${DOTNET_DEV_PACKAGES[@]}"; do
-    echo "Installing $package..."
-    run apt-get install -y "$package"
-  done
+  install_packages "Dotnet Development Packages" "${DOTNET_DEV_PACKAGES[@]}"
 }
 
 ########################################
@@ -179,6 +176,7 @@ remove_dev(){
 
     restore_git
     remove_github_ssh
+    remove_packages "Dotnet Development Packages" "${DOTNET_DEV_PACKAGES[@]}"
 
     echo "Development cleanup complete."
 }
