@@ -14,6 +14,8 @@ DOTNET_REPO_URL="https://packages.microsoft.com/config/debian/$DEBIAN_VERSION_ID
 ########################################
 
 install_dotnet() {
+  log "Installing DOTNET..."
+
   install_dotnet_repo
   install_packages "Dotnet Packages" "${DOTNET_PACKAGES[@]}"
 }
@@ -38,6 +40,7 @@ install_dotnet_repo() {
 ########################################
 
 remove_dotnet() {
+  log "Removing DOTNET"
   remove_packages "Dotnet Packages" "${DOTNET_PACKAGES[@]}"
   remove_dotnet_repo
 }
