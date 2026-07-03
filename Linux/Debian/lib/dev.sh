@@ -41,7 +41,7 @@ install_dev(){
         return 1
     fi
 
-    install_dev_packages
+    install_packages "Development Packages" "${DEV_PACKAGES[@]}"
     install_dev_dotnet
 
     log "Configuring Dev..."
@@ -51,12 +51,8 @@ install_dev(){
     echo "Development environment setup complete."
 }
 
-install_dev_packages(){
-    echo "Installing development packages..."
-    install_packages "Development Packages" "${DEV_PACKAGES[@]}"
-}
-
 install_dev_dotnet() {
+  echo "Dotnet Environment: $ENV_DOTNET"
   if [ "$ENV_DOTNET" != true ]; then
     return
   fi
