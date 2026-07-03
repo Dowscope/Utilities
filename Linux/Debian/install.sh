@@ -64,9 +64,13 @@ while [[ $# -gt 0 ]]; do
 
               if [[ -v "$install_var" ]]; then
                   printf -v "$install_var" true
-              elif [[ -v "$env_var" ]]; then
+              fi
+
+              if [[ -v "$env_var" ]]; then
                   printf -v "$env_var" true
-              else
+              fi
+
+              if [[ ! -v "$install_var" && ! -v "$env_var" ]]; then
                   echo "Unknown flag: $1"
                   exit 1
               fi
