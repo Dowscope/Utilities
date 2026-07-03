@@ -37,5 +37,11 @@ remove_all() {
 
     remove_packages "${USER_PACKAGES[@]}"
 
+    if [[ -n "${DOWSCOPE_STATE_DIR:-}" && -d "$DOWSCOPE_STATE_DIR" ]]; then
+        echo "Removing Dowscope state directory..."
+        rm -rf "$DOWSCOPE_STATE_DIR"
+    fi
+
     log "REMOVE COMPLETE"
 }
+
