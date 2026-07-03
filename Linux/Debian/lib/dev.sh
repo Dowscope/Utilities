@@ -119,12 +119,7 @@ configure_github_ssh(){
 
     if [[ -f "$key_path" ]]; then
         echo "GitHub SSH key already exists."
-    elif [[ -n "${GITHUB_SSH_KEY_SOURCE:-}" ]]; then
-        if [[ ! -f "$GITHUB_SSH_KEY_SOURCE" ]]; then
-            echo "SSH key source not found: $GITHUB_SSH_KEY_SOURCE"
-            return 1
-        fi
-
+    elif [[ -f "${GITHUB_SSH_KEY_SOURCE:-}" ]]; then
         cp "$GITHUB_SSH_KEY_SOURCE" "$key_path"
         chmod 600 "$key_path"
 
@@ -138,11 +133,7 @@ configure_github_ssh(){
 
         echo "GitHub SSH key copied from source."
     else
-        if [[ -n "${GITHUB_SSH_KEY_PASSPHRASE:-}" ]]; then
-            ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -f "$key_path" -N "$GITHUB_SSH_KEY_PASSPHRASE"
-        else
-            ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -f "$key_path" -N ""
-        fi
+        ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -f "$key_path" -N "$GITHUB_SSH_KEY_PASSPHRASE"
         echo "GitHub SSH key generated."
     fi
 
