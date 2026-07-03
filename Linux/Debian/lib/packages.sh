@@ -38,19 +38,19 @@ remove_packages() {
         return
     fi
 
-    local installed=()
+    local found=()
 
     for pkg in "$@"; do
-        if dpkg -s "$pkg" >/dev/null 2>&1; then
-            installed+=("$pkg")
+        if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok"; then
+            found+=("$pkg")
         fi
     done
 
-    if [[ ${#installed[@]} -eq 0 ]]; then
+    if [[ ${#found[@]} -eq 0 ]]; then
         echo "No packages to remove"
         return
     fi
 
-    run apt remove -y "${installed[@]}" || true
-    run apt autoremove -y || true
+    run apt-get purge -y "${found[@]}" || true
+    run apt-get autoremove --purge -y || true
 }
