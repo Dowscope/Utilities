@@ -117,6 +117,7 @@ export MODE
 export USE_SUDO
 export INSTALL_FREESWITCH
 export INSTALL_DEV
+export DOWSCOPE_STATE_DIR="${DOWSCOPE_STATE_DIR:-$HOME/.dowscope}"
 
 if [[ "$INSTALL_FREESWITCH" == true ]]; then
     export SIGNALWIRE_TOKEN

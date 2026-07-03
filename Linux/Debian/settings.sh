@@ -1,4 +1,12 @@
 ########################################
+# Dowscope Installer
+########################################
+
+# Optional: where the installer stores backups/state.
+# Leave blank to use: $HOME/.dowscope
+DOWSCOPE_STATE_DIR=""
+
+########################################
 # FreeSWITCH
 # (OPTIONAL)
 # Flag: --freeswitch
