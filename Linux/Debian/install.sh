@@ -12,7 +12,9 @@ SETTINGS_FILE="$BASE_DIR/settings.sh"
 
 MODE="install"
 USE_SUDO=true
+
 INSTALL_FREESWITCH=false
+INSTALL_DOTNET=false
 INSTALL_DEV=false
 
 ENV_DOTNET=false
@@ -122,11 +124,16 @@ fi
 
 export MODE
 export USE_SUDO
+export DOWSCOPE_STATE_DIR="${DOWSCOPE_STATE_DIR:-$HOME/.dowscope}"
+
+# Modules
 export INSTALL_FREESWITCH
+export INSTALL_DOTNET
 export INSTALL_DEV
+
+# Enviroments
 export ENV_DOTNET
 export ENV_NODE
-export DOWSCOPE_STATE_DIR="${DOWSCOPE_STATE_DIR:-$HOME/.dowscope}"
 
 # FreeSWITCH
 export SIGNALWIRE_TOKEN
