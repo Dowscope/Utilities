@@ -15,6 +15,9 @@ USE_SUDO=true
 INSTALL_FREESWITCH=false
 INSTALL_DEV=false
 
+ENV_DOTNET=false
+ENV_NODE=false
+
 mkdir -p "$TMP_DIR"
 
 ########################################
@@ -54,15 +57,19 @@ while [[ $# -gt 0 ]]; do
             ;;
         --*)
             flag="${1#--}"
-            var="INSTALL_${flag^^}"
-            if [[ -v "$var" ]]; then
-                printf -v "$var" true
-            else
-                echo "Unknown flag: $1"
-                exit 1
-            fi
+              install_var="INSTALL_${flag^^}"
+              env_var="ENV_${flag^^}"
+
+              if [[ -v "$install_var" ]]; then
+                  printf -v "$install_var" true
+              elif [[ -v "$env_var" ]]; then
+                  printf -v "$env_var" true
+              else
+                  echo "Unknown flag: $1"
+                  exit 1
+              fi
             ;;
-        *)
+          *)
             echo "Unknown argument: $1"
             exit 1
             ;;
@@ -117,6 +124,8 @@ export MODE
 export USE_SUDO
 export INSTALL_FREESWITCH
 export INSTALL_DEV
+export ENV_DOTNET
+export ENV_NODE
 export DOWSCOPE_STATE_DIR="${DOWSCOPE_STATE_DIR:-$HOME/.dowscope}"
 
 if [[ "$INSTALL_FREESWITCH" == true ]]; then

@@ -10,6 +10,10 @@ DEV_PACKAGES=(
   curl
 )
 
+DOTNET_DEV_PACKAGES=(
+  dotnet-sdk-8.0
+)
+
 DEV_STATE_DIR="$DOWSCOPE_STATE_DIR/dev"
 DEV_GIT_BACKUP="$DEV_STATE_DIR/git.conf"
 DEV_SSH_DIR="$HOME/.ssh"
@@ -47,6 +51,17 @@ install_dev(){
 install_dev_packages(){
     echo "Installing development packages..."
     install_packages "${DEV_PACKAGES[@]}"
+}
+
+install_dev_dotnet() {
+  if [ "$ENV_DOTNET" != true ]; then
+    return
+  fi
+
+  for package in "${DOTNET_DEV_PACKAGES[@]}"; do
+    echo "Installing $package..."
+    run apt-get install -y "$package"
+  done
 }
 
 ########################################
