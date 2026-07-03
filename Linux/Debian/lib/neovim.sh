@@ -1,4 +1,4 @@
-NEOVIM_CONFIG_URL="https://github.com/Dowscope/NeoVim-Configs/archive/refs/heads/main.tar.gz"
+NEOVIM_CONFIG_URL="https://github.com/Dowscope/NeoVim-Configs/archive/refs/heads/master.zip"
 
 install_neovim_config() {
     log "Installing Neovim config"
@@ -8,12 +8,12 @@ install_neovim_config() {
     rm -rf "$config_tmp"
     mkdir -p "$config_tmp"
 
-    curl -fsSL "$NEOVIM_CONFIG_URL" -o "$config_tmp/config.tar.gz"
-    tar -xzf "$config_tmp/config.tar.gz" -C "$config_tmp"
+    curl -fL "$NEOVIM_CONFIG_URL" -o "$config_tmp/config.zip"
+    unzip -q "$config_tmp/config.zip" -d "$config_tmp"
 
     rm -rf "$HOME/.config/nvim"
     mkdir -p "$HOME/.config"
-    cp -a "$config_tmp/Neovim-Configs-main/." "$HOME/.config/nvim"
+    cp -a "$config_tmp/NeoVim-Configs-master/." "$HOME/.config/nvim"
 
     echo "Neovim config installed to $HOME/.config/nvim"
 }
