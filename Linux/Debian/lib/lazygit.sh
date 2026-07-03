@@ -1,6 +1,7 @@
 LAZYGIT_VERSION="latest"
 LAZYGIT_INSTALL_PATH="/usr/local/bin/lazygit"
 LAZYGIT_REPO="https://github.com/jesseduffield/lazygit"
+LAZYGIT_API="https://api.github.com/repos/jesseduffield/lazygit/releases/latest"
 
 install_lazygit() {
   log "Installing LazyGit"
@@ -25,7 +26,7 @@ install_lazygit() {
 
   if [ "$LAZYGIT_VERSION" = "latest" ]; then
     LAZYGIT_DOWNLOAD_VERSION="$(
-      curl -s "$LAZYGIT_REPO/releases/latest" \
+      curl -s "$LAZYGIT_API" \
       | grep -Po '"tag_name": *"v\K[^"]*'
     )"
   else
