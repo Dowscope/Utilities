@@ -15,7 +15,7 @@ DOTNET_REPO_URL="https://packages.microsoft.com/config/debian/$DEBIAN_VERSION_ID
 
 install_dotnet() {
   install_dotnet_repo
-  install_dotnet_packages
+  install_packages "Dotnet Packages" "${DOTNET_PACKAGES[@]}"
 }
 
 install_dotnet_repo() {
@@ -32,18 +32,16 @@ install_dotnet_repo() {
   run apt-get update
 }
 
-install_packages() "Dotnet Packages" "${DOTNET_PACKAGES[@]}"
 
 ########################################
 # Remove
 ########################################
 
 remove_dotnet() {
-  remove_dotnet_packages
+  remove_packages "Dotnet Packages" "${DOTNET_PACKAGES[@]}"
   remove_dotnet_repo
 }
 
-remove_packages() "Dotnet Packages" "${DOTNET_PACKAGES[@]}"
 
 remove_dotnet_repo() {
   echo "Removing Microsoft package repository..."
