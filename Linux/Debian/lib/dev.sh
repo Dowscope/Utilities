@@ -42,6 +42,7 @@ install_dev(){
     fi
 
     install_dev_packages
+    install_dev_dotnet
 
     log "Configuring Dev..."
     configure_git
@@ -137,7 +138,11 @@ configure_github_ssh(){
 
         echo "GitHub SSH key copied from source."
     else
-        ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -f "$key_path" -N ""
+        if [[ -n "${GITHUB_SSH_KEY_PASSPHRASE:-}" ]]; then
+            ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -f "$key_path" -N "$GITHUB_SSH_KEY_PASSPHRASE"
+        else
+            ssh-keygen -t ed25519 -C "$GIT_USER_EMAIL" -f "$key_path" -N ""
+        fi
         echo "GitHub SSH key generated."
     fi
 
