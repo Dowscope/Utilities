@@ -71,7 +71,7 @@ install_freeswitch(){
 
     run apt update || return 1
 
-    install_packages "Installing FreeSWITCH Packages" "${FREESWITCH_PACKAGES[@]}"
+    install_packages "FreeSWITCH Packages" "${FREESWITCH_PACKAGES[@]}"
 
     configure_freeswitch
     download_freeswitch_configs
