@@ -1,4 +1,4 @@
-NEOVIM_CONFIG_URL="https://github.com/Dowscope/Neovim-Configs/archive/refs/heads/main.tar.gz"
+NEOVIM_CONFIG_URL="https://github.com/Dowscope/NeoVim-Configs/archive/refs/heads/main.tar.gz"
 
 install_neovim_config() {
     log "Installing Neovim config"
