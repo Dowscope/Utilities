@@ -128,18 +128,16 @@ export ENV_DOTNET
 export ENV_NODE
 export DOWSCOPE_STATE_DIR="${DOWSCOPE_STATE_DIR:-$HOME/.dowscope}"
 
-if [[ "$INSTALL_FREESWITCH" == true ]]; then
-    export SIGNALWIRE_TOKEN
-    export ESL_PASSWORD
-    export SPEAKER_1000_PASSWORD
-fi
+# FreeSWITCH
+export SIGNALWIRE_TOKEN
+export ESL_PASSWORD
+export SPEAKER_1000_PASSWORD
 
-if [[ "$INSTALL_DEV" == true ]]; then
-    export GIT_USER_NAME
-    export GIT_USER_EMAIL
-    export GITHUB_SSH_KEY_NAME
-    export GITHUB_SSH_KEY_SOURCE
-fi
+# Dev
+export GIT_USER_NAME
+export GIT_USER_EMAIL
+export GITHUB_SSH_KEY_NAME
+export GITHUB_SSH_KEY_SOURCE
 
 ########################################
 # Bootstrap
