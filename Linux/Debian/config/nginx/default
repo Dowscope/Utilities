@@ -1,6 +1,15 @@
+```nginx
 ##
 # /etc/nginx/sites-available/default
 ##
+
+upstream production {
+    server 127.0.0.1:5001;
+}
+
+upstream development {
+    server 127.0.0.1:5000;
+}
 
 server {
     listen 80 default_server;
@@ -17,7 +26,7 @@ server {
     }
 
     location /dev/ {
-        proxy_pass http://127.0.0.1:5000;
+        proxy_pass http://development;
 
         proxy_http_version 1.1;
 
@@ -28,7 +37,7 @@ server {
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Prefix /dev;
 
-        # Required for WebSockets and dotnet watch Hot Reload
+        # WebSockets / Hot Reload
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
 
@@ -40,7 +49,7 @@ server {
     ########################################
 
     location / {
-        proxy_pass http://127.0.0.1:5001;
+        proxy_pass http://production;
 
         proxy_http_version 1.1;
 
@@ -51,3 +60,5 @@ server {
         proxy_set_header X-Forwarded-Host $host;
     }
 }
+```
+
