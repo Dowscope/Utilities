@@ -37,4 +37,5 @@ CORE_PACKAGES=(
 )
 
 USER_PACKAGES=(
+  build-essential
 )
