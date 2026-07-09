@@ -2,6 +2,14 @@
 
 import requests
 from bs4 import BeautifulSoup
+import subprocess
+
+def ask_download():
+    return input("Download with rTorrent? [y/N]: ").strip().lower() == "y"
+
+def download_with_rtorrent(magnet_link):
+    print(f"\033[32mStarting rTorrent...\033[0m")
+    subprocess.run(["rtorrent", magnet_link])
 
 def get_user_search_string():
     return input("Enter a search string: ").strip()
@@ -81,6 +89,9 @@ def main():
     if selected:
         print(f"\n\033[32mYou selected:\033[0m {selected['name']}")
         print(f"\033[33mMagnet Link:\033[0m {selected['magnet']}")
+
+        if ask_download():
+            download_with_rtorrent(selected['magnet'])
     else:
         print("\033[31mInvalid selection.\033[0m")
 
