@@ -3,7 +3,7 @@
 ########################################
 
 DOTNET_PACKAGES=(
-  dotnet-runtime-8.0
+  aspnetcore-runtime-10.0
 )
 
 DOTNET_REPO_DEB="/tmp/packages-microsoft-prod.deb"

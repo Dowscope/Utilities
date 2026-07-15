@@ -11,7 +11,7 @@ DEV_PACKAGES=(
 )
 
 DOTNET_DEV_PACKAGES=(
-  dotnet-sdk-8.0
+  dotnet-sdk-10.0
 )
 
 DEV_STATE_DIR="$DOWSCOPE_STATE_DIR/dev"
