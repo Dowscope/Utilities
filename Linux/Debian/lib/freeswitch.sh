@@ -89,10 +89,32 @@ install_freeswitch(){
 configure_freeswitch(){
     echo "Configuring FreeSWITCH files..."
 
+    if [[ ! -d "$FREESWITCH_SOURCE_CONF" ]] ||
+       [[ ! -f "$FREESWITCH_SOURCE_CONF/freeswitch.xml" ]]; then
+        echo "Vanilla FreeSWITCH configuration is missing."
+        echo "Reinstalling freeswitch-conf-vanilla..."
+
+        run apt-get install --reinstall -y freeswitch-conf-vanilla || {
+            echo "Failed to restore the vanilla FreeSWITCH configuration"
+            return 1
+        }
+    fi
+
+    if [[ ! -f "$FREESWITCH_SOURCE_CONF/freeswitch.xml" ]]; then
+        echo "Vanilla FreeSWITCH configuration is still missing after reinstall"
+        return 1
+    fi
+
     if [[ ! -f "$FREESWITCH_TARGET_CONF/freeswitch.xml" ]]; then
         echo "Copying vanilla FreeSWITCH configuration..."
         run mkdir -p "$FREESWITCH_TARGET_CONF"
-        run cp -a "$FREESWITCH_SOURCE_CONF"/* "$FREESWITCH_TARGET_CONF"/
+
+        run cp -a \
+            "$FREESWITCH_SOURCE_CONF/." \
+            "$FREESWITCH_TARGET_CONF/" || {
+            echo "Failed to copy the vanilla FreeSWITCH configuration"
+            return 1
+        }
     else
         echo "FreeSWITCH configuration already exists, skipping vanilla copy"
     fi
@@ -202,11 +224,10 @@ remove_freeswitch(){
     run systemctl daemon-reload || true
     run systemctl reset-failed || true
 
-    remove_packages "Removing FreeSWITCH Packages" "${FREESWITCH_PACKAGES[@]}"
+    remove_packages "FreeSWITCH Packages" "${FREESWITCH_PACKAGES[@]}" || return 1
 
     echo "Removing FreeSWITCH files..."
     run rm -rf "$FREESWITCH_TARGET_CONF" || true
-    run rm -rf /usr/share/freeswitch || true
     run rm -rf /var/lib/freeswitch || true
     run rm -rf /var/log/freeswitch || true
     run rm -rf /run/freeswitch || true

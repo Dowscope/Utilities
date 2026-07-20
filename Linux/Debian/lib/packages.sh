@@ -25,7 +25,7 @@ install_packages() {
 
 remove_packages() {
     if [[ $# -eq 0 ]]; then
-        return
+        return 0
     fi
 
     local group="$1"
@@ -35,22 +35,38 @@ remove_packages() {
 
     if [[ $# -eq 0 ]]; then
         echo "No packages to remove"
-        return
+        return 0
     fi
 
     local found=()
+    local pkg
+    local status
 
     for pkg in "$@"; do
-        if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok"; then
-            found+=("$pkg")
-        fi
+        status="$(dpkg-query -W -f='${db:Status-Abbrev}' "$pkg" 2>/dev/null || true)"
+
+        case "$status" in
+            ii|rc)
+                found+=("$pkg")
+                ;;
+        esac
     done
 
     if [[ ${#found[@]} -eq 0 ]]; then
         echo "No packages to remove"
-        return
+        return 0
     fi
 
-    run apt-get purge -y "${found[@]}" || true
-    run apt-get autoremove --purge -y || true
+    echo "Purging packages:"
+    printf '  %s\n' "${found[@]}"
+
+    run apt-get purge -y "${found[@]}" || {
+        echo "Package purge failed"
+        return 1
+    }
+
+    run apt-get autoremove --purge -y || {
+        echo "Package autoremove failed"
+        return 1
+    }
 }
