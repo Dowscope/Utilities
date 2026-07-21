@@ -97,8 +97,8 @@ install_freeswitch(){
     install_packages "FreeSWITCH Packages" "${FREESWITCH_PACKAGES[@]}"
 
     configure_freeswitch
-    download_freeswitch_configs
-    deploy_freeswitch_configs
+    #download_freeswitch_configs
+    #deploy_freeswitch_configs
     install_freeswitch_service
     reload_freeswitch_configs
 
