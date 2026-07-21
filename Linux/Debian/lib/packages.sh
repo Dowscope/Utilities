@@ -46,7 +46,7 @@ remove_packages() {
         status="$(dpkg-query -W -f='${db:Status-Abbrev}' "$pkg" 2>/dev/null || true)"
 
         case "$status" in
-            ii|rc)
+            ii*|rc*)
                 found+=("$pkg")
                 ;;
         esac
