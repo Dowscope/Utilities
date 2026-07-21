@@ -5,16 +5,39 @@
 FREESWITCH_PACKAGES=(
   jq
   gettext-base
+
+  # FreeSWITCH core and baseline configuration
   freeswitch
   freeswitch-conf-vanilla
+
+  # SIP and dialplan
   freeswitch-mod-sofia
-  freeswitch-mod-conference
-  freeswitch-mod-event-socket
-  freeswitch-mod-commands
-  freeswitch-mod-db
-  freeswitch-mod-console
+  freeswitch-mod-dialplan-xml
   freeswitch-mod-dptools
+  freeswitch-mod-commands
+
+  # BellScheduler control and paging
+  freeswitch-mod-event-socket
+  freeswitch-mod-conference
+  freeswitch-mod-lua
+
+  # Audio playback and generated audio
   freeswitch-mod-sndfile
+  freeswitch-mod-native-file
+  freeswitch-mod-local-stream
+  freeswitch-mod-tone-stream
+  freeswitch-mod-say-en
+
+  # Supporting applications/endpoints
+  freeswitch-mod-db
+  freeswitch-mod-hash
+  freeswitch-mod-loopback
+
+  # Logging
+  freeswitch-mod-console
+  freeswitch-mod-logfile
+
+  # Audio content
   freeswitch-sounds-en-us-callie
   freeswitch-music-default
 )
