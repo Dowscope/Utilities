@@ -10,6 +10,7 @@ SELECTED_DESKTOP=""
 
 ESSENTIAL_PACKAGES=(
   git
+  less
   base-devel
   nodejs
   npm
@@ -33,6 +34,7 @@ ESSENTIAL_PACKAGES=(
   python-requests
   python-beautifulsoup4
   tree-sitter
+  otf-firamono-nerd
 )
 
 GNOME_PACKAGES=(
@@ -143,8 +145,17 @@ setup_nvim() {
     https://github.com/Dowscope/NeoVim-Configs.git \
     "$HOME/.config/nvim"
 
-  echo "==> Installing Tree-sitter parsers..."
-  nvim --headless "+TSUpdateSync" +qa
+  echo "==> Starting Neovim once to install configured plugins..."
+  nvim --headless "+Lazy! sync" +qa || {
+    echo "Warning: automatic Neovim plugin installation failed."
+    echo "Open Neovim and run :Lazy sync manually."
+  }
+
+  echo "==> Updating Tree-sitter parsers..."
+  nvim --headless "+TSUpdate" +qa || {
+    echo "Warning: automatic Tree-sitter parser update failed."
+    echo "Open Neovim and run :TSUpdate manually."
+  }
 }
 
 setup_shell() {
@@ -167,6 +178,9 @@ setup_git() {
 
   git config --global user.name "Timothy Dowling"
   git config --global user.email "timothy.dowling@me.com"
+  git config --global core.editor "nvim"
+  git config --global init.defaultBranch "main"
+  git config --global fetch.prune true
 }
 
 setup_ssh() {
@@ -195,12 +209,10 @@ setup_ssh() {
 
 install_aur_packages() {
   echo "==> Installing AUR packages..."
-
-  yay -S --needed --noconfirm otf-firamono-nerd
 }
 
 _build_favorites_value() {
-  local favorites=("[")
+  local favorites=()
   local output="["
   local first=true
   local app
@@ -404,6 +416,31 @@ setup_storage_drives() {
   echo "Storage setup complete."
 }
 
+preflight_checks() {
+  echo "==> Running preflight checks..."
+
+  if [ "$EUID" -eq 0 ]; then
+    echo "Do not run this installer as root."
+    echo "Run it as your normal desktop user."
+    exit 1
+  fi
+
+  if ! command -v sudo >/dev/null 2>&1; then
+    echo "sudo is required but is not installed."
+    exit 1
+  fi
+
+  if ! sudo -v; then
+    echo "Unable to obtain sudo privileges."
+    exit 1
+  fi
+
+  if ! command -v pacman >/dev/null 2>&1; then
+    echo "This installer must be run on Arch Linux."
+    exit 1
+  fi
+}
+
 select_desktop_environment() {
   local desktop_options=(
     "GNOME"
@@ -536,4 +573,5 @@ show_main_menu() {
   done
 }
 
+preflight_checks
 show_main_menu
