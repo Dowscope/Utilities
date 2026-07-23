@@ -5,7 +5,45 @@ set -e
 MAIN_DRIVE="/dev/sdc1"
 GAMES_DRIVE="/dev/sda1"
 
-REMOVE_PACKAGES=(
+SELECTED_PROFILE=""
+SELECTED_DESKTOP=""
+
+ESSENTIAL_PACKAGES=(
+  git
+  base-devel
+  nodejs
+  npm
+  lazygit
+  neovim
+  tmux
+  starship
+  remmina
+  freerdp
+  firefox
+  discord
+  clang
+  reflector
+  bear
+  glfw
+  glm
+  ripgrep
+  rsync
+  pacman-contrib
+  steam
+  python-requests
+  python-beautifulsoup4
+  tree-sitter
+)
+
+GNOME_PACKAGES=(
+  wl-clipboard
+)
+
+CINNAMON_PACKAGES=(
+  xclip
+)
+
+GNOME_REMOVE_PACKAGES=(
   epiphany
   gnome-calendar
   gnome-contacts
@@ -21,34 +59,22 @@ REMOVE_PACKAGES=(
   gnome-connections
 )
 
-ESSENTIAL_PACKAGES=(
-  git
-  base-devel
-  nodejs
-  npm
-  lazygit
-  neovim
-  tmux
-  starship
-  remmina
-  firefox
-  discord
-  clang
-  reflector
-  bear
-  glfw
-  glm
-  wl-clipboard
-  ripgrep
-  rsync
-  pacman-contrib
-  steam
-  python-requests
-  python-beautifulsoup4
+CINNAMON_REMOVE_PACKAGES=(
+  hexchat
+  hypnotix
+  pix
+  xed
 )
 
 GNOME_FAVORITES=(
   org.gnome.Nautilus.desktop
+  firefox.desktop
+  org.remmina.Remmina.desktop
+  org.gnome.Console.desktop
+)
+
+CINNAMON_FAVORITES=(
+  nemo.desktop
   firefox.desktop
   org.remmina.Remmina.desktop
   org.gnome.Console.desktop
@@ -62,7 +88,9 @@ enable_multilib() {
     return
   fi
 
-  sudo sed -i '/^#\[multilib\]/,/^#Include = \/etc\/pacman.d\/mirrorlist/ s/^#//' /etc/pacman.conf
+  sudo sed -i \
+    '/^#\[multilib\]/,/^#Include = \/etc\/pacman.d\/mirrorlist/ s/^#//' \
+    /etc/pacman.conf
 
   if grep -Eq '^\[multilib\]' /etc/pacman.conf; then
     echo "multilib enabled."
@@ -70,26 +98,6 @@ enable_multilib() {
     echo "Failed to enable multilib."
     exit 1
   fi
-}
-
-setup_gnome_taskbar() {
-  echo "==> Setting up GNOME taskbar favorites..."
-
-  local favorites="["
-  local first=true
-
-  for app in "${GNOME_FAVORITES[@]}"; do
-    if $first; then
-      first=false
-    else
-      favorites+=", "
-    fi
-    favorites+="'$app'"
-  done
-
-  favorites+="]"
-
-  gsettings set org.gnome.shell favorite-apps "$favorites"
 }
 
 install_packages() {
@@ -101,6 +109,7 @@ install_packages() {
   echo "==> Installing essential packages..."
   sudo pacman -S --needed --noconfirm "${ESSENTIAL_PACKAGES[@]}"
 }
+
 install_yay() {
   if command -v yay &>/dev/null; then
     echo "==> yay is already installed."
@@ -108,12 +117,15 @@ install_yay() {
   fi
 
   echo "==> Installing yay..."
+
+  local tmpdir
   tmpdir=$(mktemp -d)
 
   git clone https://aur.archlinux.org/yay.git "$tmpdir/yay"
-  cd "$tmpdir/yay"
+
+  pushd "$tmpdir/yay" >/dev/null
   makepkg -si --noconfirm
-  cd - >/dev/null
+  popd >/dev/null
 
   rm -rf "$tmpdir"
 }
@@ -127,19 +139,27 @@ setup_nvim() {
     rm -rf "$HOME/.config/nvim"
   fi
 
-  git clone https://github.com/Dowscope/NeoVim-Configs.git "$HOME/.config/nvim"
+  git clone \
+    https://github.com/Dowscope/NeoVim-Configs.git \
+    "$HOME/.config/nvim"
+
+  echo "==> Installing Tree-sitter parsers..."
+  nvim --headless "+TSUpdateSync" +qa
 }
 
 setup_shell() {
   echo "==> Setting up shell..."
 
-  SHELL_RC="$HOME/.bashrc"
+  local shell_rc="$HOME/.bashrc"
 
-  if ! grep -q 'eval "$(starship init bash)"' "$SHELL_RC"; then
-    echo 'eval "$(starship init bash)"' >> "$SHELL_RC"
+  mkdir -p "$HOME/.config"
+
+  if ! grep -Fq 'eval "$(starship init bash)"' "$shell_rc"; then
+    echo 'eval "$(starship init bash)"' >> "$shell_rc"
   fi
 
-  starship preset catppuccin-powerline -o "$HOME/.config/starship.toml"
+  starship preset catppuccin-powerline \
+    -o "$HOME/.config/starship.toml"
 }
 
 setup_git() {
@@ -153,9 +173,14 @@ setup_ssh() {
   echo "==> Setting up SSH key..."
 
   mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
 
   if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
-    ssh-keygen -t ed25519 -C "timothy_dowling@me.com" -f "$HOME/.ssh/id_ed25519" -N ""
+    ssh-keygen \
+      -t ed25519 \
+      -C "timothy_dowling@me.com" \
+      -f "$HOME/.ssh/id_ed25519" \
+      -N ""
   else
     echo "==> SSH key already exists."
   fi
@@ -163,6 +188,7 @@ setup_ssh() {
   eval "$(ssh-agent -s)"
   ssh-add "$HOME/.ssh/id_ed25519"
 
+  echo
   echo "==> Public SSH key:"
   cat "$HOME/.ssh/id_ed25519.pub"
 }
@@ -173,26 +199,125 @@ install_aur_packages() {
   yay -S --needed --noconfirm otf-firamono-nerd
 }
 
+_build_favorites_value() {
+  local favorites=("[")
+  local output="["
+  local first=true
+  local app
+
+  case "$SELECTED_DESKTOP" in
+    gnome)
+      favorites=("${GNOME_FAVORITES[@]}")
+      ;;
+
+    cinnamon)
+      favorites=("${CINNAMON_FAVORITES[@]}")
+      ;;
+
+    *)
+      echo "Unsupported desktop environment: $SELECTED_DESKTOP" >&2
+      return 1
+      ;;
+  esac
+
+  for app in "${favorites[@]}"; do
+    if "$first"; then
+      first=false
+    else
+      output+=", "
+    fi
+
+    output+="'$app'"
+  done
+
+  output+="]"
+
+  printf '%s\n' "$output"
+}
+
+setup_desktop_favorites() {
+  echo "==> Setting up $SELECTED_DESKTOP favorites..."
+
+  local favorites
+  favorites=$(_build_favorites_value)
+
+  case "$SELECTED_DESKTOP" in
+    gnome)
+      if ! gsettings writable org.gnome.shell favorite-apps &>/dev/null; then
+        echo "GNOME favorite-apps setting is unavailable."
+        return
+      fi
+
+      gsettings set \
+        org.gnome.shell \
+        favorite-apps \
+        "$favorites"
+      ;;
+
+    cinnamon)
+      if ! gsettings writable org.cinnamon favorite-apps &>/dev/null; then
+        echo "Cinnamon favorite-apps setting is unavailable."
+        return
+      fi
+
+      gsettings set \
+        org.cinnamon \
+        favorite-apps \
+        "$favorites"
+      ;;
+
+    *)
+      echo "No favorites configuration exists for: $SELECTED_DESKTOP"
+      ;;
+  esac
+}
+
 remove_unwanted_packages() {
-  echo "==> Removing unwanted packages..."
+  echo "==> Checking for unwanted $SELECTED_DESKTOP packages..."
 
-  installed_to_remove=()
+  local packages_to_check=()
+  local installed_to_remove=()
+  local pkg
+  local answer
 
-  for pkg in "${REMOVE_PACKAGES[@]}"; do
+  case "$SELECTED_DESKTOP" in
+    gnome)
+      packages_to_check=("${GNOME_REMOVE_PACKAGES[@]}")
+      ;;
+
+    cinnamon)
+      packages_to_check=("${CINNAMON_REMOVE_PACKAGES[@]}")
+      ;;
+
+    *)
+      echo "No package-removal profile exists for: $SELECTED_DESKTOP"
+      return
+      ;;
+  esac
+
+  if [ "${#packages_to_check[@]}" -eq 0 ]; then
+    echo "No unwanted packages configured for $SELECTED_DESKTOP."
+    return
+  fi
+
+  for pkg in "${packages_to_check[@]}"; do
     if pacman -Q "$pkg" &>/dev/null; then
       installed_to_remove+=("$pkg")
     fi
   done
 
-  if [ ${#installed_to_remove[@]} -eq 0 ]; then
-    echo "No unwanted packages installed."
+  if [ "${#installed_to_remove[@]}" -eq 0 ]; then
+    echo "No unwanted $SELECTED_DESKTOP packages are installed."
     return
   fi
 
+  echo
   echo "Packages to remove:"
   printf ' - %s\n' "${installed_to_remove[@]}"
+  echo
 
-  read -p "Remove these packages? [y/N] " answer
+  read -r -p "Remove these packages? [y/N] " answer
+
   if [[ "$answer" =~ ^[Yy]$ ]]; then
     sudo pacman -Rns --noconfirm "${installed_to_remove[@]}"
   else
@@ -203,15 +328,22 @@ remove_unwanted_packages() {
 cleanup_packages() {
   echo "==> Checking for orphaned packages..."
 
+  local orphans
+  local answer
+
   orphans=$(pacman -Qdtq 2>/dev/null || true)
 
   if [ -n "$orphans" ]; then
+    echo
     echo "Orphaned packages found:"
-    echo "$orphans"
+    printf '%s\n' "$orphans"
+    echo
 
-    read -p "Remove these orphaned packages? [y/N] " answer
+    read -r -p "Remove these orphaned packages? [y/N] " answer
+
     if [[ "$answer" =~ ^[Yy]$ ]]; then
-      sudo pacman -Rns --noconfirm $orphans
+      mapfile -t orphan_packages <<< "$orphans"
+      sudo pacman -Rns --noconfirm "${orphan_packages[@]}"
     else
       echo "Skipping orphan removal."
     fi
@@ -220,6 +352,7 @@ cleanup_packages() {
   fi
 
   echo "==> Cleaning package cache..."
+
   sudo rm -f /var/cache/pacman/pkg/download-* 2>/dev/null || true
   sudo paccache -rk2 || true
   sudo paccache -ruk0 || true
@@ -228,26 +361,39 @@ cleanup_packages() {
 setup_storage_drives() {
   echo "==> Setting up storage drives..."
 
+  local main_uuid
+  local games_uuid
+
   sudo mkdir -p /storage/main
   sudo mkdir -p /storage/games
 
-  MAIN_UUID=$(blkid -s UUID -o value "$MAIN_DRIVE" || true)
-  GAMES_UUID=$(blkid -s UUID -o value "$GAMES_DRIVE" || true)
+  main_uuid=$(sudo blkid -s UUID -o value "$MAIN_DRIVE" || true)
+  games_uuid=$(sudo blkid -s UUID -o value "$GAMES_DRIVE" || true)
 
-  if [ -z "$MAIN_UUID" ] || [ -z "$GAMES_UUID" ]; then
-    echo "Failed to detect drive UUIDs."
+  if [ -z "$main_uuid" ]; then
+    echo "Failed to detect the main drive UUID: $MAIN_DRIVE"
     echo "Check drives with: lsblk -f"
     return 1
   fi
 
-  if ! grep -q "$MAIN_UUID" /etc/fstab; then
-    echo "UUID=$MAIN_UUID /storage/main ext4 defaults,noatime 0 2" | sudo tee -a /etc/fstab
+  if [ -z "$games_uuid" ]; then
+    echo "Failed to detect the games drive UUID: $GAMES_DRIVE"
+    echo "Check drives with: lsblk -f"
+    return 1
+  fi
+
+  if ! grep -Fq "UUID=$main_uuid " /etc/fstab; then
+    echo \
+      "UUID=$main_uuid /storage/main ext4 defaults,noatime 0 2" |
+      sudo tee -a /etc/fstab >/dev/null
   else
     echo "Main drive already exists in fstab."
   fi
 
-  if ! grep -q "$GAMES_UUID" /etc/fstab; then
-    echo "UUID=$GAMES_UUID /storage/games ext4 defaults,noatime 0 2" | sudo tee -a /etc/fstab
+  if ! grep -Fq "UUID=$games_uuid " /etc/fstab; then
+    echo \
+      "UUID=$games_uuid /storage/games ext4 defaults,noatime 0 2" |
+      sudo tee -a /etc/fstab >/dev/null
   else
     echo "Games drive already exists in fstab."
   fi
@@ -258,47 +404,136 @@ setup_storage_drives() {
   echo "Storage setup complete."
 }
 
+select_desktop_environment() {
+  local desktop_options=(
+    "GNOME"
+    "Cinnamon"
+    "Back"
+  )
+
+  echo
+  echo "Select the installed desktop environment:"
+
+  select desktop_option in "${desktop_options[@]}"; do
+    case "$desktop_option" in
+      "GNOME")
+        SELECTED_DESKTOP="gnome"
+        return 0
+        ;;
+
+      "Cinnamon")
+        SELECTED_DESKTOP="cinnamon"
+        return 0
+        ;;
+
+      "Back")
+        return 1
+        ;;
+
+      *)
+        echo "Invalid option. Try again."
+        ;;
+    esac
+  done
+}
+
+install_desktop_packages() {
+  echo "==> Installing packages for $SELECTED_DESKTOP..."
+
+  case "$SELECTED_DESKTOP" in
+    gnome)
+      sudo pacman -S --needed --noconfirm "${GNOME_PACKAGES[@]}"
+      ;;
+
+    cinnamon)
+      sudo pacman -S --needed --noconfirm "${CINNAMON_PACKAGES[@]}"
+      ;;
+
+    *)
+      echo "No desktop-specific package profile exists for: $SELECTED_DESKTOP"
+      return 1
+      ;;
+  esac
+}
+
 main_desktop() {
+  echo
   echo "Running setup for MAIN DESKTOP"
+  echo "Desktop environment: $SELECTED_DESKTOP"
+  echo
 
   install_packages
+  install_desktop_packages
   install_yay
   setup_nvim
   install_aur_packages
   setup_shell
   setup_git
   setup_ssh
-  setup_gnome_taskbar
+  setup_desktop_favorites
   remove_unwanted_packages
   cleanup_packages
   setup_storage_drives
+
+  echo
+  echo "Main desktop setup complete."
 }
 
 gaming_desktop() {
+  echo
   echo "Running setup for GAMING DESKTOP"
+  echo "Desktop environment: $SELECTED_DESKTOP"
+  echo
+
+  echo "Gaming Desktop setup has not been configured yet."
 }
 
-echo "Select the option:"
-options=("Main Desktop" "Gaming Desktop" "Exit")
+show_main_menu() {
+  local profile_options=(
+    "Main Desktop"
+    "Gaming Desktop"
+    "Exit"
+  )
 
-select opt in "${options[@]}"; do
-  case $opt in
-    "Main Desktop")
-      echo "You have chosen MAIN DESKTOP"
-      main_desktop
-      break
-      ;;
-    "Gaming Desktop")
-      echo "You have chosen GAMING DESKTOP"
-      gaming_desktop
-      break
-      ;;
-    "Exit")
-      echo "Exiting..."
-      break
-      ;;
-    *)
-      echo "Invalid option. Try again."
-      ;;
-  esac
-done
+  while true; do
+    echo
+    echo "Select the computer profile:"
+
+    select profile_option in "${profile_options[@]}"; do
+      case "$profile_option" in
+        "Main Desktop")
+          SELECTED_PROFILE="main"
+
+          if select_desktop_environment; then
+            main_desktop
+            return
+          fi
+
+          break
+          ;;
+
+        "Gaming Desktop")
+          SELECTED_PROFILE="gaming"
+
+          if select_desktop_environment; then
+            gaming_desktop
+            return
+          fi
+
+          break
+          ;;
+
+        "Exit")
+          echo "Exiting..."
+          return
+          ;;
+
+        *)
+          echo "Invalid option. Try again."
+          ;;
+      esac
+    done
+  done
+}
+
+show_main_menu
