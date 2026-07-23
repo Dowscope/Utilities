@@ -8,7 +8,7 @@ FREESWITCH_PACKAGES=(
 
   # FreeSWITCH core and baseline configuration
   freeswitch
-  freeswitch-conf-vanilla
+  #freeswitch-conf-vanilla
 
   # SIP and dialplan
   freeswitch-mod-sofia
@@ -100,7 +100,7 @@ install_freeswitch(){
     #download_freeswitch_configs
     #deploy_freeswitch_configs
     install_freeswitch_service
-    reload_freeswitch_configs
+    #reload_freeswitch_configs
 
     echo "FreeSWITCH installation complete."
 }
@@ -110,39 +110,13 @@ install_freeswitch(){
 ########################################
 
 configure_freeswitch(){
-    echo "Configuring FreeSWITCH files..."
+    echo "Preparing BellScheduler FreeSWITCH configuration..."
 
-    if [[ ! -d "$FREESWITCH_SOURCE_CONF" ]] ||
-       [[ ! -f "$FREESWITCH_SOURCE_CONF/freeswitch.xml" ]]; then
-        echo "Vanilla FreeSWITCH configuration is missing."
-        echo "Reinstalling freeswitch-conf-vanilla..."
+    run mkdir -p "$FREESWITCH_TARGET_CONF"
+    run chown freeswitch:freeswitch "$FREESWITCH_TARGET_CONF"
+    run chmod 0755 "$FREESWITCH_TARGET_CONF"
 
-        run apt-get install --reinstall -y freeswitch-conf-vanilla || {
-            echo "Failed to restore the vanilla FreeSWITCH configuration"
-            return 1
-        }
-    fi
-
-    if [[ ! -f "$FREESWITCH_SOURCE_CONF/freeswitch.xml" ]]; then
-        echo "Vanilla FreeSWITCH configuration is still missing after reinstall"
-        return 1
-    fi
-
-    if [[ ! -f "$FREESWITCH_TARGET_CONF/freeswitch.xml" ]]; then
-        echo "Copying vanilla FreeSWITCH configuration..."
-        run mkdir -p "$FREESWITCH_TARGET_CONF"
-
-        run cp -a \
-            "$FREESWITCH_SOURCE_CONF/." \
-            "$FREESWITCH_TARGET_CONF/" || {
-            echo "Failed to copy the vanilla FreeSWITCH configuration"
-            return 1
-        }
-    else
-        echo "FreeSWITCH configuration already exists, skipping vanilla copy"
-    fi
-
-    run chown -R freeswitch:freeswitch "$FREESWITCH_TARGET_CONF"
+    echo "Configuration directory ready."
 }
 
 download_freeswitch_configs(){
@@ -224,7 +198,6 @@ install_freeswitch_service(){
     run chmod 0644 "$FREESWITCH_SERVICE_TARGET"
     run systemctl daemon-reload
     run systemctl enable "$FREESWITCH_SERVICE"
-    run systemctl restart "$FREESWITCH_SERVICE"
 }
 
 ########################################
