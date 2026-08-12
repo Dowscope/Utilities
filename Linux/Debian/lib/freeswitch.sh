@@ -36,6 +36,7 @@ FREESWITCH_PACKAGES=(
   # Logging
   freeswitch-mod-console
   freeswitch-mod-logfile
+  freeswitch-mod-cdr-csv
 
   # Audio content
   freeswitch-sounds-en-us-callie
