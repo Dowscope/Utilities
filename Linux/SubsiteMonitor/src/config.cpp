@@ -84,6 +84,7 @@ MonitorConfig parse_config_text(std::string_view text) {
     }
     MonitorConfig config;
     bool access_log_seen = false;
+    bool nginx_config_seen = false;
     std::size_t line_start = 0;
     while (line_start < text.size()) {
         const std::size_t line_end = text.find('\n', line_start);
@@ -103,29 +104,38 @@ MonitorConfig parse_config_text(std::string_view text) {
             }
             const std::string_view key = trim(line.substr(0, separator));
             const std::string_view value = trim(line.substr(separator + 1U));
-            if (key != "access_log") {
+            if (key != "access_log" && key != "nginx_config") {
                 throw std::runtime_error("unknown configuration key: " +
                                          std::string{key});
             }
-            if (access_log_seen) {
-                throw std::runtime_error("configuration repeats access_log");
+            bool& key_seen = key == "access_log" ? access_log_seen
+                                                   : nginx_config_seen;
+            if (key_seen) {
+                throw std::runtime_error("configuration repeats " +
+                                         std::string{key});
             }
             if (value.empty() || value.size() > 4096U) {
-                throw std::runtime_error(
-                    "access_log must be a non-empty path under 4096 bytes");
+                throw std::runtime_error(std::string{key} +
+                                         " must be a non-empty path under 4096 bytes");
             }
             if (value.front() != '/') {
-                throw std::runtime_error("access_log must be an absolute path");
+                throw std::runtime_error(std::string{key} +
+                                         " must be an absolute path");
             }
             for (const char character : value) {
                 const auto byte = static_cast<unsigned char>(character);
                 if (byte < 0x20U || byte == 0x7fU) {
                     throw std::runtime_error(
-                        "access_log path contains a control character");
+                        std::string{key} +
+                            " path contains a control character");
                 }
             }
-            config.access_log = value;
-            access_log_seen = true;
+            if (key == "access_log") {
+                config.access_log = value;
+            } else {
+                config.nginx_config = value;
+            }
+            key_seen = true;
         }
         if (line_end == std::string_view::npos) {
             break;

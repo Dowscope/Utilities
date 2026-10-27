@@ -4,3 +4,6 @@
 
 # Shared Nginx access log using the documented subsite_monitor format.
 access_log = /var/log/nginx/subsite-monitor-access.log
+
+# Main Nginx configuration. Included files are scanned for server_name values.
+nginx_config = /etc/nginx/nginx.conf

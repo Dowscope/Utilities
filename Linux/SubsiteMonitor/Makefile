@@ -9,15 +9,16 @@ CPPFLAGS += $(NCURSES_CFLAGS)
 LDLIBS += $(NCURSES_LIBS)
 
 TARGET := subsite-monitor
-VERSION := 0.1.0-alpha.2
+VERSION := 0.1.0-alpha.3
 CPPFLAGS += -DSUBSITE_MONITOR_VERSION='"$(VERSION)"'
-SOURCES := src/main.cpp src/config.cpp src/collector.cpp src/log_parser.cpp \
+SOURCES := src/main.cpp src/config.cpp src/nginx_config.cpp src/collector.cpp src/log_parser.cpp \
 	src/statistics.cpp src/report.cpp src/tui.cpp
 OBJECTS := $(SOURCES:.cpp=.o)
 DEPS := $(OBJECTS:.o=.d)
 PARSER_TEST := tests/test_parser
 STATISTICS_TEST := tests/test_statistics
 CONFIG_TEST := tests/test_config
+NGINX_CONFIG_TEST := tests/test_nginx_config
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 SYSCONFDIR ?= /etc
@@ -47,10 +48,14 @@ $(STATISTICS_TEST): tests/test_statistics.cpp src/statistics.o src/report.o \
 $(CONFIG_TEST): tests/test_config.cpp src/config.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-test: $(TARGET) $(PARSER_TEST) $(STATISTICS_TEST) $(CONFIG_TEST)
+$(NGINX_CONFIG_TEST): tests/test_nginx_config.cpp src/nginx_config.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+test: $(TARGET) $(PARSER_TEST) $(STATISTICS_TEST) $(CONFIG_TEST) $(NGINX_CONFIG_TEST)
 	./$(PARSER_TEST)
 	./$(STATISTICS_TEST)
 	./$(CONFIG_TEST)
+	./$(NGINX_CONFIG_TEST)
 	sh ./tests/test_cli.sh ./$(TARGET)
 
 install: $(TARGET)
@@ -65,6 +70,6 @@ install: $(TARGET)
 
 clean:
 	rm -f $(TARGET) $(OBJECTS) $(DEPS) $(PARSER_TEST) $(STATISTICS_TEST) \
-		$(CONFIG_TEST)
+		$(CONFIG_TEST) $(NGINX_CONFIG_TEST)
 
 -include $(DEPS)

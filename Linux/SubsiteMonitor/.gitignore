@@ -4,4 +4,5 @@
 /tests/test_parser
 /tests/test_statistics
 /tests/test_config
+/tests/test_nginx_config
 /packaging/dist/

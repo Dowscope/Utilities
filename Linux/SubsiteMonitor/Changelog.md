@@ -106,3 +106,19 @@
 - Refreshed project handoff, release notes, TODO, and user/technical manuals.
 - Verified archive checksum, installer hash pins, shell syntax, and packaged
   README/manual contents before committing.
+
+
+### Nginx site inventory — 2026-10-27
+
+- Added bounded scanning of the configured Nginx main config and included files
+  to discover literal and wildcard `server_name` entries. Regex names and `_`
+  are skipped.
+- The default UI merges configured names with log activity, so configured sites
+  without requests remain visible with zero activity. Added `nginx_config` to
+  the root-only config and `SUBSITE_MONITOR_NGINX_CONFIG` override.
+- Added realistic config fixtures and parser coverage for includes, duplicate
+  names, wildcard names, and malformed configuration.
+- Updated the manual and technical reference. `./verify.sh` passed a clean
+  C++23 build and all tests without compiler warnings.
+- Development version is `0.1.0-alpha.3`; no alpha.3 release has been built
+  or published yet. Archive SHA-256: `4b0b709a5688d4a18e0febcbf0e324fdb4aac84decd98e18e4d7c3bf5c61ac81`.

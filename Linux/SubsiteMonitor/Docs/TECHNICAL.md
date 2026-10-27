@@ -2,8 +2,9 @@
 
 ## Current architecture
 
-The executable has seven translation units: `src/main.cpp` handles CLI
+The executable has eight translation units: `src/main.cpp` handles CLI
 arguments, `src/config.cpp` parses and secures the root config,
+`src/nginx_config.cpp` discovers configured virtual-host names,
 `src/collector.cpp` streams log files, `src/log_parser.cpp`
 validates individual records, `src/statistics.cpp` aggregates them by host and
 log date, `src/report.cpp` formats text output, and `src/tui.cpp` renders the
@@ -34,7 +35,7 @@ prepends a staging root to both install destinations.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.2` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.3` and return 0.
 - `collect --log <path>`: parse a supported access log; print aggregate valid
   and malformed line counts only.
 - `stats --log <path>`: scan one log and print per-site and daily statistics.
@@ -43,17 +44,25 @@ prepends a staging root to both install destinations.
 - No arguments: launch the same UI as `ui`.
 - Invalid command arguments return 2. Log open/read failures return 1.
 
-The default config path is `/etc/subsite-monitor/monitor.conf`; its one
-supported field is an absolute `access_log` path. `SUBSITE_MONITOR_CONFIG`
-selects another config file, while `SUBSITE_MONITOR_LOG` overrides only the
-configured log path. The CLI `--log` option takes precedence for that command.
+The default config path is `/etc/subsite-monitor/monitor.conf`; supported
+fields are absolute `access_log` and `nginx_config` paths. The latter defaults
+to `/etc/nginx/nginx.conf`. `SUBSITE_MONITOR_CONFIG` selects another config
+file, while `SUBSITE_MONITOR_LOG` and `SUBSITE_MONITOR_NGINX_CONFIG` override
+individual paths. The CLI `--log` option takes precedence for that command.
 The program performs no network access and does not write persistent state.
 
 At this stage `stats` and `collect` require `--log`; persistent history and
 configuration for statistics/state directories remain future work.
 
+The Nginx config scanner follows `include` directives, including filename
+wildcards, and extracts `server_name` values in `server` blocks. It bounds
+file size, total scanned bytes, file count, nesting depth, token size, and
+discovered sites. Literal and wildcard names are normalized to lowercase and
+deduplicated; regex names and `_` are skipped. The UI merges this inventory
+with hosts seen in logs, showing configured sites with no activity as zero.
+
 The TUI requires both stdin and stdout to be terminals. It reads one snapshot
-at startup; `r` reruns statistics from the same path. Arrow keys and `j`/`k`
+at startup; `r` reruns statistics and config discovery. Arrow keys and `j`/`k`
 change the selected site, while `q` or Escape exits. The screen is redrawn on
 terminal resize. Ncursesw is linked through the `pkg-config ncursesw` metadata.
 
@@ -116,5 +125,5 @@ requires trusted proxy configuration.
 Checkpoint durability, CSV write safety, lock behavior, alternative log
 formats, and configuration for statistics/state directories remain undefined.
 
-Last reviewed: 2026-10-27T14:24:29-04:00. This reference describes the CLI,
+Last reviewed: 2026-10-27. This reference describes the CLI,
 TUI, root-only log config, and next alpha release build.

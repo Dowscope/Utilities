@@ -39,8 +39,10 @@ bool parse_throws_with(std::string_view expected_text, std::string_view text) {
 int main() {
     const subsite_monitor::MonitorConfig parsed =
         subsite_monitor::parse_config_text(
-            "# default path\naccess_log = /var/log/nginx/access.log\n");
+            "# default paths\naccess_log = /var/log/nginx/access.log\n"
+            "nginx_config = /etc/nginx/nginx.conf\n");
     assert(parsed.access_log == "/var/log/nginx/access.log");
+    assert(parsed.nginx_config == "/etc/nginx/nginx.conf");
     assert(parse_throws_with("unknown configuration key",
                              "unknown = value\n"));
     assert(parse_throws_with("repeats access_log",

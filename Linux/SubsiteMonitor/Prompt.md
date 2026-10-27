@@ -99,7 +99,7 @@ without explicit authorization.
 
 ## Current handoff state
 
-- Handoff refreshed 2026-10-27T14:29:16-04:00 for the alpha.2 commit.
+- Handoff refreshed 2026-10-27 for the alpha.3 site-inventory work.
 - Completed Phases 1 through 3: C++23 CLI, streaming Nginx parser,
   `collect --log`, per-site/daily statistics via `stats --log`, sample logs,
   parser/statistics/CLI tests, and user/technical documentation.
@@ -123,11 +123,12 @@ without explicit authorization.
   manuals under `Docs/`.
 - Alpha `0.1.0-alpha.1` is published, and the user downloaded and installed it
   on the development server. The Git tag is `v0.1.0-alpha.1`.
-- Current local development version is `0.1.0-alpha.2`. Running
+- Current local development version is `0.1.0-alpha.3`. Running
   `subsite-monitor` with no arguments or bare `ui` opens the TUI. It reads
-  `/etc/subsite-monitor/monitor.conf` by default and displays distinct valid
-  hostnames observed in its access log. A host with no valid log entries is
-  not discoverable from access logs alone.
+  `/etc/subsite-monitor/monitor.conf` and `/etc/nginx/nginx.conf` by default,
+  discovers configured literal/wildcard `server_name` entries through include
+  files, and merges them with valid log hostnames. Configured sites with no
+  observed requests appear with zero activity; regex names and `_` are skipped.
 - `config/monitor.conf.example` defaults to
   `/var/log/nginx/subsite-monitor-access.log`. The installer copies it to the
   root-owned `/etc/subsite-monitor/monitor.conf` with mode 0600 in a mode 0700
@@ -135,7 +136,7 @@ without explicit authorization.
   requires `sudo`; explicit `ui --log`, `collect --log`, and `stats --log`
   remain usable as a regular user when file permissions allow. Environment
   overrides are `SUBSITE_MONITOR_CONFIG` and `SUBSITE_MONITOR_LOG`.
-- Config syntax currently supports one absolute `access_log` value, with
+- Config syntax supports absolute `access_log` and `nginx_config` values, with
   bounded size, duplicate/unknown-key validation, and root ownership/mode
   checks. Statistics and state directory settings are still planned.
 - `./verify.sh` passed after the changes. A pseudo-terminal run using the
@@ -144,12 +145,12 @@ without explicit authorization.
 - Alpha.2 package and installer tests passed. Archive:
   `subsite-monitor-0.1.0-alpha.2-linux-x86_64-gnu.tar.gz`; SHA-256:
   `2d3e312c48c58000e8cfc403ab355d1ca6ec2e5d95b034623e1858f82edb30b3`.
-  Alpha.2 is not published yet; do not overwrite the published alpha.1 release.
+  Alpha.2 is now published and the user confirmed installation on the server.
 - The alpha.1 package flow supports x86_64 Debian, Ubuntu, and Arch, statically
   links ncursesw and GNU runtimes, and relies on host terminfo. Validate later
   artifacts on target distributions before production use.
-- Phase 4 (CSV storage) is the next implementation phase; it requires the
-  user's explicit approval before work begins.
+- Phase 4 (CSV storage) is the next planned implementation phase; wait for the
+  user to approve before starting it.
 - `run-dev.sh` builds and opens the ncurses UI on the bundled sample log when
   run without arguments; supplied arguments are passed to the executable.
   `verify.sh` is the repeatable local build and test check.
@@ -157,3 +158,14 @@ without explicit authorization.
   files to reflect the current project state, then commit and push to the
   configured GitHub origin as requested. No commit or push is part of normal
   phase implementation work.
+
+
+- Nginx config discovery is implemented locally with bounded parsing of the
+  main config, includes, `server` blocks, and `server_name` directives. Config
+  fixtures cover recursive includes, wildcard includes, duplicates, regex and
+  special names, plus malformed input. `./verify.sh` passed cleanly.
+- Nginx's default access log generally does not contain `$host`; configured
+  site names still show, but per-site request counts require the documented
+  host-aware custom log format.
+- Alpha.2 is published and was installed by the user. Alpha.3 is not yet
+  packaged or published. No commit/push/tag unless the user explicitly asks.

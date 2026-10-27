@@ -1,5 +1,6 @@
 #include "config.hpp"
 #include "collector.hpp"
+#include "nginx_config.hpp"
 #include "report.hpp"
 #include "statistics.hpp"
 #include "tui.hpp"
@@ -9,21 +10,33 @@
 #include <filesystem>
 #include <iostream>
 #include <string_view>
+#include <utility>
 
 namespace {
 
 #ifndef SUBSITE_MONITOR_VERSION
-#define SUBSITE_MONITOR_VERSION "0.1.0-alpha.2"
+#define SUBSITE_MONITOR_VERSION "0.1.0-alpha.3"
 #endif
 
 constexpr std::string_view version = SUBSITE_MONITOR_VERSION;
 constexpr std::string_view default_config_path =
     "/etc/subsite-monitor/monitor.conf";
 
-std::filesystem::path configured_log_path() {
+struct UiSettings {
+    std::filesystem::path access_log;
+    std::filesystem::path nginx_config;
+};
+
+UiSettings configured_ui_settings() {
     const char* environment_log = std::getenv("SUBSITE_MONITOR_LOG");
     if (environment_log != nullptr && environment_log[0] != '\0') {
-        return environment_log;
+        const char* environment_nginx_config =
+            std::getenv("SUBSITE_MONITOR_NGINX_CONFIG");
+        return {environment_log,
+                environment_nginx_config != nullptr &&
+                        environment_nginx_config[0] != '\0'
+                    ? std::filesystem::path{environment_nginx_config}
+                    : std::filesystem::path{}};
     }
 
     const char* environment_config = std::getenv("SUBSITE_MONITOR_CONFIG");
@@ -31,12 +44,31 @@ std::filesystem::path configured_log_path() {
         environment_config != nullptr && environment_config[0] != '\0'
             ? std::filesystem::path{environment_config}
             : std::filesystem::path{default_config_path};
-    return subsite_monitor::load_config(config_path).access_log;
+    subsite_monitor::MonitorConfig config =
+        subsite_monitor::load_config(config_path);
+    const char* environment_nginx_config =
+        std::getenv("SUBSITE_MONITOR_NGINX_CONFIG");
+    if (environment_nginx_config != nullptr &&
+        environment_nginx_config[0] != '\0') {
+        config.nginx_config = environment_nginx_config;
+    }
+    return {std::move(config.access_log), std::move(config.nginx_config)};
 }
 
-int launch_ui(const std::filesystem::path& log_path) {
+int launch_ui(const std::filesystem::path& log_path,
+              const std::filesystem::path& nginx_config = {}) {
     try {
-        return subsite_monitor::run_terminal_ui(log_path);
+        return subsite_monitor::run_terminal_ui(log_path, nginx_config);
+    } catch (const std::exception& error) {
+        std::cerr << "subsite-monitor: " << error.what() << '\n';
+        return 1;
+    }
+}
+
+int launch_default_ui() {
+    try {
+        const UiSettings settings = configured_ui_settings();
+        return launch_ui(settings.access_log, settings.nginx_config);
     } catch (const std::exception& error) {
         std::cerr << "subsite-monitor: " << error.what() << '\n';
         return 1;
@@ -58,8 +90,9 @@ void print_help(std::ostream& output) {
               "With no arguments, open the UI using the root-only\n"
               "/etc/subsite-monitor/monitor.conf configuration. The ui\n"
               "command uses the same configuration unless --log is supplied.\n"
-              "SUBSITE_MONITOR_CONFIG and SUBSITE_MONITOR_LOG can override\n"
-              "the default configuration path and access log.\n\n"
+              "The UI reads Nginx server_name values from nginx_config.\n"
+              "Environment overrides: SUBSITE_MONITOR_CONFIG,\n"
+              "SUBSITE_MONITOR_LOG, and SUBSITE_MONITOR_NGINX_CONFIG.\n\n"
               "The collect command accepts the subsite_monitor Nginx\n"
               "access-log format described in the project manual.\n"
               "The ui command requires an interactive terminal.\n";
@@ -69,7 +102,7 @@ void print_help(std::ostream& output) {
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {
-        return launch_ui(configured_log_path());
+        return launch_default_ui();
     }
 
     const std::string_view argument{argv[1]};
@@ -122,7 +155,7 @@ int main(int argc, char* argv[]) {
 
     if (argument == "ui") {
         if (argc == 2) {
-            return launch_ui(configured_log_path());
+            return launch_default_ui();
         }
         if (argc != 4 || std::string_view{argv[2]} != "--log" ||
             std::string_view{argv[3]}.empty()) {

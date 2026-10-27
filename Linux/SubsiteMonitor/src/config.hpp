@@ -7,6 +7,7 @@ namespace subsite_monitor {
 
 struct MonitorConfig {
     std::filesystem::path access_log;
+    std::filesystem::path nginx_config{"/etc/nginx/nginx.conf"};
 };
 
 [[nodiscard]] MonitorConfig parse_config_text(std::string_view text);

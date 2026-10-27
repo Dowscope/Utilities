@@ -31,7 +31,7 @@ SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
 SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
     sh "$script_dir/installer.sh"
 [ "$("$tmp_dir/install/subsite-monitor" --version)" = \
-  'subsite-monitor 0.1.0-alpha.2' ]
+  'subsite-monitor 0.1.0-alpha.3' ]
 [ "$(stat -c '%a' "$tmp_dir/etc/monitor.conf")" = 600 ]
 grep -q '^access_log = /var/log/nginx/subsite-monitor-access.log$' \
     "$tmp_dir/etc/monitor.conf"

@@ -3,10 +3,10 @@
 Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
-Last reviewed: 2026-10-27T14:29:16-04:00. Phases 1 through 3, the ncurses
-screen, and root-only default access-log config are implemented. Alpha.1 is
-published and alpha.2 is packaged locally; alpha.2 publication is pending.
-Phase 4 remains the next implementation phase after this UI/config increment.
+Last reviewed: 2026-10-27. Phases 1 through 3, the ncurses screen, root-only
+config, and Nginx `server_name` inventory are implemented locally. Alpha.2 is
+published; alpha.3 is the current development version and has not been built
+for release. Phase 4 remains the next planned implementation phase.
 
 - [x] **Phase 2 — Nginx log parser:** define and document a host-aware log
   format; parse required request fields safely; stream logs; add sample logs,
@@ -16,9 +16,9 @@ Phase 4 remains the next implementation phase after this UI/config increment.
   `stats --log`, and tests.
 - [x] **Interactive CLI screen:** add an ncurses statistics screen with site
   selection, daily detail, manual refresh, and quit controls.
-- [x] **Default UI and root-only log config:** start the UI without a command,
-  load the configured shared log, display distinct observed hostnames, seed a
-  root-owned mode-0600 config during installation, and preserve it on upgrade.
+- [x] **Default UI, root-only config, and Nginx site inventory:** start the UI
+  without a command, load configured log and Nginx paths, merge observed hosts
+  with literal/wildcard `server_name` entries, and show zero-traffic sites.
 - [ ] **Phase 4 — CSV storage:** persist daily statistics with configurable
   directory, escaping, safe replacement, concurrency handling, and
   `stats --days`; test storage and reporting.
@@ -31,5 +31,7 @@ Phase 4 remains the next implementation phase after this UI/config increment.
   review installer behavior, and build/test an alpha archive locally.
 - [x] **Publish alpha 0.1.0-alpha.1:** attach the release archive and checksum,
   then verify installation on the user's development server.
-- [ ] **Publish alpha 0.1.0-alpha.2:** attach the locally tested archive and
-  `SHA256SUMS`, then test installation on the server.
+- [x] **Publish alpha 0.1.0-alpha.2:** attach the release archive and
+  checksum, then confirm installation on the server.
+- [ ] **Prepare alpha 0.1.0-alpha.3:** build and test a release archive with
+  Nginx site discovery, then review release notes before publishing.

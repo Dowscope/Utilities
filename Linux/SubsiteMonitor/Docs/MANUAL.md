@@ -84,15 +84,19 @@ config, and `SUBSITE_MONITOR_LOG` overrides only the log path. `ui --log
 <path>` overrides the config and can be used by a non-root user with read
 permission.
 
-The log must use the host-aware Nginx format below. The UI counts distinct
-hostnames with valid requests in the log; a site with no valid request cannot
-be discovered from access logs alone. The screen is a snapshot. Press up/down
+The UI reads `server_name` directives from the Nginx main config and included
+files, then combines those names with hostnames in the log. Literal and
+wildcard names are listed; regex server names and `_` are skipped. The log
+must use the host-aware format below to attribute activity by site. Nginx's
+standard access log usually omits the hostname, so use the documented custom
+format for per-site request counts. The screen is a snapshot. Press up/down
 or `j`/`k` to select a website and view daily counts, `r` to reread the log, and
 `q` or Escape to exit. It requires an interactive terminal and omits full log
 paths, request targets, and client addresses.
 
-The config accepts one `access_log = /absolute/path` entry, ignores blank and
-comment lines, and rejects unknown/duplicate keys, relative paths, control
+The config accepts `access_log = /absolute/path` and
+`nginx_config = /absolute/path` entries, ignores blank and comment lines, and
+rejects unknown/duplicate keys, relative paths, control
 characters, lines over 4,096 bytes, and files over 16 KiB. Reading the default
 config requires effective root privileges. The program also verifies root
 ownership and restrictive permissions before parsing it.
@@ -139,5 +143,5 @@ retains the request target and client address only while reading each record;
 `collect`, `stats`, and the UI do not display them. Later reports must continue
 to avoid exposing sensitive query parameters.
 
-Last reviewed: 2026-10-27T14:22:35-04:00. This manual describes the current
+Last reviewed: 2026-10-27. This manual describes the current
 CLI and TUI.

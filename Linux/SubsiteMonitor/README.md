@@ -1,7 +1,7 @@
 # Subsite Monitor
 
-Next alpha under development: **0.1.0-alpha.2**. The published alpha is
-**0.1.0-alpha.1**. Release binaries target x86_64 Linux on Debian, Ubuntu, and
+Next alpha under development: **0.1.0-alpha.3**. The published alpha is
+**0.1.0-alpha.2**. Release binaries target x86_64 Linux on Debian, Ubuntu, and
 Arch, statically link ncursesw and the C++ runtime, and use host terminfo for
 the terminal UI.
 
@@ -34,9 +34,9 @@ design. [Prompt.md](Prompt.md) preserves the project handoff brief,
 [Changelog.md](Changelog.md) records changes, and [TODO.md](TODO.md) tracks
 approved future work.
 
-`./verify.sh` passed on 2026-10-27T14:22:35-04:00 with a clean C++23 build,
-parser/statistics/config/CLI tests, help, and version checks. The default UI
-was exercised in a pseudo-terminal and displayed 2 sites from the fixture.
+`./verify.sh` and `./packaging/build-alpha.sh` passed on 2026-10-27. The clean
+C++23 build and parser/statistics/config/Nginx-config/CLI tests passed without
+compiler warnings. The alpha.3 package and installer checks passed.
 See `packaging/README.md` for alpha build and release steps.
 
 ## Current CLI
@@ -61,10 +61,13 @@ With no arguments, the application opens the interactive UI using the
 root-only configuration. It defaults to
 `/var/log/nginx/subsite-monitor-access.log`; edit the config with
 `sudoedit /etc/subsite-monitor/monitor.conf`. The log must use the documented
-host-aware Nginx format. The UI counts distinct hostnames with valid requests
-in that log; sites with no valid entries cannot be inferred from access logs
-alone. Use `SUBSITE_MONITOR_LOG` to override the log path, or
-`SUBSITE_MONITOR_CONFIG` to select another root-only config.
+host-aware Nginx format for per-site activity. The UI reads `server_name`
+directives from the configured Nginx config and its includes, then merges those
+names with hostnames observed in the log. Sites with no requests appear with
+zero requests and `Never` as the last access. Literal and wildcard names are
+listed; regex names and `_` are skipped. Use `SUBSITE_MONITOR_LOG` and
+`SUBSITE_MONITOR_NGINX_CONFIG` to override paths, or `SUBSITE_MONITOR_CONFIG`
+to select another root-only config.
 
 The `ui` command uses the same configuration, or accepts `--log <path>` as an
 override. Use the arrow keys or `j`/`k` to select a site, `r` to reread the log,
@@ -82,6 +85,7 @@ different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. The upcoming alpha.2 binary targets Debian, Ubuntu, and
-Arch on x86_64. Its installer seeds and preserves the root-only monitor config
+`packaging/README.md`. Alpha.3 is under development and not yet published. The
+release binary targets Debian, Ubuntu, and Arch on x86_64. Its installer seeds
+and preserves the root-only monitor config
 but does not install system packages or change Nginx configuration.

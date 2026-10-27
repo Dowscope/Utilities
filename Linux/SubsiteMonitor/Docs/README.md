@@ -1,10 +1,10 @@
 # Subsite Monitor Documentation
 
 This directory is the user and technical manual for Subsite Monitor. It will
-be kept aligned with implemented behavior as the project grows. The current
-implementation covers Phases 1 through 3, the ncurses screen, and the
-root-only access-log setting used by the default UI. Remaining configuration,
-persistence, and checkpoint details are identified as planned work.
+be kept aligned with implemented behavior as the project grows. The current implementation covers Phases 1 through 3, the ncurses screen,
+root-only settings for the access log and Nginx config, and discovery of
+configured virtual hosts. CSV persistence and incremental checkpoints remain
+planned work.
 
 ## Contents
 
@@ -13,6 +13,7 @@ persistence, and checkpoint details are identified as planned work.
   behavior, and security/design constraints.
 
 The manuals reflect no-argument UI startup, root-only configuration and
-permissions, website-count behavior, alpha runtime, and packaging details.
+permissions, Nginx `server_name` discovery, host-aware log requirements, alpha runtime,
+and packaging details.
 
-Last reviewed: 2026-10-27T14:29:16-04:00.
+Last reviewed: 2026-10-27.

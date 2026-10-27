@@ -1,6 +1,7 @@
 #include "tui.hpp"
 
 #include "report.hpp"
+#include "nginx_config.hpp"
 #include "statistics.hpp"
 
 #include <algorithm>
@@ -64,6 +65,29 @@ std::vector<SiteRow> sorted_sites(const StatisticsReport& report) {
         return left.hostname < right.hostname;
     });
     return sites;
+}
+
+StatisticsReport build_ui_statistics(
+    const std::filesystem::path& log_path,
+    const std::filesystem::path& nginx_config) {
+    StatisticsReport report = build_statistics(log_path);
+    if (nginx_config.empty()) {
+        return report;
+    }
+
+    constexpr std::size_t max_ui_sites = 10000U;
+    for (const std::string& hostname :
+         discover_nginx_server_names(nginx_config)) {
+        if (report.sites.contains(hostname)) {
+            continue;
+        }
+        if (report.sites.size() >= max_ui_sites) {
+            throw std::runtime_error(
+                "statistics limit exceeded: too many configured and observed websites");
+        }
+        report.sites.emplace(hostname, SiteStatistics{});
+    }
+    return report;
 }
 
 void write_at(int row, int column, std::string_view text, int max_width) {
@@ -198,8 +222,11 @@ void draw_screen(const StatisticsReport& report,
         std::ostringstream requests;
         requests << site.statistics->requests;
         write_at(row, requests_column, requests.str(), 10);
-        write_at(row, last_access_column,
-                 format_timestamp_utc(site.statistics->latest_access_utc),
+        const std::string last_access = site.statistics->requests == 0
+                                            ? "Never"
+                                            : format_timestamp_utc(
+                                                  site.statistics->latest_access_utc);
+        write_at(row, last_access_column, last_access,
                  columns - last_access_column - 2);
 
         if (site_index == selected) {
@@ -219,6 +246,10 @@ void draw_screen(const StatisticsReport& report,
                  content_width);
     } else {
         const SiteRow& site = sites[std::min(selected, sites.size() - 1)];
+        if (site.statistics->requests == 0) {
+            write_at(daily_row, 2, "No requests recorded for this configured site.",
+                     content_width);
+        } else {
         std::ostringstream daily;
         daily << site.hostname << "   ";
         bool first_day = true;
@@ -232,6 +263,7 @@ void draw_screen(const StatisticsReport& report,
         attron(A_BOLD);
         write_at(daily_row, 2, daily.str(), content_width);
         attroff(A_BOLD);
+        }
     }
 
     mvhline(rows - 2, 0, ' ', columns);
@@ -250,12 +282,13 @@ void draw_screen(const StatisticsReport& report,
 
 } // namespace
 
-int run_terminal_ui(const std::filesystem::path& log_path) {
+int run_terminal_ui(const std::filesystem::path& log_path,
+                    const std::filesystem::path& nginx_config) {
     if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
         throw std::runtime_error("ui requires an interactive terminal");
     }
 
-    StatisticsReport report = build_statistics(log_path);
+    StatisticsReport report = build_ui_statistics(log_path, nginx_config);
     CursesSession session;
     configure_colors();
     std::size_t selected = 0;
@@ -281,8 +314,8 @@ int run_terminal_ui(const std::filesystem::path& log_path) {
             ++selected;
         } else if (key == 'r' || key == 'R') {
             try {
-                report = build_statistics(log_path);
-                status_message = "Statistics refreshed from access log.";
+                report = build_ui_statistics(log_path, nginx_config);
+                status_message = "Access log and Nginx site list refreshed.";
             } catch (const std::exception& error) {
                 status_message = error.what();
             }

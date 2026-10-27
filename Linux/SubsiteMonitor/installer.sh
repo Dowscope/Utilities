@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-VERSION='0.1.0-alpha.2'
-ASSET='subsite-monitor-0.1.0-alpha.2-linux-x86_64-gnu.tar.gz'
-ASSET_SHA256='2d3e312c48c58000e8cfc403ab355d1ca6ec2e5d95b034623e1858f82edb30b3'
+VERSION='0.1.0-alpha.3'
+ASSET='subsite-monitor-0.1.0-alpha.3-linux-x86_64-gnu.tar.gz'
+ASSET_SHA256='4b0b709a5688d4a18e0febcbf0e324fdb4aac84decd98e18e4d7c3bf5c61ac81'
 ASSET_URL="https://github.com/Dowscope/Utilities/releases/download/v${VERSION}/${ASSET}"
 INSTALL_DIR=${SUBSITE_MONITOR_INSTALL_DIR:-/usr/local/bin}
 CONFIG_FILE=${SUBSITE_MONITOR_CONFIG:-/etc/subsite-monitor/monitor.conf}
