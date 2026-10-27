@@ -2,8 +2,9 @@
 
 This directory is the user and technical manual for Subsite Monitor. It will
 be kept aligned with implemented behavior as the project grows. The current
-implementation is Phase 1, so later-phase details are identified as planned
-work rather than existing behavior.
+implementation covers Phases 1 through 3 and the requested ncurses screen;
+later-phase details are identified as planned work rather than existing
+behavior.
 
 ## Contents
 
@@ -11,4 +12,5 @@ work rather than existing behavior.
 - [Technical reference](TECHNICAL.md): source layout, build details, exit
   behavior, and security/design constraints.
 
-Last reviewed: 2026-10-27. The manuals reflect the verified Phase 1 CLI.
+Last reviewed: 2026-10-27T12:20:44-04:00. The manuals reflect the current CLI
+and TUI, including the no-argument development launch.

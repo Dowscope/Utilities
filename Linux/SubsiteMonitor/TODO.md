@@ -1,18 +1,19 @@
 # TODO
 
-Planned work, ordered by the project's approved development phases. These
-items are not implemented yet; begin a new phase only after the user approves
-it.
+Planned work, ordered by the project's development phases. Checked items are
+complete. Begin each new phase only after the user approves it.
 
-Last reviewed: 2026-10-27. Phase 1 verification passes; Phase 2 has not been
-approved or started.
+Last reviewed: 2026-10-27T12:20:44-04:00. Phases 1 through 3 and the ncurses
+screen are implemented. Phase 4 is next and waiting for explicit approval.
 
-- [ ] **Phase 2 — Nginx log parser:** define and document a host-aware log
+- [x] **Phase 2 — Nginx log parser:** define and document a host-aware log
   format; parse required request fields safely; stream logs; add sample logs,
   parser tests, and `collect --log <path>`.
-- [ ] **Phase 3 — Basic statistics:** aggregate per-site and daily requests,
+- [x] **Phase 3 — Basic statistics:** aggregate per-site and daily requests,
   latest access, and malformed-line counts; add a sorted terminal table,
-  `stats`, and tests.
+  `stats --log`, and tests.
+- [x] **Interactive CLI screen:** add an ncurses statistics screen with site
+  selection, daily detail, manual refresh, and quit controls.
 - [ ] **Phase 4 — CSV storage:** persist daily statistics with configurable
   directory, escaping, safe replacement, concurrency handling, and
   `stats --days`; test storage and reporting.

@@ -7,7 +7,7 @@ cd "$script_dir"
 make -j
 
 if [ "$#" -eq 0 ]; then
-    set -- --help
+    set -- ui --log tests/fixtures/access.log
 fi
 
 exec ./subsite-monitor "$@"

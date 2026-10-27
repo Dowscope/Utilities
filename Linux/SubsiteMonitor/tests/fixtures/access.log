@@ -1,0 +1,7 @@
+2026-10-27T14:45:32+00:00 live.lakeheadschools.ca 203.0.113.10 "GET / HTTP/1.1" 200
+2026-10-27T14:40:12+00:00 test.lakeheadschools.ca 203.0.113.11 "GET /private?token=hidden HTTP/1.1" 404
+2026-10-26T09:03:01-04:00 live.lakeheadschools.ca 2001:db8::2 "POST /forms/submit HTTP/2.0" 500
+2026-10-27T16:00:00+02:00 live.lakeheadschools.ca 203.0.113.13 "GET /check HTTP/1.1" 200
+
+malformed entry
+2026-10-27T14:45:32+00:00 live.lakeheadschools.ca 203.0.113.12 "GET /health HTTP/1.1" 204
