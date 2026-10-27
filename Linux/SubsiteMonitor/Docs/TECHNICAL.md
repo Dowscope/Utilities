@@ -93,8 +93,9 @@ behavior when no TTY is available. `make test` runs all three. `verify.sh`
 runs `make clean`, builds in parallel, runs the suite, and checks help/version.
 `./verify.sh` passed on 2026-10-27T13:40:16-04:00. The alpha package build,
 parser/statistics/CLI suite, and installer success/checksum rejection checks
-also passed. The no-argument `run-dev.sh` UI launch was exercised in a
-pseudo-terminal.
+also passed again on 2026-10-27T13:57:07-04:00 after regenerating the archive
+and installer checksum. The no-argument `run-dev.sh` UI launch was exercised
+in a pseudo-terminal.
 
 ## Security and operational constraints
 
@@ -112,5 +113,5 @@ formats, and configuration semantics are not defined by the current
 implementation.
 Document those specifics alongside the phase that introduces them.
 
-Last reviewed: 2026-10-27T13:40:16-04:00. This reference describes the current
+Last reviewed: 2026-10-27T13:57:07-04:00. This reference describes the current
 CLI, TUI, and alpha release binary.

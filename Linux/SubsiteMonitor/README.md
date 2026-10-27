@@ -33,8 +33,9 @@ approved future work.
 
 `./verify.sh` passed on 2026-10-27T13:40:16-04:00 with a clean C++23 build,
 parser/statistics/CLI tests, help, and version checks. The alpha packaging
-build and installer checks also passed; see `packaging/README.md` for the
-artifact and release steps.
+build and installer checks passed again on 2026-10-27T13:50:57-04:00 after
+refreshing the installer checksum; see `packaging/README.md` for artifact and
+release steps.
 
 ## Current CLI
 

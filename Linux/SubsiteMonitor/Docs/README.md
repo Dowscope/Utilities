@@ -15,4 +15,4 @@ behavior.
 The manuals reflect the current CLI and TUI, the no-argument development
 launch, and alpha runtime/packaging details.
 
-Last reviewed: 2026-10-27T13:40:16-04:00.
+Last reviewed: 2026-10-27T13:57:07-04:00.

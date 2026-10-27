@@ -98,7 +98,7 @@ without explicit authorization.
 
 ## Current handoff state
 
-- Handoff refreshed 2026-10-27T13:40:16-04:00 for the alpha package commit.
+- Handoff refreshed 2026-10-27T13:57:07-04:00 for the alpha installer follow-up.
 - Completed Phases 1 through 3: C++23 CLI, streaming Nginx parser,
   `collect --log`, per-site/daily statistics via `stats --log`, sample logs,
   parser/statistics/CLI tests, and user/technical documentation.
@@ -120,17 +120,22 @@ without explicit authorization.
   arguments are forwarded to the CLI. This was verified in a pseudo-terminal.
 - Added `run-dev.sh`, `verify.sh`, `Changelog.md`, `TODO.md`, and user/technical
   manuals under `Docs/`.
-- The alpha package work is prepared locally as of 2026-10-27T13:40:16-04:00.
+- The alpha package work was refreshed locally as of 2026-10-27T13:50:57-04:00.
   `packaging/build-alpha.sh` builds x86_64 Linux release archive
   `subsite-monitor-0.1.0-alpha.1-linux-x86_64-gnu.tar.gz` and generates
   checksum-pinned root scripts `installer.sh` and `install.sh`. The executable
   statically links ncursesw and GNU runtimes, and its UI uses host terminfo.
   The locally generated archive SHA-256 is
-  `668a8ccc69bfc0c7beb65652ef0a909c2481ad1e11f220bc20239861c07b7d94`.
+  `17c42c282df629e00124eb439a6d0da76b88fec700a793af4afcadef48ad755d`.
 - Package build, parser/statistics/CLI tests, and successful/corrupted archive
   installer tests passed. No GitHub release or release assets have been
   published. The release asset must be attached before the installer can
   download it.
+- A follow-up fixed generated `SHA256SUMS` to contain a portable relative
+  filename and rebuilt the archive after refreshing the README/manual included
+  in the package. The build script and root installer use the same archive
+  hash. Attach this archive and checksum manifest to the GitHub release before
+  installing; the release itself is still pending.
 - The installer supports x86_64 Debian, Ubuntu, and Arch, checks the OS and
   archive checksum, and installs only the executable to `/usr/local/bin` by
   default. It does not set up persistent stats/configuration or system

@@ -51,7 +51,7 @@
 - Refreshed all Markdown handoff, user, technical, and tracking documents.
 - `./verify.sh` passed: clean build, all tests, help, and version checks.
 
-### Alpha release packaging — 2026-10-27T12:40:16-04:00
+### Alpha release packaging — 2026-10-27T13:50:57-04:00
 
 - Added a reproducible x86_64 alpha package build and pinned installer
   (`installer.sh`, with `install.sh` retained as a compatibility name).
@@ -61,6 +61,19 @@
   replacement, and tests for successful installation and corrupted archives.
 - Generated alpha archive:
   `subsite-monitor-0.1.0-alpha.1-linux-x86_64-gnu.tar.gz` (SHA-256:
-  `668a8ccc69bfc0c7beb65652ef0a909c2481ad1e11f220bc20239861c07b7d94`).
+  `17c42c282df629e00124eb439a6d0da76b88fec700a793af4afcadef48ad755d`).
 - `./packaging/build-alpha.sh` passed, including parser/statistics/CLI tests
   and installer checks. GitHub release upload and publication remain pending.
+- After checking installer behavior against the unpublished release URL, made
+  the generated `SHA256SUMS` path relative so release users can verify it from
+  the extracted download directory.
+
+### Installer 404 follow-up — 2026-10-27T13:57:07-04:00
+
+- Regenerated the installer and release archive after refreshing packaged
+  documentation, so the embedded checksum matches the current artifact
+  (`17c42c282df629e00124eb439a6d0da76b88fec700a793af4afcadef48ad755d`).
+- Fixed the packaging script to write a portable relative filename in
+  `SHA256SUMS`; the full package build and installer tests passed again.
+- The GitHub release remains unpublished; attach the refreshed archive and
+  checksum manifest to `v0.1.0-alpha.1` before using the installer.

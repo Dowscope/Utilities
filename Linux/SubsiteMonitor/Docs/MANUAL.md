@@ -120,5 +120,5 @@ retains the request target and client address only while reading each record;
 `collect`, `stats`, and the UI do not display them. Later reports must continue
 to avoid exposing sensitive query parameters.
 
-Last reviewed: 2026-10-27T13:40:16-04:00. This manual describes the current
+Last reviewed: 2026-10-27T13:56:08-04:00. This manual describes the current
 CLI and TUI.

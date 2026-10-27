@@ -21,6 +21,8 @@ suite, and links the release binary statically. It creates
 `SHA256SUMS`, embeds the artifact checksum in both installer scripts, and tests
 normal installation plus rejection of a corrupted archive. Generated
 artifacts and downloaded source under `packaging/dist/` are not committed.
+The checksum manifest contains only the archive filename, so it can be checked
+from the directory where the release assets are downloaded.
 
 For a GitHub release, create tag `v0.1.0-alpha.1` and attach the generated
 archive and `SHA256SUMS`. The scripts download the archive from that release

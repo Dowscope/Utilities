@@ -71,7 +71,7 @@ fi
 tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
     -cf - -C "$stage_dir" bin README.md Docs/MANUAL.md |
     gzip -n >"$output_dir/$asset"
-sha256sum "$output_dir/$asset" >"$output_dir/SHA256SUMS"
+(cd "$output_dir" && sha256sum "$asset" >SHA256SUMS)
 
 asset_hash=$(sha256sum "$output_dir/$asset" | awk '{print $1}')
 for installer in installer.sh install.sh; do
