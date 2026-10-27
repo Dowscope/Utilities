@@ -41,11 +41,64 @@ installs the executable under `/usr/local/bin` and seeds
 The helper scripts provide common local workflows:
 
 - `./run-dev.sh` builds as needed and runs the program. With no arguments it
-  opens the ncurses UI using `tests/fixtures/access.log`; pass CLI arguments
-  to run a specific command or choose another log.
+  opens the ncurses UI using `tests/fixtures/access.log` and the matching Nginx
+  config; pass CLI arguments to run a specific command.
 - `./verify.sh` performs a clean build, runs parser and CLI tests, and checks
   help and version output. It includes tests for config parsing and default UI
   dispatch.
+- `./run-docker.sh` starts a local Nginx test server with Docker Compose. Docker
+  Engine and Compose v2 must be installed. It serves three local virtual hosts
+  and writes host-aware requests to `docker-data/logs/access.log`.
+
+### Testing against the Docker Nginx server
+
+Use two terminals. Start Nginx in the first:
+
+```sh
+sudo ./run-docker.sh
+```
+
+In the second, send requests to two sites, leaving `inactive.test` untouched,
+then launch the development build against the files shared from the container:
+
+```sh
+curl -H 'Host: alpha.test' http://127.0.0.1:8080/
+curl -H 'Host: beta.test' http://127.0.0.1:8080/
+./run-dev.sh
+```
+
+The UI should show `alpha.test` and `beta.test` with requests, and
+`inactive.test` with zero requests. Press `r` to refresh after sending more
+requests from another terminal. With no environment overrides, `run-dev.sh`
+automatically uses `docker-data/logs/access.log` and
+`docker/nginx/nginx.conf` when the Docker log exists; otherwise it uses the
+sample fixtures. `docker-data/` is ignored by Git. Stop Nginx with Ctrl-C in
+the first terminal; `sudo ./run-docker.sh down` also stops it.
+
+The Compose service binds only to localhost and mounts the Nginx config
+read-only. The application itself builds and runs natively on the development
+machine, reading the same config and log files that the container uses.
+
+### Testing with copied server data
+
+For a server snapshot, copy only the required Nginx config and selected log
+files into a private local directory. Logs can contain sensitive URLs and
+client addresses; Nginx directories may contain private keys. Review copied
+files, exclude secrets, and do not place them in Git. Keep include paths
+resolvable. Then run the development app with paths to the copy:
+
+```sh
+SUBSITE_MONITOR_LOG=/absolute/path/to/copy/access.log \
+SUBSITE_MONITOR_NGINX_CONFIG=/absolute/path/to/copy/nginx.conf \
+  ./run-dev.sh
+```
+
+The site list comes from `server_name` in the mounted config. Per-site request
+counts require the documented host-aware log format. Nginx's standard
+`access.log` commonly omits the hostname, so it may show configured sites but
+cannot attribute requests to them. When a configured log is missing, the
+development alpha.4 UI shows configured sites and warns that activity is
+unavailable.
 
 ## Commands currently available
 
@@ -85,7 +138,9 @@ config, and `SUBSITE_MONITOR_LOG` overrides only the log path. `ui --log
 permission.
 
 The UI reads `server_name` directives from the Nginx main config and included
-files, then combines those names with hostnames in the log. Literal and
+files, then combines those names with hostnames in the log. If the configured
+log cannot be opened, it still displays the configured site inventory with an
+on-screen warning; request activity is unavailable until the path is corrected. Literal and
 wildcard names are listed; regex server names and `_` are skipped. The log
 must use the host-aware format below to attribute activity by site. Nginx's
 standard access log usually omits the hostname, so use the documented custom

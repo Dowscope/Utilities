@@ -4,9 +4,10 @@ Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
 Last reviewed: 2026-10-27. Phases 1 through 3, the ncurses screen, root-only
-config, and Nginx `server_name` inventory are implemented locally. Alpha.2 is
-published; alpha.3 is the current development version and has not been built
-for release. Phase 4 remains the next planned implementation phase.
+config, Nginx `server_name` inventory, and Docker-backed development workflow
+are implemented. Alpha.3 is the latest published version. Alpha.4 is local
+development and still needs packaging and review. Phase 4 remains the next
+planned implementation phase.
 
 - [x] **Phase 2 — Nginx log parser:** define and document a host-aware log
   format; parse required request fields safely; stream logs; add sample logs,
@@ -33,5 +34,9 @@ for release. Phase 4 remains the next planned implementation phase.
   then verify installation on the user's development server.
 - [x] **Publish alpha 0.1.0-alpha.2:** attach the release archive and
   checksum, then confirm installation on the server.
-- [ ] **Prepare alpha 0.1.0-alpha.3:** build and test a release archive with
+- [ ] **Prepare alpha 0.1.0-alpha.4:** build and test a release archive with
   Nginx site discovery, then review release notes before publishing.
+
+- [x] **Docker-backed development:** Compose Nginx writes a host-aware log to
+  an ignored bind mount; no-argument `run-dev.sh` automatically reads that log
+  and the shared virtual-host config when present, falling back to fixtures.

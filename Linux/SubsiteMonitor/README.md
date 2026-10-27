@@ -1,7 +1,7 @@
 # Subsite Monitor
 
-Next alpha under development: **0.1.0-alpha.3**. The published alpha is
-**0.1.0-alpha.2**. Release binaries target x86_64 Linux on Debian, Ubuntu, and
+Next alpha under development: **0.1.0-alpha.4**. The latest published alpha is
+**0.1.0-alpha.3**. Release binaries target x86_64 Linux on Debian, Ubuntu, and
 Arch, statically link ncursesw and the C++ runtime, and use host terminfo for
 the terminal UI.
 
@@ -27,8 +27,13 @@ Use `make clean` to remove build outputs, `make debug` for a debug build, and
 `DESTDIR` for packaging).
 
 For local development, `./run-dev.sh` builds and opens the ncurses UI with the
-bundled sample log. Pass arguments to run another command or log. Run
-`./verify.sh` for a clean build, tests, and CLI smoke checks.
+bundled sample log and Nginx config. Pass arguments to run another command.
+Run `./verify.sh` for a clean build, tests, and CLI smoke checks.
+
+For a live Nginx test, run `./run-docker.sh` in one terminal. In another,
+generate requests with `curl` and run `./run-dev.sh`; it automatically uses the
+Docker-shared config and log when present. See the [manual](Docs/MANUAL.md) for
+exact commands and how to point the app at reviewed copies of server data.
 The [user and technical manuals](Docs/README.md) describe current behavior and
 design. [Prompt.md](Prompt.md) preserves the project handoff brief,
 [Changelog.md](Changelog.md) records changes, and [TODO.md](TODO.md) tracks
@@ -36,7 +41,8 @@ approved future work.
 
 `./verify.sh` and `./packaging/build-alpha.sh` passed on 2026-10-27. The clean
 C++23 build and parser/statistics/config/Nginx-config/CLI tests passed without
-compiler warnings. The alpha.3 package and installer checks passed.
+compiler warnings. The alpha.3 package and installer checks passed. Alpha.4
+keeps configured sites visible if the selected access log is unavailable.
 See `packaging/README.md` for alpha build and release steps.
 
 ## Current CLI
@@ -78,14 +84,14 @@ run:
 ./run-dev.sh
 ```
 
-With no arguments, `run-dev.sh` builds and opens the UI on that sample data.
-Any arguments are passed to `subsite-monitor`, allowing CLI commands or a
-different log path.
+With no arguments, `run-dev.sh` builds and opens the UI, using Docker-generated
+Nginx data when available and fixture data otherwise. Any arguments are passed
+to `subsite-monitor`, allowing CLI commands or a different log path.
 
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.3 is under development and not yet published. The
-release binary targets Debian, Ubuntu, and Arch on x86_64. Its installer seeds
-and preserves the root-only monitor config
-but does not install system packages or change Nginx configuration.
+`packaging/README.md`. Alpha.3 is the latest published release; alpha.4 is
+under development. Release binaries target Debian, Ubuntu, and Arch on x86_64.
+The installer seeds and preserves the root-only monitor config but does not
+install system packages or change Nginx configuration.

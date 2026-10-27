@@ -13,7 +13,7 @@ grep -q 'collect --log <path>' "$tmp_dir/help.txt"
 grep -q 'stats --log <path>' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.3' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.4' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2
@@ -43,6 +43,16 @@ else
 fi
 [ "$status" -eq 1 ]
 grep -q 'ui requires an interactive terminal' "$tmp_dir/error.txt"
+
+if command -v script >/dev/null 2>&1; then
+    printf 'q' | TERM=xterm \
+        SUBSITE_MONITOR_LOG="$tmp_dir/missing-access.log" \
+        SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
+        script -q -e -c "$program" /dev/null >"$tmp_dir/ui-missing-log.txt"
+    grep -q 'alpha.example.test' "$tmp_dir/ui-missing-log.txt"
+    grep -q 'Access log unavailable; showing configured sites only.' \
+        "$tmp_dir/ui-missing-log.txt"
+fi
 
 "$program" collect --log tests/fixtures/access.log >"$tmp_dir/collect.txt"
 grep -q '^Parsed records: 5$' "$tmp_dir/collect.txt"

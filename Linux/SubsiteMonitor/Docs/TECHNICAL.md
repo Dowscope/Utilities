@@ -35,7 +35,7 @@ prepends a staging root to both install destinations.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.3` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.4` and return 0.
 - `collect --log <path>`: parse a supported access log; print aggregate valid
   and malformed line counts only.
 - `stats --log <path>`: scan one log and print per-site and daily statistics.
@@ -60,6 +60,10 @@ file size, total scanned bytes, file count, nesting depth, token size, and
 discovered sites. Literal and wildcard names are normalized to lowercase and
 deduplicated; regex names and `_` are skipped. The UI merges this inventory
 with hosts seen in logs, showing configured sites with no activity as zero.
+
+When Nginx config discovery is enabled but the configured access log cannot
+be opened, the TUI still displays the discovered site inventory and reports
+that activity is unavailable. Other log processing errors remain fatal.
 
 The TUI requires both stdin and stdout to be terminals. It reads one snapshot
 at startup; `r` reruns statistics and config discovery. Arrow keys and `j`/`k`
@@ -127,3 +131,22 @@ formats, and configuration for statistics/state directories remain undefined.
 
 Last reviewed: 2026-10-27. This reference describes the CLI,
 TUI, root-only log config, and next alpha release build.
+
+
+## Docker Nginx development fixture
+
+`compose.yaml` starts an Nginx container only; the Subsite Monitor development
+binary is built and run natively on the host through `run-dev.sh`. The test
+Nginx config and virtual-host files live under `docker/nginx/` and are mounted
+read-only into the container. Nginx writes its host-aware access log to the
+Git-ignored `docker-data/logs/access.log` bind mount so both the host app and
+container see the same file. The service binds to localhost port 8080 by
+default. Its container filesystem remains writable because the official Nginx
+entrypoint prepares writable log and cache paths at startup.
+
+For this host/container arrangement, `run-dev.sh` honors
+`SUBSITE_MONITOR_LOG` and `SUBSITE_MONITOR_NGINX_CONFIG`. With no overrides it
+uses the Docker-mounted Nginx config and log if the log file exists, otherwise
+the checked-in parser fixtures. This lets developers create requests against a
+real Nginx process while keeping app compilation and UI interaction on the
+development host. It is a development fixture, not a production service.

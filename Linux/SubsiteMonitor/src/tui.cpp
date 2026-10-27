@@ -51,6 +51,11 @@ struct SiteRow {
     const SiteStatistics* statistics{};
 };
 
+struct UiSnapshot {
+    StatisticsReport report;
+    std::string status_message;
+};
+
 std::vector<SiteRow> sorted_sites(const StatisticsReport& report) {
     std::vector<SiteRow> sites;
     sites.reserve(report.sites.size());
@@ -67,27 +72,38 @@ std::vector<SiteRow> sorted_sites(const StatisticsReport& report) {
     return sites;
 }
 
-StatisticsReport build_ui_statistics(
+UiSnapshot build_ui_statistics(
     const std::filesystem::path& log_path,
     const std::filesystem::path& nginx_config) {
-    StatisticsReport report = build_statistics(log_path);
+    UiSnapshot snapshot;
+    try {
+        snapshot.report = build_statistics(log_path);
+    } catch (const std::runtime_error& error) {
+        const std::string_view message{error.what()};
+        if (nginx_config.empty() ||
+            !message.starts_with("cannot open access log:")) {
+            throw;
+        }
+        snapshot.status_message =
+            "Access log unavailable; showing configured sites only.";
+    }
     if (nginx_config.empty()) {
-        return report;
+        return snapshot;
     }
 
     constexpr std::size_t max_ui_sites = 10000U;
     for (const std::string& hostname :
          discover_nginx_server_names(nginx_config)) {
-        if (report.sites.contains(hostname)) {
+        if (snapshot.report.sites.contains(hostname)) {
             continue;
         }
-        if (report.sites.size() >= max_ui_sites) {
+        if (snapshot.report.sites.size() >= max_ui_sites) {
             throw std::runtime_error(
                 "statistics limit exceeded: too many configured and observed websites");
         }
-        report.sites.emplace(hostname, SiteStatistics{});
+        snapshot.report.sites.emplace(hostname, SiteStatistics{});
     }
-    return report;
+    return snapshot;
 }
 
 void write_at(int row, int column, std::string_view text, int max_width) {
@@ -288,21 +304,21 @@ int run_terminal_ui(const std::filesystem::path& log_path,
         throw std::runtime_error("ui requires an interactive terminal");
     }
 
-    StatisticsReport report = build_ui_statistics(log_path, nginx_config);
+    UiSnapshot snapshot = build_ui_statistics(log_path, nginx_config);
     CursesSession session;
     configure_colors();
     std::size_t selected = 0;
-    std::string status_message;
+    std::string status_message = std::move(snapshot.status_message);
 
     while (true) {
-        const std::vector<SiteRow> sites = sorted_sites(report);
+        const std::vector<SiteRow> sites = sorted_sites(snapshot.report);
         if (sites.empty()) {
             selected = 0;
         } else if (selected >= sites.size()) {
             selected = sites.size() - 1;
         }
 
-        draw_screen(report, log_path, selected, status_message);
+        draw_screen(snapshot.report, log_path, selected, status_message);
         status_message.clear();
         const int key = getch();
         if (key == 'q' || key == 'Q' || key == 27) {
@@ -314,8 +330,13 @@ int run_terminal_ui(const std::filesystem::path& log_path,
             ++selected;
         } else if (key == 'r' || key == 'R') {
             try {
-                report = build_ui_statistics(log_path, nginx_config);
-                status_message = "Access log and Nginx site list refreshed.";
+                snapshot = build_ui_statistics(log_path, nginx_config);
+                if (snapshot.status_message.empty()) {
+                    status_message =
+                        "Access log and Nginx site list refreshed.";
+                } else {
+                    status_message = std::move(snapshot.status_message);
+                }
             } catch (const std::exception& error) {
                 status_message = error.what();
             }

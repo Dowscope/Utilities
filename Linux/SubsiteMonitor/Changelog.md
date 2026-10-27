@@ -120,5 +120,31 @@
   names, wildcard names, and malformed configuration.
 - Updated the manual and technical reference. `./verify.sh` passed a clean
   C++23 build and all tests without compiler warnings.
-- Development version is `0.1.0-alpha.3`; no alpha.3 release has been built
-  or published yet. Archive SHA-256: `4b0b709a5688d4a18e0febcbf0e324fdb4aac84decd98e18e4d7c3bf5c61ac81`.
+- Built and published `0.1.0-alpha.3`; the user confirmed installing it on the
+  target server. Archive SHA-256: `4b0b709a5688d4a18e0febcbf0e324fdb4aac84decd98e18e4d7c3bf5c61ac81`.
+
+
+### Missing access-log fallback — 2026-10-27
+
+- Fixed the TUI to continue displaying configured Nginx sites when the selected
+  access log cannot be opened, with a clear warning that activity is unavailable.
+- Corrected `verify.sh` to check the actual version string; it previously checked
+  `0.1.0` and would fail after the build/tests.
+- Verified the unavailable-log behavior in a pseudo-terminal: configured fixture
+  sites appeared alongside the warning. `./verify.sh` passed.
+- Development version is now `0.1.0-alpha.4`; packaging and publication remain
+  pending.
+
+
+### Docker-backed development workflow — 2026-10-27
+
+- Compose runs a local Nginx service with three virtual hosts and host-aware
+  access logging. `run-dev.sh` builds/runs the app natively and automatically
+  reads the shared Docker config/log when present, falling back to fixtures.
+- Verified Compose configuration and `./verify.sh`. The host UI read the
+  Docker-generated log in a pseudo-terminal and displayed 11 requests across
+  `alpha.test`, `beta.test`, and inactive `inactive.test`, with no malformed
+  lines.
+- Scoped generated `.o`/`.d` ignores to `src/`; the old broad `*.d` pattern
+  also hid directories named `conf.d`. The Compose vhost file and Nginx parser
+  include fixtures are now tracked, and `./verify.sh` passes with them present.

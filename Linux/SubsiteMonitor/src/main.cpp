@@ -15,7 +15,7 @@
 namespace {
 
 #ifndef SUBSITE_MONITOR_VERSION
-#define SUBSITE_MONITOR_VERSION "0.1.0-alpha.3"
+#define SUBSITE_MONITOR_VERSION "0.1.0-alpha.4"
 #endif
 
 constexpr std::string_view version = SUBSITE_MONITOR_VERSION;

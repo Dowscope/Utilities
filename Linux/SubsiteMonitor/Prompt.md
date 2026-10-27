@@ -99,7 +99,7 @@ without explicit authorization.
 
 ## Current handoff state
 
-- Handoff refreshed 2026-10-27 for the alpha.3 site-inventory work.
+- Handoff refreshed 2026-10-27 for the alpha.4 unavailable-log follow-up.
 - Completed Phases 1 through 3: C++23 CLI, streaming Nginx parser,
   `collect --log`, per-site/daily statistics via `stats --log`, sample logs,
   parser/statistics/CLI tests, and user/technical documentation.
@@ -117,13 +117,14 @@ without explicit authorization.
   Ncursesw and pkg-config are build dependencies.
 - `./verify.sh` passes after the TUI addition, and the sample screen reports 5
   requests across 2 sites with 2 malformed lines.
-- `./run-dev.sh` with no arguments builds and opens the sample-log UI; supplied
-  arguments are forwarded to the CLI. This was verified in a pseudo-terminal.
+- `./run-dev.sh` with no arguments builds and opens the UI, preferring the
+  Docker-generated log/config when available and otherwise using sample fixtures.
+  Supplied arguments are forwarded to the CLI.
 - Added `run-dev.sh`, `verify.sh`, `Changelog.md`, `TODO.md`, and user/technical
   manuals under `Docs/`.
 - Alpha `0.1.0-alpha.1` is published, and the user downloaded and installed it
   on the development server. The Git tag is `v0.1.0-alpha.1`.
-- Current local development version is `0.1.0-alpha.3`. Running
+- Current local development version is `0.1.0-alpha.4`. Running
   `subsite-monitor` with no arguments or bare `ui` opens the TUI. It reads
   `/etc/subsite-monitor/monitor.conf` and `/etc/nginx/nginx.conf` by default,
   discovers configured literal/wildcard `server_name` entries through include
@@ -151,9 +152,9 @@ without explicit authorization.
   artifacts on target distributions before production use.
 - Phase 4 (CSV storage) is the next planned implementation phase; wait for the
   user to approve before starting it.
-- `run-dev.sh` builds and opens the ncurses UI on the bundled sample log when
-  run without arguments; supplied arguments are passed to the executable.
-  `verify.sh` is the repeatable local build and test check.
+- `run-dev.sh` builds and opens the ncurses UI when run without arguments. It
+  automatically chooses Docker-generated Nginx data if present, otherwise the
+  bundled fixtures. `verify.sh` is the repeatable local build and test check.
 - When the user gives the commit command, update all Markdown documentation
   files to reflect the current project state, then commit and push to the
   configured GitHub origin as requested. No commit or push is part of normal
@@ -167,5 +168,36 @@ without explicit authorization.
 - Nginx's default access log generally does not contain `$host`; configured
   site names still show, but per-site request counts require the documented
   host-aware custom log format.
-- Alpha.2 is published and was installed by the user. Alpha.3 is not yet
-  packaged or published. No commit/push/tag unless the user explicitly asks.
+- Alpha.2 and alpha.3 are published; the user installed alpha.3. Alpha.4 is
+  local development and is not committed or released.
+
+
+- The earlier interim Docker-app-container approach was discarded after the
+  user clarified they want Compose to run Nginx separately and the native dev
+  app to consume its shared files. The old Dockerfile was removed.
+
+- Current Docker development flow is Compose running only the local Nginx
+  fixture. `run-dev.sh` builds/runs natively and honors `SUBSITE_MONITOR_LOG`
+  and `SUBSITE_MONITOR_NGINX_CONFIG`. `docker/nginx/nginx.conf` and
+  `docker/nginx/conf.d/sites.conf` define alpha.test, beta.test, and an inactive
+  site; Nginx writes host-aware lines to ignored `docker-data/logs/access.log`.
+  Start Nginx with `sudo ./run-docker.sh`; in another terminal run `./run-dev.sh`
+  with no args. It automatically selects the Docker log/config when present,
+  otherwise sample fixtures. Compose config and `./verify.sh` pass. Host UI was
+  run in a pseudo-terminal against the shared Docker log and displayed 11
+  requests across alpha.test, beta.test, and inactive.test (0 malformed lines).
+- The user started the Nginx Compose service and Nginx exited because read-only
+  rootfs/capability drops blocked its entrypoint's cache ownership and startup
+  error log. Removed those restrictions; Compose remains localhost-only and
+  config mounts remain read-only. Agent verified Compose config and host tests,
+  but cannot access this environment's Docker socket for an end-to-end run.
+
+- `run-dev.sh` no-argument auto-selection of Docker-generated data is verified
+  against the shared log currently present in `docker-data/logs/access.log`.
+  With Docker running, execute `./run-dev.sh`; issue more curl requests in a
+  separate terminal and press `r` to refresh.
+- Before pushing, found the repository's broad `.gitignore` `*.d` rule was
+  excluding all `conf.d` directories, including Docker vhosts and parser test
+  fixtures. Narrowed ignores to `src/*.o` and `src/*.d`, added the missed files,
+  and reran `./verify.sh` successfully. This fix is included in the pending
+  development commit.
