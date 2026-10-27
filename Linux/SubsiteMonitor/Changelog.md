@@ -77,3 +77,32 @@
   `SHA256SUMS`; the full package build and installer tests passed again.
 - The GitHub release remains unpublished; attach the refreshed archive and
   checksum manifest to `v0.1.0-alpha.1` before using the installer.
+
+### Published alpha 0.1.0-alpha.1 — 2026-10-27T13:58:28-04:00
+
+- Published the release archive and verified installer download and
+  installation on the user's development server.
+
+### Default UI and root-only configuration — 2026-10-27T14:24:29-04:00
+
+- Changed no-argument startup and bare `ui` to open the ncurses screen from the
+  configured shared Nginx access log.
+- The UI counts distinct valid hostnames in the log; sites with no valid
+  requests cannot be discovered from access logs alone.
+- Added the root-owned `/etc/subsite-monitor/monitor.conf` format for the log
+  path. The installer seeds it with mode 0600 under a mode 0700 directory and
+  preserves existing values on upgrade.
+- Config reading checks root ownership and permissions; the config parser
+  validates the setting, path, size, and control characters.
+- Bumped the development version to `0.1.0-alpha.2`. Clean build, all tests,
+  pseudo-terminal UI check (2 fixture websites), staged install checks, and
+  static package/installer tests passed.
+- Built `subsite-monitor-0.1.0-alpha.2-linux-x86_64-gnu.tar.gz` with SHA-256
+  `2d3e312c48c58000e8cfc403ab355d1ca6ec2e5d95b034623e1858f82edb30b3`. The
+  alpha.2 release has not been published.
+
+### Commit preparation — 2026-10-27T14:29:16-04:00
+
+- Refreshed project handoff, release notes, TODO, and user/technical manuals.
+- Verified archive checksum, installer hash pins, shell syntax, and packaged
+  README/manual contents before committing.

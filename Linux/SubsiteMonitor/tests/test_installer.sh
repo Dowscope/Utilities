@@ -28,19 +28,37 @@ chmod 0755 "$tmp_dir/mock-bin/curl"
 PATH="$tmp_dir/mock-bin:$PATH" \
 TEST_RELEASE_ARCHIVE="$asset" \
 SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
+SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
     sh "$script_dir/installer.sh"
 [ "$("$tmp_dir/install/subsite-monitor" --version)" = \
-  'subsite-monitor 0.1.0-alpha.1' ]
+  'subsite-monitor 0.1.0-alpha.2' ]
+[ "$(stat -c '%a' "$tmp_dir/etc/monitor.conf")" = 600 ]
+grep -q '^access_log = /var/log/nginx/subsite-monitor-access.log$' \
+    "$tmp_dir/etc/monitor.conf"
+
+printf 'access_log = /srv/nginx/custom-access.log\n' \
+    >"$tmp_dir/etc/monitor.conf"
+chmod 0644 "$tmp_dir/etc/monitor.conf"
+PATH="$tmp_dir/mock-bin:$PATH" \
+TEST_RELEASE_ARCHIVE="$asset" \
+SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
+SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
+    sh "$script_dir/installer.sh"
+[ "$(stat -c '%a' "$tmp_dir/etc/monitor.conf")" = 600 ]
+grep -q '^access_log = /srv/nginx/custom-access.log$' \
+    "$tmp_dir/etc/monitor.conf"
 
 printf 'not the release archive\n' >"$tmp_dir/corrupted.tar.gz"
 if PATH="$tmp_dir/mock-bin:$PATH" \
     TEST_RELEASE_ARCHIVE="$tmp_dir/corrupted.tar.gz" \
     SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/should-not-install" \
+    SUBSITE_MONITOR_CONFIG="$tmp_dir/should-not-config/monitor.conf" \
     sh "$script_dir/installer.sh" >"$tmp_dir/out" 2>"$tmp_dir/error"; then
     printf '%s\n' 'installer accepted a corrupted release archive' >&2
     exit 1
 fi
 grep -q 'checksum verification failed' "$tmp_dir/error"
 [ ! -e "$tmp_dir/should-not-install/subsite-monitor" ]
+[ ! -e "$tmp_dir/should-not-config/monitor.conf" ]
 
 printf '%s\n' 'Installer tests passed'

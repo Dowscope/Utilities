@@ -1,22 +1,51 @@
+#include "config.hpp"
 #include "collector.hpp"
 #include "report.hpp"
 #include "statistics.hpp"
 #include "tui.hpp"
 
+#include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <string_view>
 
 namespace {
 
 #ifndef SUBSITE_MONITOR_VERSION
-#define SUBSITE_MONITOR_VERSION "0.1.0-alpha.1"
+#define SUBSITE_MONITOR_VERSION "0.1.0-alpha.2"
 #endif
 
 constexpr std::string_view version = SUBSITE_MONITOR_VERSION;
+constexpr std::string_view default_config_path =
+    "/etc/subsite-monitor/monitor.conf";
+
+std::filesystem::path configured_log_path() {
+    const char* environment_log = std::getenv("SUBSITE_MONITOR_LOG");
+    if (environment_log != nullptr && environment_log[0] != '\0') {
+        return environment_log;
+    }
+
+    const char* environment_config = std::getenv("SUBSITE_MONITOR_CONFIG");
+    const std::filesystem::path config_path =
+        environment_config != nullptr && environment_config[0] != '\0'
+            ? std::filesystem::path{environment_config}
+            : std::filesystem::path{default_config_path};
+    return subsite_monitor::load_config(config_path).access_log;
+}
+
+int launch_ui(const std::filesystem::path& log_path) {
+    try {
+        return subsite_monitor::run_terminal_ui(log_path);
+    } catch (const std::exception& error) {
+        std::cerr << "subsite-monitor: " << error.what() << '\n';
+        return 1;
+    }
+}
 
 void print_help(std::ostream& output) {
     output << "Usage:\n"
+              "  subsite-monitor\n"
               "  subsite-monitor --help\n"
               "  subsite-monitor --version\n"
               "  subsite-monitor collect --log <path>\n"
@@ -26,6 +55,11 @@ void print_help(std::ostream& output) {
               "Options:\n"
               "  -h, --help       Show this help message\n"
               "  -V, --version    Show version information\n\n"
+              "With no arguments, open the UI using the root-only\n"
+              "/etc/subsite-monitor/monitor.conf configuration. The ui\n"
+              "command uses the same configuration unless --log is supplied.\n"
+              "SUBSITE_MONITOR_CONFIG and SUBSITE_MONITOR_LOG can override\n"
+              "the default configuration path and access log.\n\n"
               "The collect command accepts the subsite_monitor Nginx\n"
               "access-log format described in the project manual.\n"
               "The ui command requires an interactive terminal.\n";
@@ -35,8 +69,7 @@ void print_help(std::ostream& output) {
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {
-        print_help(std::cout);
-        return 0;
+        return launch_ui(configured_log_path());
     }
 
     const std::string_view argument{argv[1]};
@@ -88,18 +121,16 @@ int main(int argc, char* argv[]) {
     }
 
     if (argument == "ui") {
+        if (argc == 2) {
+            return launch_ui(configured_log_path());
+        }
         if (argc != 4 || std::string_view{argv[2]} != "--log" ||
             std::string_view{argv[3]}.empty()) {
-            std::cerr << "subsite-monitor: ui requires --log <path>\n"
+            std::cerr << "subsite-monitor: ui accepts no options or --log <path>\n"
                          "Try 'subsite-monitor --help' for usage.\n";
             return 2;
         }
-        try {
-            return subsite_monitor::run_terminal_ui(argv[3]);
-        } catch (const std::exception& error) {
-            std::cerr << "subsite-monitor: " << error.what() << '\n';
-            return 1;
-        }
+        return launch_ui(argv[3]);
     }
 
     std::cerr << "subsite-monitor: unrecognized or incomplete argument";

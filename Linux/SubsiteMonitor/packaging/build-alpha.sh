@@ -2,7 +2,7 @@
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-version=0.1.0-alpha.1
+version=0.1.0-alpha.2
 architecture=$(uname -m)
 if [ "$architecture" != x86_64 ]; then
     printf 'Alpha release build currently supports x86_64 only (found %s).\n' \
@@ -16,7 +16,8 @@ ncurses_archive="$source_dir/ncurses-6.5.tar.gz"
 ncurses_prefix="$source_dir/ncurses-6.5/static-install"
 stage_dir="$output_dir/stage"
 asset="subsite-monitor-$version-linux-x86_64-gnu.tar.gz"
-mkdir -p "$source_dir" "$stage_dir/bin" "$stage_dir/Docs"
+mkdir -p "$source_dir" "$stage_dir/bin" "$stage_dir/Docs" \
+    "$stage_dir/config"
 
 if [ ! -f "$ncurses_archive" ]; then
     curl --fail --location --silent --show-error \
@@ -60,6 +61,8 @@ install -m 0755 "$script_dir/subsite-monitor" "$stage_dir/bin/subsite-monitor"
 strip --strip-unneeded "$stage_dir/bin/subsite-monitor"
 install -m 0644 "$script_dir/README.md" "$stage_dir/README.md"
 install -m 0644 "$script_dir/Docs/MANUAL.md" "$stage_dir/Docs/MANUAL.md"
+install -m 0644 "$script_dir/config/monitor.conf.example" \
+    "$stage_dir/config/monitor.conf.example"
 
 if ldd "$stage_dir/bin/subsite-monitor" 2>&1 | grep -q 'not a dynamic executable'; then
     :
@@ -69,7 +72,8 @@ else
 fi
 
 tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
-    -cf - -C "$stage_dir" bin README.md Docs/MANUAL.md |
+    -cf - -C "$stage_dir" bin README.md Docs/MANUAL.md \
+    config/monitor.conf.example |
     gzip -n >"$output_dir/$asset"
 (cd "$output_dir" && sha256sum "$asset" >SHA256SUMS)
 

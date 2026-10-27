@@ -1,0 +1,6 @@
+# Root-only Subsite Monitor configuration.
+# The installer copies this file to /etc/subsite-monitor/monitor.conf with
+# permissions 0600. Edit the installed copy with sudoedit.
+
+# Shared Nginx access log using the documented subsite_monitor format.
+access_log = /var/log/nginx/subsite-monitor-access.log

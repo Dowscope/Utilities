@@ -2,9 +2,9 @@
 
 This directory is the user and technical manual for Subsite Monitor. It will
 be kept aligned with implemented behavior as the project grows. The current
-implementation covers Phases 1 through 3 and the requested ncurses screen;
-later-phase details are identified as planned work rather than existing
-behavior.
+implementation covers Phases 1 through 3, the ncurses screen, and the
+root-only access-log setting used by the default UI. Remaining configuration,
+persistence, and checkpoint details are identified as planned work.
 
 ## Contents
 
@@ -12,7 +12,7 @@ behavior.
 - [Technical reference](TECHNICAL.md): source layout, build details, exit
   behavior, and security/design constraints.
 
-The manuals reflect the current CLI and TUI, the no-argument development
-launch, and alpha runtime/packaging details.
+The manuals reflect no-argument UI startup, root-only configuration and
+permissions, website-count behavior, alpha runtime, and packaging details.
 
-Last reviewed: 2026-10-27T13:57:07-04:00.
+Last reviewed: 2026-10-27T14:29:16-04:00.

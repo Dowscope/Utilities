@@ -3,4 +3,5 @@
 /subsite-monitor
 /tests/test_parser
 /tests/test_statistics
+/tests/test_config
 /packaging/dist/

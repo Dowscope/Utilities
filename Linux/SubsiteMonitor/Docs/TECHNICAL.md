@@ -2,8 +2,9 @@
 
 ## Current architecture
 
-The executable has six translation units: `src/main.cpp` handles CLI
-arguments, `src/collector.cpp` streams log files, `src/log_parser.cpp`
+The executable has seven translation units: `src/main.cpp` handles CLI
+arguments, `src/config.cpp` parses and secures the root config,
+`src/collector.cpp` streams log files, `src/log_parser.cpp`
 validates individual records, `src/statistics.cpp` aggregates them by host and
 log date, `src/report.cpp` formats text output, and `src/tui.cpp` renders the
 interactive screen with ncursesw. Their interfaces are declared in
@@ -26,25 +27,30 @@ ncurses 6.5 static libraries and statically links the executable. The release
 binary still uses the host terminfo database for terminal capabilities.
 
 The default install prefix is `/usr/local`, with the executable installed in
-`bin`. `DESTDIR` prepends a staging root to the install destination. No install
-step is needed to run the binary from the project directory.
+`bin`. `make install` also seeds `/etc/subsite-monitor/monitor.conf` as mode
+0600 under a mode 0700 directory, preserving an existing config. `DESTDIR`
+prepends a staging root to both install destinations.
 
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.1` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.2` and return 0.
 - `collect --log <path>`: parse a supported access log; print aggregate valid
   and malformed line counts only.
 - `stats --log <path>`: scan one log and print per-site and daily statistics.
 - `ui --log <path>`: load one statistics snapshot and display it in ncurses.
-- No arguments: print help and return 0.
+- `ui` with no options: read the default root-only config and launch ncurses.
+- No arguments: launch the same UI as `ui`.
 - Invalid command arguments return 2. Log open/read failures return 1.
 
-The program reads only the explicitly supplied log path. It performs no
-network access and does not write state.
+The default config path is `/etc/subsite-monitor/monitor.conf`; its one
+supported field is an absolute `access_log` path. `SUBSITE_MONITOR_CONFIG`
+selects another config file, while `SUBSITE_MONITOR_LOG` overrides only the
+configured log path. The CLI `--log` option takes precedence for that command.
+The program performs no network access and does not write persistent state.
 
-At this stage `stats` requires `--log`; persistent history and configuration
-are future work, so a bare `stats` command cannot select an input yet.
+At this stage `stats` and `collect` require `--log`; persistent history and
+configuration for statistics/state directories remain future work.
 
 The TUI requires both stdin and stdout to be terminals. It reads one snapshot
 at startup; `r` reruns statistics from the same path. Arrow keys and `j`/`k`
@@ -86,16 +92,13 @@ error.
 ## Verification
 
 `tests/test_parser.cpp` checks field extraction and malformed inputs.
-`tests/test_statistics.cpp` checks aggregation, ordering, timestamp normalization,
-and redaction. `tests/test_cli.sh` checks command behavior, sample log
-collection, oversized lines, resource caps, and error exits, including UI
-behavior when no TTY is available. `make test` runs all three. `verify.sh`
-runs `make clean`, builds in parallel, runs the suite, and checks help/version.
-`./verify.sh` passed on 2026-10-27T13:40:16-04:00. The alpha package build,
-parser/statistics/CLI suite, and installer success/checksum rejection checks
-also passed again on 2026-10-27T13:57:07-04:00 after regenerating the archive
-and installer checksum. The no-argument `run-dev.sh` UI launch was exercised
-in a pseudo-terminal.
+`tests/test_statistics.cpp` checks aggregation, ordering, timestamp
+normalization, and redaction. `tests/test_config.cpp` checks config parsing and
+root-only access policy. `tests/test_cli.sh` checks command behavior, sample
+log collection, oversized lines, resource caps, and UI dispatch without a TTY.
+`make test` runs these suites. `verify.sh` runs a clean build, tests, and CLI
+smoke checks. The default UI was also exercised in a pseudo-terminal using the
+sample log and displayed 2 websites.
 
 ## Security and operational constraints
 
@@ -104,14 +107,14 @@ buffer and validates field syntax and lengths. The collector only reads its
 input file and reports open/read failures to the caller; it does not modify the
 web server. The command does not print sensitive URL query parameters or client
 IPs. The TUI sanitizes control characters in displayed file names and error
-messages. Client IP attribution through a reverse proxy requires trusted proxy
-configuration. The application does not require root when filesystem
-permissions allow access to logs and its own state directories.
+messages. The default config must be root-owned, readable by root only, and
+stored in a root-owned directory that is not group/world writable. The default
+UI therefore requires root; explicit `--log` commands remain available to
+users with log read permission. Client IP attribution through a reverse proxy
+requires trusted proxy configuration.
 
 Checkpoint durability, CSV write safety, lock behavior, alternative log
-formats, and configuration semantics are not defined by the current
-implementation.
-Document those specifics alongside the phase that introduces them.
+formats, and configuration for statistics/state directories remain undefined.
 
-Last reviewed: 2026-10-27T13:57:07-04:00. This reference describes the current
-CLI, TUI, and alpha release binary.
+Last reviewed: 2026-10-27T14:24:29-04:00. This reference describes the CLI,
+TUI, root-only log config, and next alpha release build.

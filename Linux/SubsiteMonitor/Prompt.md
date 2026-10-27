@@ -19,8 +19,9 @@ build systems. Prefer the C++ standard library and avoid external dependencies
 except ncursesw, which the user later authorized for the terminal UI.
 Prioritize execution speed, low memory use, security, RAII, const correctness,
 `std::filesystem`, `std::string_view`, small functions, modular files, and
-strict compiler warnings. The app must work without root when the user can read
-the configured logs. The initial brief excluded GUI/ncurses, email, network
+strict compiler warnings. Explicit-log commands must work without root when
+the user can read the configured logs. The default UI uses a root-only config
+and therefore requires root. The initial brief excluded GUI/ncurses, email, network
 service, and database. The user later authorized an ncurses terminal UI;
 email, network service, and database remain out of scope.
 
@@ -98,13 +99,13 @@ without explicit authorization.
 
 ## Current handoff state
 
-- Handoff refreshed 2026-10-27T13:57:07-04:00 for the alpha installer follow-up.
+- Handoff refreshed 2026-10-27T14:29:16-04:00 for the alpha.2 commit.
 - Completed Phases 1 through 3: C++23 CLI, streaming Nginx parser,
   `collect --log`, per-site/daily statistics via `stats --log`, sample logs,
   parser/statistics/CLI tests, and user/technical documentation.
 - `stats` currently requires an explicit log path because persistence and
-  configuration have not been implemented. It reports per-site totals, latest
-  access in UTC, daily counts by log date, and malformed lines.
+  stats/state configuration have not been implemented. It reports per-site
+  totals, latest access in UTC, daily counts by log date, and malformed lines.
 - Phase 3 passed `./verify.sh`: clean build, parser/statistics/CLI tests,
   help, and version checks; no compiler warnings.
 - Statistics aggregation is capped at 10,000 sites and 100,000 site/date pairs
@@ -120,27 +121,33 @@ without explicit authorization.
   arguments are forwarded to the CLI. This was verified in a pseudo-terminal.
 - Added `run-dev.sh`, `verify.sh`, `Changelog.md`, `TODO.md`, and user/technical
   manuals under `Docs/`.
-- The alpha package work was refreshed locally as of 2026-10-27T13:50:57-04:00.
-  `packaging/build-alpha.sh` builds x86_64 Linux release archive
-  `subsite-monitor-0.1.0-alpha.1-linux-x86_64-gnu.tar.gz` and generates
-  checksum-pinned root scripts `installer.sh` and `install.sh`. The executable
-  statically links ncursesw and GNU runtimes, and its UI uses host terminfo.
-  The locally generated archive SHA-256 is
-  `17c42c282df629e00124eb439a6d0da76b88fec700a793af4afcadef48ad755d`.
-- Package build, parser/statistics/CLI tests, and successful/corrupted archive
-  installer tests passed. No GitHub release or release assets have been
-  published. The release asset must be attached before the installer can
-  download it.
-- A follow-up fixed generated `SHA256SUMS` to contain a portable relative
-  filename and rebuilt the archive after refreshing the README/manual included
-  in the package. The build script and root installer use the same archive
-  hash. Attach this archive and checksum manifest to the GitHub release before
-  installing; the release itself is still pending.
-- The installer supports x86_64 Debian, Ubuntu, and Arch, checks the OS and
-  archive checksum, and installs only the executable to `/usr/local/bin` by
-  default. It does not set up persistent stats/configuration or system
-  services. Validate the static glibc artifact on target hosts before
-  production use.
+- Alpha `0.1.0-alpha.1` is published, and the user downloaded and installed it
+  on the development server. The Git tag is `v0.1.0-alpha.1`.
+- Current local development version is `0.1.0-alpha.2`. Running
+  `subsite-monitor` with no arguments or bare `ui` opens the TUI. It reads
+  `/etc/subsite-monitor/monitor.conf` by default and displays distinct valid
+  hostnames observed in its access log. A host with no valid log entries is
+  not discoverable from access logs alone.
+- `config/monitor.conf.example` defaults to
+  `/var/log/nginx/subsite-monitor-access.log`. The installer copies it to the
+  root-owned `/etc/subsite-monitor/monitor.conf` with mode 0600 in a mode 0700
+  directory, preserving existing settings on upgrades. Default UI startup
+  requires `sudo`; explicit `ui --log`, `collect --log`, and `stats --log`
+  remain usable as a regular user when file permissions allow. Environment
+  overrides are `SUBSITE_MONITOR_CONFIG` and `SUBSITE_MONITOR_LOG`.
+- Config syntax currently supports one absolute `access_log` value, with
+  bounded size, duplicate/unknown-key validation, and root ownership/mode
+  checks. Statistics and state directory settings are still planned.
+- `./verify.sh` passed after the changes. A pseudo-terminal run using the
+  fixture displayed 5 requests across 2 websites; staged `make install`
+  created the config directory at 0700 and config file at 0600.
+- Alpha.2 package and installer tests passed. Archive:
+  `subsite-monitor-0.1.0-alpha.2-linux-x86_64-gnu.tar.gz`; SHA-256:
+  `2d3e312c48c58000e8cfc403ab355d1ca6ec2e5d95b034623e1858f82edb30b3`.
+  Alpha.2 is not published yet; do not overwrite the published alpha.1 release.
+- The alpha.1 package flow supports x86_64 Debian, Ubuntu, and Arch, statically
+  links ncursesw and GNU runtimes, and relies on host terminfo. Validate later
+  artifacts on target distributions before production use.
 - Phase 4 (CSV storage) is the next implementation phase; it requires the
   user's explicit approval before work begins.
 - `run-dev.sh` builds and opens the ncurses UI on the bundled sample log when

@@ -8,11 +8,12 @@ trap 'rm -rf "$tmp_dir"' EXIT HUP INT TERM
 "$program" --help >"$tmp_dir/help.txt"
 grep -q '^Usage:' "$tmp_dir/help.txt"
 grep -q -- '--version' "$tmp_dir/help.txt"
+grep -q 'With no arguments, open the UI' "$tmp_dir/help.txt"
 grep -q 'collect --log <path>' "$tmp_dir/help.txt"
 grep -q 'stats --log <path>' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.1' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.2' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2
@@ -22,6 +23,26 @@ else
 fi
 [ "$status" -eq 2 ]
 grep -q 'unrecognized or incomplete argument' "$tmp_dir/error.txt"
+
+if SUBSITE_MONITOR_LOG=tests/fixtures/access.log "$program" \
+    </dev/null >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
+    echo 'expected no-argument UI mode to reject non-interactive output' >&2
+    exit 1
+else
+    status=$?
+fi
+[ "$status" -eq 1 ]
+grep -q 'ui requires an interactive terminal' "$tmp_dir/error.txt"
+
+if SUBSITE_MONITOR_LOG=tests/fixtures/access.log "$program" ui \
+    </dev/null >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
+    echo 'expected default ui mode to reject non-interactive output' >&2
+    exit 1
+else
+    status=$?
+fi
+[ "$status" -eq 1 ]
+grep -q 'ui requires an interactive terminal' "$tmp_dir/error.txt"
 
 "$program" collect --log tests/fixtures/access.log >"$tmp_dir/collect.txt"
 grep -q '^Parsed records: 5$' "$tmp_dir/collect.txt"
