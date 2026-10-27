@@ -20,8 +20,10 @@ The Makefile uses `g++`, `-std=c++23`, `-O2`, and the warning flags
 files through `-MMD -MP`, so header changes trigger rebuilds. Parallel jobs are
 enabled by invoking GNU Make with `-j` (for example `make -j`).
 
-The interactive screen requires ncursesw development headers and library plus
-`pkg-config` metadata for `ncursesw`. The executable links with `-lncursesw`.
+Development builds require ncursesw development headers and library plus
+`pkg-config` metadata for `ncursesw`. Alpha release packaging builds pinned
+ncurses 6.5 static libraries and statically links the executable. The release
+binary still uses the host terminfo database for terminal capabilities.
 
 The default install prefix is `/usr/local`, with the executable installed in
 `bin`. `DESTDIR` prepends a staging root to the install destination. No install
@@ -30,7 +32,7 @@ step is needed to run the binary from the project directory.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.1` and return 0.
 - `collect --log <path>`: parse a supported access log; print aggregate valid
   and malformed line counts only.
 - `stats --log <path>`: scan one log and print per-site and daily statistics.
@@ -89,8 +91,10 @@ and redaction. `tests/test_cli.sh` checks command behavior, sample log
 collection, oversized lines, resource caps, and error exits, including UI
 behavior when no TTY is available. `make test` runs all three. `verify.sh`
 runs `make clean`, builds in parallel, runs the suite, and checks help/version.
-It passed on 2026-10-27T12:20:26-04:00. The no-argument `run-dev.sh` UI launch
-was also exercised in a pseudo-terminal.
+`./verify.sh` passed on 2026-10-27T13:40:16-04:00. The alpha package build,
+parser/statistics/CLI suite, and installer success/checksum rejection checks
+also passed. The no-argument `run-dev.sh` UI launch was exercised in a
+pseudo-terminal.
 
 ## Security and operational constraints
 
@@ -108,5 +112,5 @@ formats, and configuration semantics are not defined by the current
 implementation.
 Document those specifics alongside the phase that introduces them.
 
-Last reviewed: 2026-10-27T12:20:44-04:00. This reference describes the current
-CLI and TUI.
+Last reviewed: 2026-10-27T13:40:16-04:00. This reference describes the current
+CLI, TUI, and alpha release binary.

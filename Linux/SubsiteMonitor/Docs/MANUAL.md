@@ -19,6 +19,11 @@ not yet implemented.
 On Debian or Ubuntu, install `g++ make pkg-config libncurses-dev`. On Arch,
 install `gcc make pkgconf ncurses`.
 
+The alpha release installer supports x86_64 Debian, Ubuntu, and Arch systems.
+Its binary statically links the runtime libraries; the terminal UI still needs
+a usable terminfo database. The development build requirements above are not
+needed to run the installed release executable.
+
 ## Build and test
 
 From the project directory:
@@ -115,5 +120,5 @@ retains the request target and client address only while reading each record;
 `collect`, `stats`, and the UI do not display them. Later reports must continue
 to avoid exposing sensitive query parameters.
 
-Last reviewed: 2026-10-27T12:20:44-04:00. This manual describes the current
+Last reviewed: 2026-10-27T13:40:16-04:00. This manual describes the current
 CLI and TUI.

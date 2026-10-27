@@ -9,7 +9,11 @@
 
 namespace {
 
-constexpr std::string_view version = "0.1.0";
+#ifndef SUBSITE_MONITOR_VERSION
+#define SUBSITE_MONITOR_VERSION "0.1.0-alpha.1"
+#endif
+
+constexpr std::string_view version = SUBSITE_MONITOR_VERSION;
 
 void print_help(std::ostream& output) {
     output << "Usage:\n"

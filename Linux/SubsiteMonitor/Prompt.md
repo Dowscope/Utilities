@@ -98,7 +98,7 @@ without explicit authorization.
 
 ## Current handoff state
 
-- Handoff refreshed 2026-10-27T12:20:44-04:00 for the user's commit request.
+- Handoff refreshed 2026-10-27T13:40:16-04:00 for the alpha package commit.
 - Completed Phases 1 through 3: C++23 CLI, streaming Nginx parser,
   `collect --log`, per-site/daily statistics via `stats --log`, sample logs,
   parser/statistics/CLI tests, and user/technical documentation.
@@ -120,7 +120,23 @@ without explicit authorization.
   arguments are forwarded to the CLI. This was verified in a pseudo-terminal.
 - Added `run-dev.sh`, `verify.sh`, `Changelog.md`, `TODO.md`, and user/technical
   manuals under `Docs/`.
-- Next implementation phase is Phase 4 (CSV storage). It requires the
+- The alpha package work is prepared locally as of 2026-10-27T13:40:16-04:00.
+  `packaging/build-alpha.sh` builds x86_64 Linux release archive
+  `subsite-monitor-0.1.0-alpha.1-linux-x86_64-gnu.tar.gz` and generates
+  checksum-pinned root scripts `installer.sh` and `install.sh`. The executable
+  statically links ncursesw and GNU runtimes, and its UI uses host terminfo.
+  The locally generated archive SHA-256 is
+  `668a8ccc69bfc0c7beb65652ef0a909c2481ad1e11f220bc20239861c07b7d94`.
+- Package build, parser/statistics/CLI tests, and successful/corrupted archive
+  installer tests passed. No GitHub release or release assets have been
+  published. The release asset must be attached before the installer can
+  download it.
+- The installer supports x86_64 Debian, Ubuntu, and Arch, checks the OS and
+  archive checksum, and installs only the executable to `/usr/local/bin` by
+  default. It does not set up persistent stats/configuration or system
+  services. Validate the static glibc artifact on target hosts before
+  production use.
+- Phase 4 (CSV storage) is the next implementation phase; it requires the
   user's explicit approval before work begins.
 - `run-dev.sh` builds and opens the ncurses UI on the bundled sample log when
   run without arguments; supplied arguments are passed to the executable.

@@ -50,3 +50,17 @@
 
 - Refreshed all Markdown handoff, user, technical, and tracking documents.
 - `./verify.sh` passed: clean build, all tests, help, and version checks.
+
+### Alpha release packaging — 2026-10-27T12:40:16-04:00
+
+- Added a reproducible x86_64 alpha package build and pinned installer
+  (`installer.sh`, with `install.sh` retained as a compatibility name).
+- Built the application with statically linked ncursesw and GNU runtime
+  libraries; the terminal UI still uses the target's terminfo database.
+- Added archive checksum verification, platform checks, atomic executable
+  replacement, and tests for successful installation and corrupted archives.
+- Generated alpha archive:
+  `subsite-monitor-0.1.0-alpha.1-linux-x86_64-gnu.tar.gz` (SHA-256:
+  `668a8ccc69bfc0c7beb65652ef0a909c2481ad1e11f220bc20239861c07b7d94`).
+- `./packaging/build-alpha.sh` passed, including parser/statistics/CLI tests
+  and installer checks. GitHub release upload and publication remain pending.

@@ -12,5 +12,7 @@ behavior.
 - [Technical reference](TECHNICAL.md): source layout, build details, exit
   behavior, and security/design constraints.
 
-Last reviewed: 2026-10-27T12:20:44-04:00. The manuals reflect the current CLI
-and TUI, including the no-argument development launch.
+The manuals reflect the current CLI and TUI, the no-argument development
+launch, and alpha runtime/packaging details.
+
+Last reviewed: 2026-10-27T13:40:16-04:00.

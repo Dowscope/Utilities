@@ -9,6 +9,8 @@ CPPFLAGS += $(NCURSES_CFLAGS)
 LDLIBS += $(NCURSES_LIBS)
 
 TARGET := subsite-monitor
+VERSION := 0.1.0-alpha.1
+CPPFLAGS += -DSUBSITE_MONITOR_VERSION='"$(VERSION)"'
 SOURCES := src/main.cpp src/collector.cpp src/log_parser.cpp \
 	src/statistics.cpp src/report.cpp src/tui.cpp
 OBJECTS := $(SOURCES:.cpp=.o)

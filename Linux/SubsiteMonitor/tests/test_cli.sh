@@ -12,7 +12,7 @@ grep -q 'collect --log <path>' "$tmp_dir/help.txt"
 grep -q 'stats --log <path>' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.1' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2

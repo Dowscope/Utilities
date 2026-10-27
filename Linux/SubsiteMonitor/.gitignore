@@ -1,0 +1,6 @@
+*.o
+*.d
+/subsite-monitor
+/tests/test_parser
+/tests/test_statistics
+/packaging/dist/
