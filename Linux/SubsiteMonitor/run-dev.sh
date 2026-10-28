@@ -16,7 +16,9 @@ if [ "$#" -eq 0 ]; then
     fi
     SUBSITE_MONITOR_LOG=${SUBSITE_MONITOR_LOG:-"$default_log"}
     SUBSITE_MONITOR_NGINX_CONFIG=${SUBSITE_MONITOR_NGINX_CONFIG:-"$default_nginx_config"}
-    export SUBSITE_MONITOR_LOG SUBSITE_MONITOR_NGINX_CONFIG
+    SUBSITE_MONITOR_STATS_DIR=${SUBSITE_MONITOR_STATS_DIR:-"$script_dir/docker-data/stats"}
+    export SUBSITE_MONITOR_LOG SUBSITE_MONITOR_NGINX_CONFIG \
+        SUBSITE_MONITOR_STATS_DIR
     exec ./subsite-monitor
 fi
 

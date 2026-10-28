@@ -21,9 +21,9 @@ Prioritize execution speed, low memory use, security, RAII, const correctness,
 `std::filesystem`, `std::string_view`, small functions, modular files, and
 strict compiler warnings. Explicit-log commands must work without root when
 the user can read the configured logs. The default UI uses a root-only config
-and therefore requires root. The initial brief excluded GUI/ncurses, email, network
-service, and database. The user later authorized an ncurses terminal UI;
-email, network service, and database remain out of scope.
+and therefore requires root. The user later authorized an ncurses terminal UI
+and a local foreground log-monitoring service managed by systemd. Email,
+network-facing services, and databases remain out of scope.
 
 The project is part of the existing `Utilities` Git repository at
 `Linux/SubsiteMonitor`. Never initialize another repository or modify files
@@ -58,7 +58,9 @@ before starting the next phase.
    counting; handle rotation, truncation, incomplete lines, concurrent
    collectors, interruption, and checkpoint recovery. Prioritize avoiding
    lost or duplicated data. If crash-safe CSV/checkpoint coordination is too
-   complex, document a minimal safe approach before implementing it.
+  complex, document a minimal safe approach before implementing it. A
+  foreground `service` command may run under the supplied systemd unit; never
+  enable it automatically or change Nginx configuration.
 6. **Configuration:** add `config/monitor.conf.example` for access logs,
    statistics directory, and state directory; CLI options override applicable
    values; validate configuration and test it. Store no secrets.
@@ -75,6 +77,7 @@ subsite-monitor --version
 subsite-monitor collect --log /path/to/access.log
 subsite-monitor stats
 subsite-monitor stats --days 7
+subsite-monitor service
 ```
 
 Use standard-library argument handling, meaningful errors, and appropriate
@@ -90,114 +93,76 @@ bound memory use, never execute commands using log contents, handle filesystem
 errors safely, use restrictive file permissions, and avoid exposing sensitive
 URL parameters in reports. Trusted reverse-proxy requirements must be
 documented for accurate client IPs. Monitoring failures must not affect the
-web server. Eventually an installer may detect platform/architecture, fetch a
-real release artifact, verify trusted checksums/signatures, install to
-`/usr/local/bin/subsite-monitor`, create `/etc/subsite-monitor/` and
-`/var/lib/subsite-monitor/`, preserve existing config/history, and support
-upgrades. This is future planning only; do not implement production deployment
-without explicit authorization.
+web server. A local alpha.5 installer/package now prepares the executable,
+root-only monitor config, private state/log directories, Nginx `conf.d` snippet,
+logrotate policy, and disabled systemd unit. It accepts a checksum-verified
+local archive for pre-release testing. It deliberately does not edit the main
+Nginx config, reload Nginx, enable the service, or deploy to a server without
+explicit authorization. The alpha.5 release is not published.
 
 ## Current handoff state
 
-- Handoff refreshed 2026-10-27 for the alpha.4 unavailable-log follow-up.
-- Completed Phases 1 through 3: C++23 CLI, streaming Nginx parser,
-  `collect --log`, per-site/daily statistics via `stats --log`, sample logs,
-  parser/statistics/CLI tests, and user/technical documentation.
-- `stats` currently requires an explicit log path because persistence and
-  stats/state configuration have not been implemented. It reports per-site
-  totals, latest access in UTC, daily counts by log date, and malformed lines.
-- Phase 3 passed `./verify.sh`: clean build, parser/statistics/CLI tests,
-  help, and version checks; no compiler warnings.
-- Statistics aggregation is capped at 10,000 sites and 100,000 site/date pairs
-  to keep memory use bounded. The report never prints request targets or
-  client addresses.
-- Implemented the requested ncurses UI. `ui --log <path>` displays a one-log
-  snapshot; arrows or `j`/`k` select a site, `r` rereads the log, and `q` exits.
-  The sample UI was run interactively and selection/refresh/quit were exercised.
-  Ncursesw and pkg-config are build dependencies.
-- `./verify.sh` passes after the TUI addition, and the sample screen reports 5
-  requests across 2 sites with 2 malformed lines.
+- Current local development version is `0.1.0-alpha.5`; alpha.3 remains the
+  latest published release. The user asked to add a continuously running
+  CSV-updating
+  service and systemd unit; the unit must not be enabled on this development
+  host or a production host as part of implementation.
+- Phases 1 through 5 are implemented locally: C++23 CLI, bounded streaming
+  Nginx parser, per-site/daily aggregation, Docker-backed development, root-only
+  log configuration and virtual-host inventory, private daily summary CSVs, and
+  per-request CSV event history, checkpointed live collection, and a systemd
+  unit installed by `make install`.
+- `collect --log <path> [--stats-dir <path>]` scans the full log and replaces
+  snapshots for dates present in the scan. Repeating collection on the same
+  complete log does not double count. `stats [--days N] [--stats-dir <path>]`
+  reads stored data; N selects the newest N stored dates. `stats --log <path>`
+  continues to provide a one-time report without persistence.
+- Default storage is `/var/lib/subsite-monitor/stats` as root and under the
+  user's XDG state directory otherwise. `SUBSITE_MONITOR_STATS_DIR` and
+  `--stats-dir` override the location. The directory is private (0700), CSV and
+  lock files are private (0600), writers/readers use an advisory lock, and CSV
+  snapshots are replaced atomically. Per-request files preserve UTC timestamp,
+  site, client IP, method, full URL including query string, and HTTP status.
+  Event timestamps are stored in UTC and rendered in the monitor host's local
+  timezone with numeric offset.
+- In the UI, arrows or `j`/`k` select a site and Enter opens that site's
+  request records from CSV in a one-line-per-request table showing timestamp,
+  client IP, method, status, and full URL. Up/down selects a request, Page Up/Down moves in 100-record
+  pages, left/right scrolls a long URL, Escape returns to the overview, `r`
+  refreshes, and `q` exits. The UI collects/stores on launch and refresh. If the log is unavailable, it
+  can display stored statistics alongside discovered configured sites.
+- Request CSVs contain sensitive client IPs and full URLs. Files are mode 0600
+  in a mode 0700 directory; storage grows with request volume.
+- `service` follows the configured log and updates event and summary CSVs about
+  once per second. It starts at the current log end when no checkpoint exists;
+  use a one-time `collect` first for historical backfill. It supports retained
+  uncompressed numeric rotations. Copytruncate has a known truncate-and-regrow
+  race between polls. Manual full collection is refused while the service is
+  active; the UI reads stored data and refreshes on `r`.
+- `./verify.sh` and `./packaging/build-alpha.sh` passed on 2026-10-28 with
+  parser, statistics, config, Nginx config, storage, CLI, service, and
+  installer-template tests. The C++23 build had no warnings. The local static
+  alpha.5 archive and installers are current; archive SHA-256 is
+  `c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c`. The
+  archive includes the systemd unit, Nginx snippet, and logrotate policy. No
+  alpha.5 release has been published; alpha.3 remains latest published.
 - `./run-dev.sh` with no arguments builds and opens the UI, preferring the
-  Docker-generated log/config when available and otherwise using sample fixtures.
-  Supplied arguments are forwarded to the CLI.
-- Added `run-dev.sh`, `verify.sh`, `Changelog.md`, `TODO.md`, and user/technical
-  manuals under `Docs/`.
-- Alpha `0.1.0-alpha.1` is published, and the user downloaded and installed it
-  on the development server. The Git tag is `v0.1.0-alpha.1`.
-- Current local development version is `0.1.0-alpha.4`. Running
-  `subsite-monitor` with no arguments or bare `ui` opens the TUI. It reads
-  `/etc/subsite-monitor/monitor.conf` and `/etc/nginx/nginx.conf` by default,
-  discovers configured literal/wildcard `server_name` entries through include
-  files, and merges them with valid log hostnames. Configured sites with no
-  observed requests appear with zero activity; regex names and `_` are skipped.
-- `config/monitor.conf.example` defaults to
-  `/var/log/nginx/subsite-monitor-access.log`. The installer copies it to the
-  root-owned `/etc/subsite-monitor/monitor.conf` with mode 0600 in a mode 0700
-  directory, preserving existing settings on upgrades. Default UI startup
-  requires `sudo`; explicit `ui --log`, `collect --log`, and `stats --log`
-  remain usable as a regular user when file permissions allow. Environment
-  overrides are `SUBSITE_MONITOR_CONFIG` and `SUBSITE_MONITOR_LOG`.
-- Config syntax supports absolute `access_log` and `nginx_config` values, with
-  bounded size, duplicate/unknown-key validation, and root ownership/mode
-  checks. Statistics and state directory settings are still planned.
-- `./verify.sh` passed after the changes. A pseudo-terminal run using the
-  fixture displayed 5 requests across 2 websites; staged `make install`
-  created the config directory at 0700 and config file at 0600.
-- Alpha.2 package and installer tests passed. Archive:
-  `subsite-monitor-0.1.0-alpha.2-linux-x86_64-gnu.tar.gz`; SHA-256:
-  `2d3e312c48c58000e8cfc403ab355d1ca6ec2e5d95b034623e1858f82edb30b3`.
-  Alpha.2 is now published and the user confirmed installation on the server.
-- The alpha.1 package flow supports x86_64 Debian, Ubuntu, and Arch, statically
-  links ncursesw and GNU runtimes, and relies on host terminfo. Validate later
-  artifacts on target distributions before production use.
-- Phase 4 (CSV storage) is the next planned implementation phase; wait for the
-  user to approve before starting it.
-- `run-dev.sh` builds and opens the ncurses UI when run without arguments. It
-  automatically chooses Docker-generated Nginx data if present, otherwise the
-  bundled fixtures. `verify.sh` is the repeatable local build and test check.
-- When the user gives the commit command, update all Markdown documentation
-  files to reflect the current project state, then commit and push to the
-  configured GitHub origin as requested. No commit or push is part of normal
-  phase implementation work.
+  Docker-generated Nginx log/config when present and otherwise using fixtures.
+  Start the fixture in another terminal with `sudo ./run-docker.sh`.
+- Documentation is in `Docs/MANUAL.md` and `Docs/TECHNICAL.md`; `TODO.md` tracks
+  pending phases. When the user says `commit`, update all Markdown, commit, and
+  push to the configured GitHub origin. Do not release without approval.
 
+The user has explicitly requested a commit and push for the current prepared
+server-test integration and documentation refresh. No release or server
+installation is authorized by that request.
 
-- Nginx config discovery is implemented locally with bounded parsing of the
-  main config, includes, `server` blocks, and `server_name` directives. Config
-  fixtures cover recursive includes, wildcard includes, duplicates, regex and
-  special names, plus malformed input. `./verify.sh` passed cleanly.
-- Nginx's default access log generally does not contain `$host`; configured
-  site names still show, but per-site request counts require the documented
-  host-aware custom log format.
-- Alpha.2 and alpha.3 are published; the user installed alpha.3. Alpha.4 is
-  local development and is not committed or released.
-
-
-- The earlier interim Docker-app-container approach was discarded after the
-  user clarified they want Compose to run Nginx separately and the native dev
-  app to consume its shared files. The old Dockerfile was removed.
-
-- Current Docker development flow is Compose running only the local Nginx
-  fixture. `run-dev.sh` builds/runs natively and honors `SUBSITE_MONITOR_LOG`
-  and `SUBSITE_MONITOR_NGINX_CONFIG`. `docker/nginx/nginx.conf` and
-  `docker/nginx/conf.d/sites.conf` define alpha.test, beta.test, and an inactive
-  site; Nginx writes host-aware lines to ignored `docker-data/logs/access.log`.
-  Start Nginx with `sudo ./run-docker.sh`; in another terminal run `./run-dev.sh`
-  with no args. It automatically selects the Docker log/config when present,
-  otherwise sample fixtures. Compose config and `./verify.sh` pass. Host UI was
-  run in a pseudo-terminal against the shared Docker log and displayed 11
-  requests across alpha.test, beta.test, and inactive.test (0 malformed lines).
-- The user started the Nginx Compose service and Nginx exited because read-only
-  rootfs/capability drops blocked its entrypoint's cache ownership and startup
-  error log. Removed those restrictions; Compose remains localhost-only and
-  config mounts remain read-only. Agent verified Compose config and host tests,
-  but cannot access this environment's Docker socket for an end-to-end run.
-
-- `run-dev.sh` no-argument auto-selection of Docker-generated data is verified
-  against the shared log currently present in `docker-data/logs/access.log`.
-  With Docker running, execute `./run-dev.sh`; issue more curl requests in a
-  separate terminal and press `r` to refresh.
-- Before pushing, found the repository's broad `.gitignore` `*.d` rule was
-  excluding all `conf.d` directories, including Docker vhosts and parser test
-  fixtures. Narrowed ignores to `src/*.o` and `src/*.d`, added the missed files,
-  and reran `./verify.sh` successfully. This fix is included in the pending
-  development commit.
+The staged `make install` and `systemd-analyze verify` checks passed. The
+installer places the access log at `/var/log/subsite-monitor/access.log` by
+default and installs its snippet in `/etc/nginx/conf.d`. Nginx loads the snippet
+when the main config includes `conf.d/*.conf` inside `http { }`; confirm with
+`sudo nginx -T`, then validate with `sudo nginx -t` and reload manually. The
+installer does not edit or reload the main Nginx config, or start the service.
+Use the local archive option for pre-release server testing. Phase 6 remains
+future work. Validate on the subsites server before enabling the service; do
+not publish a release without explicit approval.

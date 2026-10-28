@@ -7,6 +7,21 @@
 - Added `run-dev.sh`, `verify.sh`, project handoff prompt, TODO list, and
   technical/user documentation.
 
+### Nginx log path and server-test documentation — 2026-10-28T15:59:22-04:00
+
+- Confirmed the monitored log is kept separately at
+  `/var/log/subsite-monitor/access.log`; the installer installs its Nginx
+  `conf.d` snippet and logrotate policy. Nginx loads the snippet when its main
+  config includes `conf.d/*.conf` in `http { }`.
+- Updated the README, user manual, technical reference, packaging guide,
+  handoff prompt, and TODO with the installer behavior, test commands, current
+  alpha.5 archive checksum, and outstanding server validation.
+- Rebuilt the local alpha.5 archive/installers and ran `./verify.sh`; build,
+  tests, help, version, and installer-template tests passed without compiler
+  warnings. Updated archive SHA-256:
+  `c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c`. No
+  server deployment or GitHub release was performed.
+
 ### Documentation and verification update — 2026-10-27T11:42:32-04:00
 
 - Refreshed the project handoff, user manual, technical reference, README, and
@@ -148,3 +163,104 @@
 - Scoped generated `.o`/`.d` ignores to `src/`; the old broad `*.d` pattern
   also hid directories named `conf.d`. The Compose vhost file and Nginx parser
   include fixtures are now tracked, and `./verify.sh` passes with them present.
+
+
+### Phase 4 — CSV storage and site history — 2026-10-27T16:25:46-04:00
+
+- Added private daily CSV snapshots with atomic replacement, restrictive file
+  modes, and advisory locking. Collection rescans logs and replaces affected
+  dates, so repeat scans do not double count.
+- Added `stats` over stored data, `--days`, and configurable storage via
+  `--stats-dir` and `SUBSITE_MONITOR_STATS_DIR`.
+- The UI now opens the selected site's CSV history with Enter; Escape returns
+  to the overview. Updated the user manual, technical reference, README, TODO,
+  and handoff prompt.
+- `./verify.sh` passed: clean build and all parser, statistics, config, Nginx
+  config, storage, CLI, and UI-history tests; no compiler warnings.
+- Collection remains a full-log snapshot. Checkpointing and safe recovery from
+  log rotation/truncation are Phase 5 work.
+
+
+### Request-level event history — 2026-10-28T09:26:15-04:00
+
+- Added a private daily event CSV containing every valid request's UTC timestamp,
+  site, client IP, method, full URL including query string, and HTTP status.
+- Changed Enter on a site to open its request list. Added bounded 100-record
+  paging and horizontal scrolling for full URLs. Summary statistics continue to
+  use separate daily aggregate CSVs.
+- Added storage, CSV escaping, full-query preservation, paging, and pseudo-terminal
+  UI checks. `./verify.sh` passed without compiler warnings.
+- Event CSVs grow with access-log volume and contain sensitive URLs/IPs. They use
+  mode 0600 in the mode 0700 statistics directory. Rotation-safe incremental
+  collection remains future work.
+
+
+### Request table layout — 2026-10-28T10:12:56-04:00
+
+- Changed the request-history screen to a compact table with one request per
+  line, showing UTC time, client IP, method/status, and URL. Long selected URLs
+  remain horizontally scrollable; paging still covers the full request list.
+- `./verify.sh` passed after the UI change.
+
+### Server-local time display — 2026-10-28T10:20:27-04:00
+
+- Changed request-history and last-access displays to the machine's configured
+  local timezone, including a numeric UTC offset. Stored timestamps remain UTC.
+- Verified `America/Thunder_Bay` renders fixture timestamps with the expected
+  `-0400` offset. `./verify.sh` passed without compiler warnings.
+
+
+### Continuous CSV collection service — 2026-10-28T10:47:24-04:00
+
+- Added `subsite-monitor service`, a foreground log follower that appends
+  per-request CSV rows and updates daily summary CSVs about once per second.
+- Added checkpoints for log device/inode/offset and committed event-file sizes,
+  exclusive service locking, incomplete-line handling, restart recovery,
+  truncation detection, and retained numeric logrotate file catch-up.
+- Added a systemd unit. `make install` and the release packaging template install
+  it and create a private state root, but do not enable or start it. The
+  installer/package pipeline now includes the unit for a future approved
+  release.
+- The UI reads stored CSV data while service collection is active. Manual full
+  collection is rejected while the service holds its lock.
+- Documented one-time historical backfill, service management, and the
+  copytruncate and compressed-rotation limitations.
+- Added a service integration test for incomplete lines, live append, rotation,
+  restart recovery, truncation, and concurrent collection refusal.
+- `./verify.sh` passed, including service integration tests, with no compiler
+  warnings. Staged install paths and the systemd unit were also checked.
+
+
+### Release package includes service unit — 2026-10-28T10:59:13-04:00
+
+- Added the service unit to the release archive and updated the generated
+  installer to install it, create the private state directory, and leave the
+  service disabled. A custom binary install path is reflected in the unit.
+- Added an installer-template integration test to the regular `make test`
+  suite.
+- Corrected static ncurses terminfo search paths for standard Linux locations;
+  the package build now passes the pseudo-terminal UI tests.
+- Built the local alpha.5 archive and generated installer scripts. The archive
+  was later rebuilt with the Nginx snippet noted below. No GitHub release was
+  created.
+
+
+### Server test installer and Nginx integration — 2026-10-28T14:18:43-04:00
+
+- Moved the monitored log to `/var/log/subsite-monitor/access.log`; the
+  installer creates its private directory and migrates the previous built-in
+  Nginx log path while preserving custom paths.
+- The installer places the host-aware snippet at
+  `/etc/nginx/conf.d/subsite-monitor.conf` and adds a daily logrotate policy
+  with delayed compression and an Nginx log-reopen signal. It does not edit the
+  main Nginx config, reload Nginx, or enable the monitor service. Existing
+  snippets/policies are preserved and checked against the configured path.
+- Docker development now uses the same log directory and loads the snippet
+  through its `conf.d` include.
+- `SUBSITE_MONITOR_ARCHIVE` supports checksum-verified local installation
+  before GitHub publication. Installer tests cover local archives, path
+  migration, custom paths, and preserving existing config files.
+- Documented automatic `conf.d` loading when the main config includes it from
+  `http { }`, along with manual validation and reload steps.
+- Rebuilt the local alpha.5 archive and installer scripts. Current SHA-256:
+  `395ea83f7a049503754456214dd8989f23b82d0708bcaccff5d9b328c67bf26a`.

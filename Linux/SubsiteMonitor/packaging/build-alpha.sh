@@ -2,7 +2,7 @@
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-version=0.1.0-alpha.4
+version=0.1.0-alpha.5
 architecture=$(uname -m)
 if [ "$architecture" != x86_64 ]; then
     printf 'Alpha release build currently supports x86_64 only (found %s).\n' \
@@ -14,10 +14,11 @@ output_dir="$script_dir/packaging/dist"
 source_dir="$output_dir/ncurses-source"
 ncurses_archive="$source_dir/ncurses-6.5.tar.gz"
 ncurses_prefix="$source_dir/ncurses-6.5/static-install"
+ncurses_config_stamp="$ncurses_prefix/.subsite-monitor-configured"
 stage_dir="$output_dir/stage"
 asset="subsite-monitor-$version-linux-x86_64-gnu.tar.gz"
 mkdir -p "$source_dir" "$stage_dir/bin" "$stage_dir/Docs" \
-    "$stage_dir/config"
+    "$stage_dir/config" "$stage_dir/systemd"
 
 if [ ! -f "$ncurses_archive" ]; then
     curl --fail --location --silent --show-error \
@@ -31,17 +32,21 @@ printf '%s  %s\n' \
     exit 1
 }
 
-if [ ! -f "$ncurses_prefix/lib/libncursesw.a" ]; then
+if [ ! -f "$ncurses_prefix/lib/libncursesw.a" ] ||
+    [ ! -f "$ncurses_config_stamp" ]; then
     rm -rf "$source_dir/ncurses-6.5"
     tar -xzf "$ncurses_archive" -C "$source_dir"
     (
         cd "$source_dir/ncurses-6.5"
         ./configure --prefix="$ncurses_prefix" --with-normal \
             --without-shared --without-debug --with-termlib --without-ada \
-            --without-cxx --without-tests --without-gpm --without-dlsym
+            --without-cxx --without-tests --without-gpm --without-dlsym \
+            --with-terminfo-dirs=/etc/terminfo:/lib/terminfo:/usr/share/terminfo \
+            --with-default-terminfo-dir=/usr/share/terminfo
         make -j"$(getconf _NPROCESSORS_ONLN)"
         make install.libs
     )
+    touch "$ncurses_config_stamp"
 fi
 
 static_cflags="-I$ncurses_prefix/include -I$ncurses_prefix/include/ncursesw"
@@ -63,6 +68,12 @@ install -m 0644 "$script_dir/README.md" "$stage_dir/README.md"
 install -m 0644 "$script_dir/Docs/MANUAL.md" "$stage_dir/Docs/MANUAL.md"
 install -m 0644 "$script_dir/config/monitor.conf.example" \
     "$stage_dir/config/monitor.conf.example"
+install -m 0644 "$script_dir/config/nginx-log-format.conf.example" \
+    "$stage_dir/config/nginx-log-format.conf.example"
+install -m 0644 "$script_dir/config/subsite-monitor.logrotate" \
+    "$stage_dir/config/subsite-monitor.logrotate"
+install -m 0644 "$script_dir/systemd/subsite-monitor.service" \
+    "$stage_dir/systemd/subsite-monitor.service"
 
 if ldd "$stage_dir/bin/subsite-monitor" 2>&1 | grep -q 'not a dynamic executable'; then
     :
@@ -73,7 +84,9 @@ fi
 
 tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
     -cf - -C "$stage_dir" bin README.md Docs/MANUAL.md \
-    config/monitor.conf.example |
+    config/monitor.conf.example config/nginx-log-format.conf.example \
+    config/subsite-monitor.logrotate \
+    systemd/subsite-monitor.service |
     gzip -n >"$output_dir/$asset"
 (cd "$output_dir" && sha256sum "$asset" >SHA256SUMS)
 

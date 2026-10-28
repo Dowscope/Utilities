@@ -7,6 +7,11 @@ ASSET_SHA256='@ASSET_SHA256@'
 ASSET_URL="https://github.com/Dowscope/Utilities/releases/download/v${VERSION}/${ASSET}"
 INSTALL_DIR=${SUBSITE_MONITOR_INSTALL_DIR:-/usr/local/bin}
 CONFIG_FILE=${SUBSITE_MONITOR_CONFIG:-/etc/subsite-monitor/monitor.conf}
+SYSTEMD_UNIT_DIR=${SUBSITE_MONITOR_SYSTEMD_UNIT_DIR:-/usr/lib/systemd/system}
+STATE_DIR=${SUBSITE_MONITOR_STATE_DIR:-/var/lib/subsite-monitor}
+NGINX_CONF_DIR=${SUBSITE_MONITOR_NGINX_CONF_DIR:-/etc/nginx/conf.d}
+LOGROTATE_FILE=${SUBSITE_MONITOR_LOGROTATE_FILE:-/etc/logrotate.d/subsite-monitor}
+ACCESS_LOG=${SUBSITE_MONITOR_ACCESS_LOG:-/var/log/subsite-monitor/access.log}
 
 fail() {
     printf 'subsite-monitor installer: %s\n' "$1" >&2
@@ -43,17 +48,28 @@ fi
 work_dir=$(mktemp -d "${TMPDIR:-/tmp}/subsite-monitor.XXXXXX") ||
     fail 'could not create a temporary directory'
 staged_binary=''
+staged_config=''
 cleanup() {
     rm -rf "$work_dir"
     if [ -n "$staged_binary" ]; then
         rm -f "$staged_binary"
+    fi
+    if [ -n "$staged_config" ]; then
+        rm -f "$staged_config"
     fi
 }
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
 
 archive="$work_dir/$ASSET"
-if command -v curl >/dev/null 2>&1; then
+if [ -n "${SUBSITE_MONITOR_ARCHIVE:-}" ]; then
+    if [ -L "$SUBSITE_MONITOR_ARCHIVE" ] ||
+        [ ! -f "$SUBSITE_MONITOR_ARCHIVE" ]; then
+        fail 'local release archive must be a regular, non-symlink file'
+    fi
+    cp "$SUBSITE_MONITOR_ARCHIVE" "$archive" ||
+        fail 'cannot copy local release archive'
+elif command -v curl >/dev/null 2>&1; then
     curl --fail --location --silent --show-error \
         --output "$archive" "$ASSET_URL" || fail 'release download failed'
 elif command -v wget >/dev/null 2>&1; then
@@ -68,19 +84,67 @@ printf '%s  %s\n' "$ASSET_SHA256" "$archive" | sha256sum --check --status - ||
 
 mkdir -p "$work_dir/extracted"
 tar -xzf "$archive" -C "$work_dir/extracted" \
-    bin/subsite-monitor config/monitor.conf.example ||
+    bin/subsite-monitor config/monitor.conf.example \
+    config/nginx-log-format.conf.example \
+    config/subsite-monitor.logrotate \
+    systemd/subsite-monitor.service ||
     fail 'release archive could not be extracted'
 binary="$work_dir/extracted/bin/subsite-monitor"
 if [ ! -f "$binary" ] || [ ! -x "$binary" ]; then
     fail 'release archive does not contain the expected executable'
 fi
 config_template="$work_dir/extracted/config/monitor.conf.example"
+nginx_format_template="$work_dir/extracted/config/nginx-log-format.conf.example"
+logrotate_template="$work_dir/extracted/config/subsite-monitor.logrotate"
+service_template="$work_dir/extracted/systemd/subsite-monitor.service"
 if [ ! -f "$config_template" ]; then
     fail 'release archive does not contain the default configuration'
+fi
+if [ ! -f "$service_template" ]; then
+    fail 'release archive does not contain the systemd unit'
+fi
+if [ ! -f "$nginx_format_template" ]; then
+    fail 'release archive does not contain the Nginx log format example'
+fi
+if [ ! -f "$logrotate_template" ]; then
+    fail 'release archive does not contain the logrotate policy'
 fi
 if [ "$("$binary" --version)" != "subsite-monitor $VERSION" ]; then
     fail 'downloaded executable version does not match the release'
 fi
+for configured_path in "$ACCESS_LOG" "$NGINX_CONF_DIR" "$LOGROTATE_FILE"; do
+    case "$configured_path" in
+        /*) ;;
+        *) fail "configured path must be absolute: $configured_path" ;;
+    esac
+    case "$configured_path" in
+        *[!A-Za-z0-9_./-]*)
+            fail "configured path contains unsupported characters: $configured_path"
+            ;;
+    esac
+    case "$configured_path" in
+        */../*|*/..|*/./*|*/.)
+            fail "configured path contains a dot segment: $configured_path"
+            ;;
+    esac
+done
+case "$INSTALL_DIR" in
+    /*) ;;
+    *) fail 'installation directory must be absolute' ;;
+esac
+case "$INSTALL_DIR" in
+    *[!A-Za-z0-9_./-]*)
+        fail 'installation directory contains unsupported characters for systemd'
+        ;;
+esac
+service_file="$work_dir/subsite-monitor.service"
+sed "s|^ExecStart=/usr/local/bin/subsite-monitor service$|ExecStart=$INSTALL_DIR/subsite-monitor service|" \
+    "$service_template" >"$service_file" ||
+    fail 'could not prepare systemd unit'
+monitor_config_file="$work_dir/monitor.conf"
+sed "s|^access_log = .*|access_log = $ACCESS_LOG|" \
+    "$config_template" >"$monitor_config_file" ||
+    fail 'could not prepare monitor configuration'
 
 case "$CONFIG_FILE" in
     /*/*) ;;
@@ -107,9 +171,115 @@ elif [ -e "$CONFIG_FILE" ]; then
         chown root:root "$CONFIG_FILE" ||
             fail "cannot set configuration ownership: $CONFIG_FILE"
     fi
+    if grep -Fqx 'access_log = /var/log/nginx/subsite-monitor-access.log' \
+        "$CONFIG_FILE"; then
+        staged_config=$(mktemp "$config_dir/.monitor.conf.XXXXXX") ||
+            fail 'cannot stage monitor config migration'
+        sed "s|^access_log = /var/log/nginx/subsite-monitor-access.log$|access_log = $ACCESS_LOG|" \
+            "$CONFIG_FILE" >"$staged_config" ||
+            fail 'cannot update the legacy default access-log path'
+        chmod 0600 "$staged_config" ||
+            fail 'cannot secure migrated monitor config'
+        if [ "$(id -u)" -eq 0 ]; then
+            chown root:root "$staged_config" ||
+                fail 'cannot set migrated config ownership'
+        fi
+        mv -f "$staged_config" "$CONFIG_FILE" ||
+            fail 'cannot activate migrated monitor config'
+        staged_config=''
+    fi
 else
-    install -m 0600 "$config_template" "$CONFIG_FILE" ||
+    install -m 0600 "$monitor_config_file" "$CONFIG_FILE" ||
         fail "cannot install configuration file: $CONFIG_FILE"
+fi
+
+configured_access_log=$(sed -n 's/^access_log = //p' "$CONFIG_FILE")
+if [ -z "$configured_access_log" ]; then
+    fail "monitor config has no access_log value: $CONFIG_FILE"
+fi
+ACCESS_LOG=$configured_access_log
+case "$ACCESS_LOG" in
+    /*) ;;
+    *) fail "configured access log must be absolute: $ACCESS_LOG" ;;
+esac
+case "$ACCESS_LOG" in
+    *[!A-Za-z0-9_./-]*)
+        fail "configured access-log path contains unsupported characters: $ACCESS_LOG"
+        ;;
+esac
+case "$ACCESS_LOG" in
+    */../*|*/..|*/./*|*/.)
+        fail "configured access-log path contains a dot segment: $ACCESS_LOG"
+        ;;
+esac
+nginx_config_file="$work_dir/subsite-monitor.conf"
+sed "s|^access_log /var/log/subsite-monitor/access.log subsite_monitor;$|access_log $ACCESS_LOG subsite_monitor;|" \
+    "$nginx_format_template" >"$nginx_config_file" ||
+    fail 'could not prepare Nginx configuration snippet'
+logrotate_config_file="$work_dir/subsite-monitor.logrotate"
+sed "s|^/var/log/subsite-monitor/access.log {|$ACCESS_LOG {|" \
+    "$logrotate_template" >"$logrotate_config_file" ||
+    fail 'could not prepare logrotate configuration'
+
+nginx_config_path="$NGINX_CONF_DIR/subsite-monitor.conf"
+if [ -L "$NGINX_CONF_DIR" ]; then
+    fail 'Nginx configuration directory must not be a symbolic link'
+fi
+install -d -m 0755 "$NGINX_CONF_DIR" ||
+    fail "cannot create Nginx configuration directory: $NGINX_CONF_DIR"
+if [ -L "$nginx_config_path" ]; then
+    fail 'Nginx Subsite Monitor snippet must not be a symbolic link'
+elif [ -e "$nginx_config_path" ]; then
+    if [ ! -f "$nginx_config_path" ]; then
+        fail 'existing Nginx snippet path is not a regular file'
+    fi
+    if ! grep -Fqx "access_log $ACCESS_LOG subsite_monitor;" \
+        "$nginx_config_path"; then
+        fail "existing Nginx snippet targets a different log: $nginx_config_path"
+    fi
+else
+    install -m 0644 "$nginx_config_file" "$nginx_config_path" ||
+        fail "cannot install Nginx snippet: $nginx_config_path"
+fi
+
+log_directory=${ACCESS_LOG%/*}
+[ -n "$log_directory" ] || log_directory=/
+if [ -L "$log_directory" ]; then
+    fail 'access-log directory must not be a symbolic link'
+fi
+install -d -m 0750 "$log_directory" ||
+    fail "cannot create access-log directory: $log_directory"
+if [ "$(id -u)" -eq 0 ]; then
+    chown root:root "$log_directory" ||
+        fail "cannot set access-log directory ownership: $log_directory"
+    chmod 0750 "$log_directory" ||
+        fail "cannot secure access-log directory: $log_directory"
+fi
+
+logrotate_directory=${LOGROTATE_FILE%/*}
+install -d -m 0755 "$logrotate_directory" ||
+    fail "cannot create logrotate directory: $logrotate_directory"
+if [ -L "$LOGROTATE_FILE" ]; then
+    fail 'Subsite Monitor logrotate file must not be a symbolic link'
+elif [ -e "$LOGROTATE_FILE" ]; then
+    if [ ! -f "$LOGROTATE_FILE" ]; then
+        fail 'existing logrotate path is not a regular file'
+    fi
+    if ! grep -Fqx "$ACCESS_LOG {" "$LOGROTATE_FILE"; then
+        fail "existing logrotate policy targets a different log: $LOGROTATE_FILE"
+    fi
+else
+    install -m 0644 "$logrotate_config_file" "$LOGROTATE_FILE" ||
+        fail "cannot install logrotate policy: $LOGROTATE_FILE"
+fi
+
+install -d -m 0700 "$STATE_DIR" ||
+    fail "cannot create state directory: $STATE_DIR"
+if [ "$(id -u)" -eq 0 ]; then
+    chown root:root "$STATE_DIR" ||
+        fail "cannot set state directory ownership: $STATE_DIR"
+    chmod 0700 "$STATE_DIR" ||
+        fail "cannot secure state directory: $STATE_DIR"
 fi
 
 mkdir -p "$INSTALL_DIR" || fail "cannot create install directory: $INSTALL_DIR"
@@ -120,5 +290,16 @@ mv -f "$staged_binary" "$INSTALL_DIR/subsite-monitor" ||
     fail 'could not install executable'
 staged_binary=''
 
-printf 'Installed subsite-monitor %s to %s/subsite-monitor\n' \
-    "$VERSION" "$INSTALL_DIR"
+install -d -m 0755 "$SYSTEMD_UNIT_DIR" ||
+    fail "cannot create systemd unit directory: $SYSTEMD_UNIT_DIR"
+install -m 0644 "$service_file" \
+    "$SYSTEMD_UNIT_DIR/subsite-monitor.service" ||
+    fail 'could not install systemd unit'
+
+printf 'Installed subsite-monitor %s to %s/subsite-monitor and %s/subsite-monitor.service\n' \
+    "$VERSION" "$INSTALL_DIR" "$SYSTEMD_UNIT_DIR"
+printf 'Nginx snippet: %s\n' "$nginx_config_path"
+printf 'Access log: %s\n' "$ACCESS_LOG"
+printf 'Log rotation policy: %s\n' "$LOGROTATE_FILE"
+printf '%s\n' 'The service is installed but not enabled or started.'
+printf '%s\n' 'The installer did not edit the main Nginx configuration or reload Nginx.'

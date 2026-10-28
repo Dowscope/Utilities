@@ -1,21 +1,24 @@
 # Subsite Monitor Documentation
 
-This directory is the user and technical manual for Subsite Monitor. It will
-be kept aligned with implemented behavior as the project grows. The current implementation covers Phases 1 through 3, the ncurses screen,
-root-only settings for the access log and Nginx config, and discovery of
-configured virtual hosts, including an unavailable-log fallback. CSV persistence and incremental checkpoints remain
-planned work.
+This directory contains the user manual and technical reference. The current
+implementation covers Phases 1 through 5, the ncurses UI, root-only access-log
+configuration, Nginx virtual-host discovery, Docker-backed development, daily
+summary CSVs, paginated per-request event CSV history, and a checkpointed
+foreground service with a systemd unit. Phase 6 configuration expansion remains
+future work.
 
 ## Contents
 
-- [User manual](MANUAL.md): build, run, CLI behavior, and current limitations.
+- [User manual](MANUAL.md): build, run, CLI behavior, request-history controls,
+  storage, and current limitations.
 - [Technical reference](TECHNICAL.md): source layout, build details, exit
-  behavior, and security/design constraints.
+  behavior, CSV schema, service checkpoint design, and security constraints.
 - Docker Compose runs a local Nginx process whose config and log are shared
   with the host development app; see the user manual.
 
-The manuals reflect no-argument UI startup, root-only configuration and
-permissions, Nginx `server_name` discovery, host-aware log requirements, alpha runtime,
-and packaging details.
+The manuals cover no-argument UI startup, root-only configuration and
+permissions, Nginx `server_name` discovery, the packaged host-aware log snippet
+and its automatic loading when `conf.d/*.conf` is included inside `http { }`,
+local archive installation, and request detail privacy and storage behavior.
 
-Last reviewed: 2026-10-27.
+Last reviewed: 2026-10-28.

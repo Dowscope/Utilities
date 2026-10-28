@@ -2,6 +2,7 @@
 #include "statistics.hpp"
 
 #include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <sstream>
 #include <string_view>
@@ -18,6 +19,8 @@ void require(bool condition, std::string_view message) {
 } // namespace
 
 int main() {
+    (void)setenv("TZ", "UTC0", 1);
+    tzset();
     const subsite_monitor::StatisticsReport report =
         subsite_monitor::build_statistics("tests/fixtures/access.log");
 
@@ -38,11 +41,11 @@ int main() {
 
     subsite_monitor::StatisticsReport sort_report = report;
     sort_report.sites.emplace(
-        "a-first.test",
-        subsite_monitor::SiteStatistics{1, live->second.latest_access_utc, {}});
+        "a-first.test", subsite_monitor::SiteStatistics{
+                            1, live->second.latest_access_utc, {}, {}});
     sort_report.sites.emplace(
-        "z-last.test",
-        subsite_monitor::SiteStatistics{2, live->second.latest_access_utc, {}});
+        "z-last.test", subsite_monitor::SiteStatistics{
+                            2, live->second.latest_access_utc, {}, {}});
 
     std::ostringstream output;
     subsite_monitor::print_statistics(sort_report, output);
@@ -53,8 +56,8 @@ int main() {
                 lower_count_row != std::string::npos &&
                 higher_count_row < lower_count_row,
             "sort the site table by request count descending");
-    require(text.find("2026-10-27T14:45:32Z") != std::string::npos,
-            "select the latest instant after normalizing timezone offsets");
+    require(text.find("2026-10-27 14:45:32 +0000") != std::string::npos,
+            "display latest access in the server's configured local timezone");
     require(text.find("203.0.113.") == std::string::npos &&
                 text.find("token=hidden") == std::string::npos,
             "omit client IPs and request targets from the report");

@@ -1,5 +1,7 @@
 #!/bin/sh
 set -eu
+TZ=UTC0
+export TZ
 
 program=${1:-./subsite-monitor}
 tmp_dir=$(mktemp -d)
@@ -11,9 +13,10 @@ grep -q -- '--version' "$tmp_dir/help.txt"
 grep -q 'With no arguments, open the UI' "$tmp_dir/help.txt"
 grep -q 'collect --log <path>' "$tmp_dir/help.txt"
 grep -q 'stats --log <path>' "$tmp_dir/help.txt"
+grep -q 'stats \[--days <count>\]' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.4' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.5' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2
@@ -52,19 +55,45 @@ if command -v script >/dev/null 2>&1; then
     grep -q 'alpha.example.test' "$tmp_dir/ui-missing-log.txt"
     grep -q 'Access log unavailable; showing configured sites only.' \
         "$tmp_dir/ui-missing-log.txt"
+
+    printf 'j\nq' | TERM=xterm \
+        SUBSITE_MONITOR_LOG=tests/fixtures/access.log \
+        SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
+        SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-stats" \
+        script -q -e -c "$program" /dev/null >"$tmp_dir/ui-history.txt"
+    grep -q 'HISTORY' "$tmp_dir/ui-history.txt"
+    grep -q '203.0.113.11' "$tmp_dir/ui-history.txt"
+    grep -q '/private?token=hidden' "$tmp_dir/ui-history.txt"
 fi
 
-"$program" collect --log tests/fixtures/access.log >"$tmp_dir/collect.txt"
+"$program" collect --log tests/fixtures/access.log \
+    --stats-dir "$tmp_dir/stats" >"$tmp_dir/collect.txt"
 grep -q '^Parsed records: 5$' "$tmp_dir/collect.txt"
 grep -q '^Malformed lines: 2$' "$tmp_dir/collect.txt"
+grep -q '/private?token=hidden,404' \
+    "$tmp_dir/stats/requests-2026-10-27.csv"
+grep -q '203.0.113.11' "$tmp_dir/stats/requests-2026-10-27.csv"
 if grep -Eq '203\.0\.113|/private\?' "$tmp_dir/collect.txt"; then
     echo 'collect output must not expose client IPs or request targets' >&2
     exit 1
 fi
 
+"$program" collect --log tests/fixtures/access.log \
+    --stats-dir "$tmp_dir/stats" >"$tmp_dir/collect-repeat.txt"
+"$program" stats --stats-dir "$tmp_dir/stats" >"$tmp_dir/stored-stats.txt"
+grep -q 'live.lakeheadschools.ca.*4' "$tmp_dir/stored-stats.txt"
+grep -q 'test.lakeheadschools.ca.*1' "$tmp_dir/stored-stats.txt"
+"$program" stats --days 1 --stats-dir "$tmp_dir/stats" \
+    >"$tmp_dir/recent-stats.txt"
+grep -q '2026-10-27' "$tmp_dir/recent-stats.txt"
+if grep -q '2026-10-26' "$tmp_dir/recent-stats.txt"; then
+    echo 'stats --days 1 should limit output to the newest stored date' >&2
+    exit 1
+fi
+
 "$program" stats --log tests/fixtures/access.log >"$tmp_dir/stats.txt"
-grep -q 'Website.*Requests.*Last access (UTC)' "$tmp_dir/stats.txt"
-grep -q '2026-10-27T14:45:32Z' "$tmp_dir/stats.txt"
+grep -q 'Website.*Requests.*Last access (server time)' "$tmp_dir/stats.txt"
+grep -q '2026-10-27 14:45:32 +0000' "$tmp_dir/stats.txt"
 grep -q 'Daily requests by website' "$tmp_dir/stats.txt"
 grep -q '^Malformed lines: 2$' "$tmp_dir/stats.txt"
 if grep -Eq '203\.0\.113|/private\?' "$tmp_dir/stats.txt"; then
@@ -72,14 +101,15 @@ if grep -Eq '203\.0\.113|/private\?' "$tmp_dir/stats.txt"; then
     exit 1
 fi
 
-if "$program" stats >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
-    echo 'expected stats without a log path to fail at this stage' >&2
+if "$program" stats --days 0 --stats-dir "$tmp_dir/stats" \
+    >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
+    echo 'expected zero days to be rejected' >&2
     exit 1
 else
     status=$?
 fi
 [ "$status" -eq 2 ]
-grep -q 'stats currently requires --log <path>' "$tmp_dir/error.txt"
+grep -q -- '--days must be an integer' "$tmp_dir/error.txt"
 
 if "$program" ui --log tests/fixtures/access.log \
     >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
@@ -107,13 +137,15 @@ grep -q 'too many distinct websites' "$tmp_dir/error.txt"
 
 awk 'BEGIN { for (i = 0; i < 17000; ++i) printf "x"; printf "\n" }' \
     >"$tmp_dir/oversized.log"
-"$program" collect --log "$tmp_dir/oversized.log" >"$tmp_dir/oversized.txt"
+"$program" collect --log "$tmp_dir/oversized.log" \
+    --stats-dir "$tmp_dir/stats" >"$tmp_dir/oversized.txt"
 grep -q '^Parsed records: 0$' "$tmp_dir/oversized.txt"
 grep -q '^Malformed lines: 1$' "$tmp_dir/oversized.txt"
 
 printf '%s' '2026-10-27T14:45:32+00:00 example.test 192.0.2.1 "GET / HTTP/1.1" 200' \
     >"$tmp_dir/no-final-newline.log"
 "$program" collect --log "$tmp_dir/no-final-newline.log" \
+    --stats-dir "$tmp_dir/stats" \
     >"$tmp_dir/no-final-newline.txt"
 grep -q '^Parsed records: 1$' "$tmp_dir/no-final-newline.txt"
 grep -q '^Malformed lines: 0$' "$tmp_dir/no-final-newline.txt"

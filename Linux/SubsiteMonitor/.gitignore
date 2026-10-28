@@ -5,6 +5,7 @@
 /tests/test_statistics
 /tests/test_config
 /tests/test_nginx_config
+/tests/test_storage
 /packaging/dist/
 /.env
 /docker-data/

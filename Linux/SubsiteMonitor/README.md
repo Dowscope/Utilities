@@ -1,15 +1,14 @@
 # Subsite Monitor
 
-Next alpha under development: **0.1.0-alpha.4**. The latest published alpha is
+Next alpha under development: **0.1.0-alpha.5**. The latest published alpha is
 **0.1.0-alpha.3**. Release binaries target x86_64 Linux on Debian, Ubuntu, and
 Arch, statically link ncursesw and the C++ runtime, and use host terminfo for
 the terminal UI.
 
 A small C++ command-line utility for monitoring website activity from web-server
-access logs. It streams the documented Nginx log format, reports per-site and
-daily statistics, and provides an ncurses screen. Its default UI uses a
-root-only access-log configuration. CSV history and persistent checkpoints
-remain planned work.
+access logs. It streams the documented Nginx log format, stores private daily
+CSV statistics, and provides an ncurses screen with per-site summaries and request-level
+history. Its default UI uses a root-only access-log configuration.
 
 ## Build and test
 
@@ -39,10 +38,11 @@ design. [Prompt.md](Prompt.md) preserves the project handoff brief,
 [Changelog.md](Changelog.md) records changes, and [TODO.md](TODO.md) tracks
 approved future work.
 
-`./verify.sh` and `./packaging/build-alpha.sh` passed on 2026-10-27. The clean
-C++23 build and parser/statistics/config/Nginx-config/CLI tests passed without
-compiler warnings. The alpha.3 package and installer checks passed. Alpha.4
-keeps configured sites visible if the selected access log is unavailable.
+`./verify.sh` and `./packaging/build-alpha.sh` passed on 2026-10-28. The clean
+C++23 build, parser/statistics/config/Nginx-config/storage/CLI/service and
+installer-template tests passed without compiler warnings. The local alpha.5
+archive and its checksum-pinned installers were rebuilt. Alpha.5 keeps
+configured sites visible if the selected access log is unavailable.
 See `packaging/README.md` for alpha build and release steps.
 
 ## Current CLI
@@ -52,20 +52,28 @@ subsite-monitor --help
 subsite-monitor --version
 sudo subsite-monitor
 subsite-monitor collect --log /path/to/access.log
+subsite-monitor stats
+subsite-monitor stats --days 7
 subsite-monitor stats --log /path/to/access.log
+sudo subsite-monitor service
 sudo subsite-monitor ui
 subsite-monitor ui --log /path/to/access.log
 ```
 
-`collect` prints the number of parsed and malformed lines. It does not print
-request targets or client addresses. See the [manual](Docs/MANUAL.md) for the
-supported Nginx format, parser limits, and statistics report. The current
-`stats` command reads one log directly, with caps of 10,000 distinct websites
-and 100,000 website/date pairs; CSV-backed history is a later step.
+`collect` prints parsed and malformed line counts and writes daily summary
+CSVs plus a daily event CSV containing every valid request. `stats` reads the
+summary snapshots; `--days N` limits output to the newest N dates with stored
+data. The UI shows each stored request, including its full URL and client IP.
+See the [manual](Docs/MANUAL.md) for storage details and limits.
+
+`service` follows the configured log in the foreground and appends new request
+rows and summary counts to the CSV store. `make install` also installs a
+systemd unit; it does not enable or start it. See the manual for the initial
+backfill choice, systemd commands, and rotation requirements.
 
 With no arguments, the application opens the interactive UI using the
 root-only configuration. It defaults to
-`/var/log/nginx/subsite-monitor-access.log`; edit the config with
+`/var/log/subsite-monitor/access.log`; edit the config with
 `sudoedit /etc/subsite-monitor/monitor.conf`. The log must use the documented
 host-aware Nginx format for per-site activity. The UI reads `server_name`
 directives from the configured Nginx config and its includes, then merges those
@@ -76,7 +84,12 @@ listed; regex names and `_` are skipped. Use `SUBSITE_MONITOR_LOG` and
 to select another root-only config.
 
 The `ui` command uses the same configuration, or accepts `--log <path>` as an
-override. Use the arrow keys or `j`/`k` to select a site, `r` to reread the log,
+override. Use the arrow keys or `j`/`k` to select a site. Enter opens every stored
+request for that site, including server-local timestamp with offset, client IP, method, status, and
+full request target (path and query). The site name is shown above; the current
+log format does not record the scheme. Use up/down to navigate, left/right to
+inspect long targets, Page
+Up/Down to move through pages, and Escape to return. Press `r` to reread the log
 and `q` to quit. It requires a real interactive terminal. For sample data,
 run:
 
@@ -91,7 +104,11 @@ to `subsite-monitor`, allowing CLI commands or a different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.3 is the latest published release; alpha.4 is
+`packaging/README.md`. Alpha.3 is the latest published release; alpha.5 is
 under development. Release binaries target Debian, Ubuntu, and Arch on x86_64.
-The installer seeds and preserves the root-only monitor config but does not
-install system packages or change Nginx configuration.
+The installer seeds the root-only monitor config and installs a host-aware
+snippet at `/etc/nginx/conf.d/subsite-monitor.conf`, a logrotate policy, and the
+systemd unit. The snippet loads when the main Nginx config includes
+`conf.d/*.conf` inside `http { }`; verify with `sudo nginx -T`. The installer
+does not edit the main Nginx config, reload Nginx, or enable the service. The
+default monitored log is `/var/log/subsite-monitor/access.log`.

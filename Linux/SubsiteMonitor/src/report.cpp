@@ -1,6 +1,7 @@
 #include "report.hpp"
 
 #include <algorithm>
+#include <ctime>
 #include <iomanip>
 #include <ostream>
 #include <sstream>
@@ -27,6 +28,24 @@ std::string format_timestamp_utc(std::chrono::sys_seconds timestamp) {
     return output.str();
 }
 
+std::string format_timestamp_local(std::chrono::sys_seconds timestamp) {
+    const auto clock_time = std::chrono::time_point_cast<
+        std::chrono::system_clock::duration>(timestamp);
+    const std::time_t raw_time = std::chrono::system_clock::to_time_t(clock_time);
+    std::tm local_time{};
+    if (localtime_r(&raw_time, &local_time) == nullptr) {
+        return "unavailable";
+    }
+    char buffer[40]{};
+    const std::size_t length =
+        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S %z",
+                      &local_time);
+    if (length == 0U) {
+        return "unavailable";
+    }
+    return std::string{buffer, length};
+}
+
 void print_statistics(const StatisticsReport& report, std::ostream& output) {
     std::vector<std::pair<std::string_view, const SiteStatistics*>> sites;
     sites.reserve(report.sites.size());
@@ -44,13 +63,13 @@ void print_statistics(const StatisticsReport& report, std::ostream& output) {
 
     output << std::left << std::setw(static_cast<int>(hostname_width))
            << "Website" << "  " << std::right << std::setw(8) << "Requests"
-           << "  Last access (UTC)\n";
+           << "  Last access (server time)\n";
     output << std::string(hostname_width + 31, '-') << '\n';
     for (const auto& [hostname, statistics] : sites) {
         output << std::left << std::setw(static_cast<int>(hostname_width))
                << hostname << "  " << std::right << std::setw(8)
                << statistics->requests << "  "
-               << format_timestamp_utc(statistics->latest_access_utc) << '\n';
+               << format_timestamp_local(statistics->latest_access_utc) << '\n';
     }
 
     output << "\nDaily requests by website (date from access log)\n"

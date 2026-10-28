@@ -13,11 +13,14 @@ constexpr std::size_t max_site_day_buckets = 100000;
 
 } // namespace
 
-StatisticsReport build_statistics(const std::filesystem::path& path) {
+StatisticsReport build_statistics(
+    const std::filesystem::path& path,
+    const std::function<void(const AccessLogEntry&)>& on_record) {
     StatisticsReport report;
     std::size_t daily_bucket_count = 0;
     const CollectionSummary summary = scan_log(
-        path, [&report, &daily_bucket_count](const AccessLogEntry& entry) {
+        path, [&report, &daily_bucket_count, &on_record](
+                  const AccessLogEntry& entry) {
             auto site_position = report.sites.find(entry.hostname);
             if (site_position == report.sites.end()) {
                 if (report.sites.size() >= max_sites) {
@@ -45,6 +48,14 @@ StatisticsReport build_statistics(const std::filesystem::path& path) {
                 ++daily_bucket_count;
             }
             ++day_position->second;
+            auto latest_day_position = site.latest_access_by_day.find(date);
+            if (latest_day_position == site.latest_access_by_day.end() ||
+                entry.timestamp_utc > latest_day_position->second) {
+                site.latest_access_by_day[date] = entry.timestamp_utc;
+            }
+            if (on_record) {
+                on_record(entry);
+            }
         });
     report.malformed_lines = summary.malformed_lines;
     return report;

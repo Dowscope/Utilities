@@ -1,0 +1,5 @@
+# Installed as /etc/nginx/conf.d/subsite-monitor.conf. Nginx must include
+# conf.d/*.conf from inside http { }; this is the default on common packages.
+# Server blocks with their own access_log directive override this shared log.
+log_format subsite_monitor '$time_iso8601 $host $remote_addr "$request" $status';
+access_log /var/log/subsite-monitor/access.log subsite_monitor;

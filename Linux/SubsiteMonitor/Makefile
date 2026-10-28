@@ -9,21 +9,26 @@ CPPFLAGS += $(NCURSES_CFLAGS)
 LDLIBS += $(NCURSES_LIBS)
 
 TARGET := subsite-monitor
-VERSION := 0.1.0-alpha.4
+VERSION := 0.1.0-alpha.5
 CPPFLAGS += -DSUBSITE_MONITOR_VERSION='"$(VERSION)"'
 SOURCES := src/main.cpp src/config.cpp src/nginx_config.cpp src/collector.cpp src/log_parser.cpp \
-	src/statistics.cpp src/report.cpp src/tui.cpp
+	src/statistics.cpp src/storage.cpp src/service.cpp src/report.cpp src/tui.cpp
 OBJECTS := $(SOURCES:.cpp=.o)
 DEPS := $(OBJECTS:.o=.d)
 PARSER_TEST := tests/test_parser
 STATISTICS_TEST := tests/test_statistics
 CONFIG_TEST := tests/test_config
 NGINX_CONFIG_TEST := tests/test_nginx_config
+STORAGE_TEST := tests/test_storage
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 SYSCONFDIR ?= /etc
 CONFIGDIR ?= $(SYSCONFDIR)/subsite-monitor
 CONFIGFILE ?= $(CONFIGDIR)/monitor.conf
+SYSTEMD_UNITDIR ?= /usr/lib/systemd/system
+STATEDIR ?= /var/lib/subsite-monitor
+NGINX_CONFDIR ?= /etc/nginx/conf.d
+LOGROTATEDIR ?= /etc/logrotate.d
 
 .PHONY: all clean test debug install
 
@@ -51,25 +56,54 @@ $(CONFIG_TEST): tests/test_config.cpp src/config.o
 $(NGINX_CONFIG_TEST): tests/test_nginx_config.cpp src/nginx_config.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
-test: $(TARGET) $(PARSER_TEST) $(STATISTICS_TEST) $(CONFIG_TEST) $(NGINX_CONFIG_TEST)
+$(STORAGE_TEST): tests/test_storage.cpp src/storage.o src/statistics.o \
+	src/report.o src/collector.o src/log_parser.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
+test: $(TARGET) $(PARSER_TEST) $(STATISTICS_TEST) $(CONFIG_TEST) \
+	$(NGINX_CONFIG_TEST) $(STORAGE_TEST)
 	./$(PARSER_TEST)
 	./$(STATISTICS_TEST)
 	./$(CONFIG_TEST)
 	./$(NGINX_CONFIG_TEST)
+	./$(STORAGE_TEST)
 	sh ./tests/test_cli.sh ./$(TARGET)
+	sh ./tests/test_service.sh ./$(TARGET)
+	sh ./tests/test_installer_template.sh ./$(TARGET)
 
 install: $(TARGET)
 	install -Dm755 $(TARGET) "$(DESTDIR)$(BINDIR)/$(TARGET)"
+	install -Dm644 systemd/subsite-monitor.service \
+		"$(DESTDIR)$(SYSTEMD_UNITDIR)/subsite-monitor.service"
+	install -d -m700 "$(DESTDIR)$(STATEDIR)"
 	install -d -m700 "$(DESTDIR)$(CONFIGDIR)"
-	if [ ! -e "$(DESTDIR)$(CONFIGFILE)" ]; then \
+	set -e; if [ ! -e "$(DESTDIR)$(CONFIGFILE)" ]; then \
 		install -m600 config/monitor.conf.example \
 			"$(DESTDIR)$(CONFIGFILE)"; \
+	elif grep -Fqx 'access_log = /var/log/nginx/subsite-monitor-access.log' \
+		"$(DESTDIR)$(CONFIGFILE)"; then \
+		migrated_config="$(DESTDIR)$(CONFIGFILE).tmp.$$$$"; \
+		sed 's|^access_log = /var/log/nginx/subsite-monitor-access.log$$|access_log = /var/log/subsite-monitor/access.log|' \
+			"$(DESTDIR)$(CONFIGFILE)" >"$$migrated_config"; \
+		chmod 600 "$$migrated_config"; \
+		mv -f "$$migrated_config" "$(DESTDIR)$(CONFIGFILE)"; \
 	else \
 		chmod 600 "$(DESTDIR)$(CONFIGFILE)"; \
+	fi
+	install -d -m750 "$(DESTDIR)/var/log/subsite-monitor"
+	install -d -m755 "$(DESTDIR)$(NGINX_CONFDIR)" \
+		"$(DESTDIR)$(LOGROTATEDIR)"
+	if [ ! -e "$(DESTDIR)$(NGINX_CONFDIR)/subsite-monitor.conf" ]; then \
+		install -m644 config/nginx-log-format.conf.example \
+			"$(DESTDIR)$(NGINX_CONFDIR)/subsite-monitor.conf"; \
+	fi
+	if [ ! -e "$(DESTDIR)$(LOGROTATEDIR)/subsite-monitor" ]; then \
+		install -m644 config/subsite-monitor.logrotate \
+			"$(DESTDIR)$(LOGROTATEDIR)/subsite-monitor"; \
 	fi
 
 clean:
 	rm -f $(TARGET) $(OBJECTS) $(DEPS) $(PARSER_TEST) $(STATISTICS_TEST) \
-		$(CONFIG_TEST) $(NGINX_CONFIG_TEST)
+		$(CONFIG_TEST) $(NGINX_CONFIG_TEST) $(STORAGE_TEST)
 
 -include $(DEPS)

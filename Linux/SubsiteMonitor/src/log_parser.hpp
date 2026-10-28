@@ -23,4 +23,8 @@ struct AccessLogEntry {
 [[nodiscard]] std::optional<AccessLogEntry> parse_access_log_line(
     std::string_view line);
 
+// Parses the UTC timestamp shape written to statistics CSV files.
+[[nodiscard]] std::optional<std::chrono::sys_seconds> parse_utc_timestamp(
+    std::string_view value);
+
 } // namespace subsite_monitor

@@ -302,4 +302,18 @@ std::optional<AccessLogEntry> parse_access_log_line(std::string_view line) {
                           static_cast<std::uint16_t>(status)};
 }
 
+std::optional<std::chrono::sys_seconds> parse_utc_timestamp(
+    std::string_view value) {
+    if (value.size() != 20 || value.back() != 'Z') {
+        return std::nullopt;
+    }
+    std::string timestamp{value.substr(0, 19)};
+    timestamp += "+00:00";
+    std::chrono::sys_seconds result{};
+    if (!parse_timestamp(timestamp, result)) {
+        return std::nullopt;
+    }
+    return result;
+}
+
 } // namespace subsite_monitor
