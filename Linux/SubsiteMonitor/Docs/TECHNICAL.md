@@ -39,8 +39,11 @@ staging root to install paths. It creates `/var/log/subsite-monitor` mode 0750,
 installs the Nginx snippet to `/etc/nginx/conf.d/subsite-monitor.conf`, and
 installs a separate `/etc/logrotate.d/subsite-monitor` policy. The snippet is
 automatically loaded when the main Nginx config includes `conf.d/*.conf` from
-inside `http { }`; the installer does not edit that main config or reload
-Nginx. Existing snippets and logrotate files are preserved.
+inside `http { }`; the installer does not edit the main config. The release
+installer tests Nginx, checks that the
+snippet appears in `nginx -T`, and reloads `nginx.service` when active. It skips
+the validation/reload when Nginx is not installed, and leaves an inactive
+service stopped. Existing snippets and logrotate files are preserved.
 
 ## CLI and process behavior
 

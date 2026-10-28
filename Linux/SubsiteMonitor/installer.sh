@@ -296,10 +296,29 @@ install -m 0644 "$service_file" \
     "$SYSTEMD_UNIT_DIR/subsite-monitor.service" ||
     fail 'could not install systemd unit'
 
+if command -v nginx >/dev/null 2>&1; then
+    nginx -t || fail 'Nginx configuration test failed; Nginx was not reloaded'
+    nginx_dump="$work_dir/nginx-config.txt"
+    nginx -T >"$nginx_dump" 2>&1 ||
+        fail 'could not inspect the active Nginx configuration'
+    if ! grep -Fq "# configuration file $nginx_config_path:" "$nginx_dump"; then
+        fail "Nginx did not load $nginx_config_path; ensure conf.d/*.conf is included inside http {}"
+    fi
+    if command -v systemctl >/dev/null 2>&1 &&
+        systemctl is-active --quiet nginx.service; then
+        systemctl reload nginx.service || fail 'Nginx reload failed'
+        printf '%s\n' 'Nginx configuration validated and nginx.service reloaded.'
+    else
+        printf '%s\n' 'Nginx configuration validated; nginx.service is not active, so it was not reloaded.'
+    fi
+else
+    printf '%s\n' 'Nginx is not installed; configuration test and reload were skipped.'
+fi
+
 printf 'Installed subsite-monitor %s to %s/subsite-monitor and %s/subsite-monitor.service\n' \
     "$VERSION" "$INSTALL_DIR" "$SYSTEMD_UNIT_DIR"
 printf 'Nginx snippet: %s\n' "$nginx_config_path"
 printf 'Access log: %s\n' "$ACCESS_LOG"
 printf 'Log rotation policy: %s\n' "$LOGROTATE_FILE"
 printf '%s\n' 'The service is installed but not enabled or started.'
-printf '%s\n' 'The installer did not edit the main Nginx configuration or reload Nginx.'
+printf '%s\n' 'The installer did not edit the main Nginx configuration.'

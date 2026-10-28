@@ -97,16 +97,16 @@ web server. A local alpha.5 installer/package now prepares the executable,
 root-only monitor config, private state/log directories, Nginx `conf.d` snippet,
 logrotate policy, and disabled systemd unit. It accepts a checksum-verified
 local archive for pre-release testing. It deliberately does not edit the main
-Nginx config, reload Nginx, enable the service, or deploy to a server without
-explicit authorization. The alpha.5 release is not published.
+Nginx config; it validates the config and reloads `nginx.service` when active.
+It does not start an inactive Nginx or monitor service. Alpha.5 was published
+by the user for server testing; no production deployment is implied.
 
 ## Current handoff state
 
-- Current local development version is `0.1.0-alpha.5`; alpha.3 remains the
-  latest published release. The user asked to add a continuously running
-  CSV-updating
-  service and systemd unit; the unit must not be enabled on this development
-  host or a production host as part of implementation.
+- Current version is `0.1.0-alpha.5`, published for server testing. The user
+  asked to add a continuously running CSV-updating service and systemd unit;
+  the unit must not be enabled on this development host or a production host
+  as part of implementation.
 - Phases 1 through 5 are implemented locally: C++23 CLI, bounded streaming
   Nginx parser, per-site/daily aggregation, Docker-backed development, root-only
   log configuration and virtual-host inventory, private daily summary CSVs, and
@@ -141,11 +141,16 @@ explicit authorization. The alpha.5 release is not published.
   active; the UI reads stored data and refreshes on `r`.
 - `./verify.sh` and `./packaging/build-alpha.sh` passed on 2026-10-28 with
   parser, statistics, config, Nginx config, storage, CLI, service, and
-  installer-template tests. The C++23 build had no warnings. The local static
-  alpha.5 archive and installers are current; archive SHA-256 is
-  `c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c`. The
-  archive includes the systemd unit, Nginx snippet, and logrotate policy. No
-  alpha.5 release has been published; alpha.3 remains latest published.
+  installer-template tests. The C++23 build had no warnings. The local rebuilt
+  alpha.5 package (with refreshed documentation) has SHA-256
+  `9e61dcdb3dc952388c7cada441062e7ff1e6f949a1e0aec3954a9d1a4aef566d`; the
+  archive includes the systemd unit, Nginx snippet, and logrotate policy. The
+  already published alpha.5 archive remains SHA-256
+  `c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c`.
+  `installer.sh` and `install.sh` are rendered with the new Nginx validation
+  and reload behavior while pinned to that existing release asset. The
+  published alpha.5 archive was downloaded and checksum-verified against the
+  release's `SHA256SUMS`.
 - `./run-dev.sh` with no arguments builds and opens the UI, preferring the
   Docker-generated Nginx log/config when present and otherwise using fixtures.
   Start the fixture in another terminal with `sudo ./run-docker.sh`.
@@ -153,16 +158,18 @@ explicit authorization. The alpha.5 release is not published.
   pending phases. When the user says `commit`, update all Markdown, commit, and
   push to the configured GitHub origin. Do not release without approval.
 
-The user has explicitly requested a commit and push for the current prepared
-server-test integration and documentation refresh. No release or server
-installation is authorized by that request.
+The server-test integration and installer changes are maintained in this
+repository. The release installer validates Nginx and reloads its active
+systemd service. No server installation has been performed by the developer.
 
 The staged `make install` and `systemd-analyze verify` checks passed. The
-installer places the access log at `/var/log/subsite-monitor/access.log` by
-default and installs its snippet in `/etc/nginx/conf.d`. Nginx loads the snippet
-when the main config includes `conf.d/*.conf` inside `http { }`; confirm with
-`sudo nginx -T`, then validate with `sudo nginx -t` and reload manually. The
-installer does not edit or reload the main Nginx config, or start the service.
-Use the local archive option for pre-release server testing. Phase 6 remains
-future work. Validate on the subsites server before enabling the service; do
-not publish a release without explicit approval.
+release installer places the access log at
+`/var/log/subsite-monitor/access.log` by default and installs its snippet in
+`/etc/nginx/conf.d`. Nginx loads the snippet when the main config includes
+`conf.d/*.conf` inside `http { }`. When Nginx is installed, the installer runs
+`nginx -t`, confirms the snippet appears in `nginx -T`, then reloads
+`nginx.service` if active. It does not edit the main config or start an
+inactive Nginx service. Use the local archive option for pre-release server
+testing. Phase 6 remains future work. Validate on the subsites server before
+enabling the monitor service; do not publish another release without explicit
+approval.

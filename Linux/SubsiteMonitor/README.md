@@ -1,9 +1,8 @@
 # Subsite Monitor
 
-Next alpha under development: **0.1.0-alpha.5**. The latest published alpha is
-**0.1.0-alpha.3**. Release binaries target x86_64 Linux on Debian, Ubuntu, and
-Arch, statically link ncursesw and the C++ runtime, and use host terminfo for
-the terminal UI.
+Current release: **0.1.0-alpha.5**. Release binaries target x86_64 Linux on
+Debian, Ubuntu, and Arch, statically link ncursesw and the C++ runtime, and use
+host terminfo for the terminal UI.
 
 A small C++ command-line utility for monitoring website activity from web-server
 access logs. It streams the documented Nginx log format, stores private daily
@@ -104,11 +103,12 @@ to `subsite-monitor`, allowing CLI commands or a different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.3 is the latest published release; alpha.5 is
-under development. Release binaries target Debian, Ubuntu, and Arch on x86_64.
+`packaging/README.md`. Alpha.5 is the current published release. Release
+binaries target Debian, Ubuntu, and Arch on x86_64.
 The installer seeds the root-only monitor config and installs a host-aware
 snippet at `/etc/nginx/conf.d/subsite-monitor.conf`, a logrotate policy, and the
 systemd unit. The snippet loads when the main Nginx config includes
-`conf.d/*.conf` inside `http { }`; verify with `sudo nginx -T`. The installer
-does not edit the main Nginx config, reload Nginx, or enable the service. The
+`conf.d/*.conf` inside `http { }`. The installer checks that include, tests the
+Nginx configuration, and reloads `nginx.service` when it is active. It does not
+edit the main Nginx config, start Nginx, or enable the monitor service. The
 default monitored log is `/var/log/subsite-monitor/access.log`.

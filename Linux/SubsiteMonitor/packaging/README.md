@@ -1,7 +1,7 @@
 # Alpha Release Packaging
 
-`0.1.0-alpha.3` is the latest published alpha. Alpha.5 is under development
-and includes configured-site fallback and continuous CSV collection. The
+`0.1.0-alpha.5` is the current published alpha and includes configured-site
+fallback and continuous CSV collection. The
 alpha.5 build targets x86_64 Linux. The executable statically links
 ncursesw, libstdc++, libgcc, and glibc; the UI still uses host terminfo. Static
 glibc binaries have portability tradeoffs. This build has only been exercised
@@ -28,8 +28,11 @@ directory. It creates private state and log directories, installs the snippet
 under `/etc/nginx/conf.d`, the rotation policy under `/etc/logrotate.d`, and the
 service unit under `/usr/lib/systemd/system`. It migrates the previous default
 log path while preserving custom config and existing snippet/rotation files.
-It does not edit the main Nginx config, reload Nginx or systemd, or enable or
-start the service.
+It does not edit the main Nginx config or enable/start the monitor service.
+When Nginx is installed, it runs `nginx -t`, verifies the snippet appears in
+`nginx -T`, and reloads `nginx.service` when active. It does not start an
+inactive Nginx service. `make install` only installs the files and does not
+test or reload Nginx.
 For pre-release testing, pass the matching local archive as
 `SUBSITE_MONITOR_ARCHIVE=/path/to/archive`; the installer still checks its
 embedded SHA-256 and does not require the GitHub release asset to exist.
@@ -46,10 +49,12 @@ set `SUBSITE_MONITOR_INSTALL_DIR` for another executable destination. Set
 
 The root installer script is published from
 `https://raw.githubusercontent.com/Dowscope/Utilities/main/Linux/SubsiteMonitor/installer.sh`.
-The script URL reflects pushed source changes. The current alpha.5 archive and
-installer are local pre-release artifacts; no GitHub release has been created
-for them. A public installation requires attaching the matching archive and
-checksum manifest to the release before publication.
+The script URL reflects pushed source changes. The published alpha.5 archive
+has SHA-256
+`c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c`; the
+current Git installer is pinned to that artifact. The local rebuild includes
+refreshed documentation and has a different checksum. Replacing the published
+archive requires updating `SHA256SUMS` and the installer pin together.
 
 The build host is Arch Linux. No Debian or Ubuntu environment is available in
 this checkout, so validate on those systems before production use.

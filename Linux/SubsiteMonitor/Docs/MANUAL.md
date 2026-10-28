@@ -41,9 +41,9 @@ installs the executable under `/usr/local/bin` and seeds
 installs `subsite-monitor.service` under `/usr/lib/systemd/system`; installation
 creates `/var/lib/subsite-monitor` with mode 0700, and does not enable or start
 the service. It installs `/etc/nginx/conf.d/subsite-monitor.conf` and
-`/etc/logrotate.d/subsite-monitor`, but does not edit the main Nginx config or
-reload Nginx. The snippet loads only if the main config includes
-`conf.d/*.conf` inside `http { }`. Set `STATEDIR` to change the state root.
+`/etc/logrotate.d/subsite-monitor`; `make install` does not test or reload
+Nginx. The snippet loads only if the main config includes `conf.d/*.conf`
+inside `http { }`. Set `STATEDIR` to change the state root.
 
 The helper scripts provide common local workflows:
 
@@ -251,16 +251,17 @@ adds `/etc/logrotate.d/subsite-monitor`, which rotates this file daily, keeps
 14 rotations, delays compression for one rotation, and asks the Nginx systemd
 service to reopen its logs.
 
-The installer does not edit the main Nginx configuration or reload Nginx.
-Check that your main config includes `/etc/nginx/conf.d/*.conf` from the
-`http { }` context. Use `nginx -T` to confirm the snippet is loaded. A server
-block with its own `access_log` directive overrides the shared log, so update
-that block to use the `subsite_monitor` format if you need its requests.
-Validate the complete configuration and reload Nginx yourself:
+The release installer does not edit the main Nginx configuration. It runs
+`nginx -t`, checks `nginx -T` to confirm the snippet was loaded, and reloads
+`nginx.service` if systemd reports that it is active. If Nginx is missing or
+inactive, the installer reports that it skipped validation/reload as
+applicable; it does not start Nginx. Confirm the include is in the `http { }`
+context with `sudo nginx -T`. A server block with its own `access_log`
+directive overrides the shared log, so update that block to use the
+`subsite_monitor` format if you need its requests.
 
 ```sh
-sudo nginx -t
-sudo systemctl reload nginx
+sudo nginx -T
 ```
 
 The app does not modify existing virtual-host files. The monitor log is a new,
@@ -313,13 +314,13 @@ sudo env SUBSITE_MONITOR_ARCHIVE=/tmp/subsite-monitor-0.1.0-alpha.5-linux-x86_64
 The installer preserves an existing monitor config, Nginx snippet, and
 logrotate policy. It migrates the previous default log path to
 `/var/log/subsite-monitor/access.log`, but preserves custom paths. It does not
-enable the service, edit the main Nginx configuration, or reload Nginx. Check
-that the `conf.d/*.conf` include is inside `http { }`, confirm the snippet is
-loaded, then validate and reload Nginx yourself:
+enable the monitor service or edit the main Nginx configuration. When Nginx is
+installed, the installer tests its configuration, confirms the snippet is
+included, and reloads `nginx.service` if active. It leaves an inactive Nginx
+service stopped. Check the installation output and inspect the loaded config:
 
 ```sh
-sudo nginx -t
-sudo systemctl reload nginx
+sudo nginx -T
 sudo logrotate -d /etc/logrotate.d/subsite-monitor
 ```
 

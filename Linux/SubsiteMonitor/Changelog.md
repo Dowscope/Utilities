@@ -22,6 +22,22 @@
   `c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c`. No
   server deployment or GitHub release was performed.
 
+### Installer validates and reloads Nginx — 2026-10-28T16:27:09-04:00
+
+- Updated the release installer to run `nginx -t`, confirm the Subsite Monitor
+  snippet appears in `nginx -T`, then reload `nginx.service` when active. It
+  leaves an inactive service stopped and reports when Nginx is unavailable.
+- Added installer integration coverage for active and inactive Nginx service
+  states, and refreshed the user, technical, packaging, and handoff docs.
+- `./verify.sh` and the alpha.5 package build passed with no compiler warnings.
+  The locally rebuilt archive with updated documentation has SHA-256
+  `9e61dcdb3dc952388c7cada441062e7ff1e6f949a1e0aec3954a9d1a4aef566d`. The
+  existing published archive was downloaded and verified at SHA-256
+  `c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c`; the Git
+  installer scripts are pinned to that existing release asset, so it does not
+  need replacement for the installer change. The refreshed Git installer is
+  ready for server testing once these changes are pushed.
+
 ### Documentation and verification update — 2026-10-27T11:42:32-04:00
 
 - Refreshed the project handoff, user manual, technical reference, README, and

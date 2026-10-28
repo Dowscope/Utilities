@@ -27,9 +27,38 @@ cp "$TEST_RELEASE_ARCHIVE" "$output"
 MOCK_CURL
 chmod 0755 "$tmp_dir/mock-bin/curl"
 
+cat >"$tmp_dir/mock-bin/nginx" <<'MOCK_NGINX'
+#!/bin/sh
+set -eu
+printf '%s\n' "$*" >>"${TEST_NGINX_CALLS:-/dev/null}"
+case "$1" in
+    -t) exit 0 ;;
+    -T)
+        printf '# configuration file %s/subsite-monitor.conf:\n' \
+            "$SUBSITE_MONITOR_NGINX_CONF_DIR"
+        ;;
+    *) exit 2 ;;
+esac
+MOCK_NGINX
+chmod 0755 "$tmp_dir/mock-bin/nginx"
+
+cat >"$tmp_dir/mock-bin/systemctl" <<'MOCK_SYSTEMCTL'
+#!/bin/sh
+set -eu
+printf '%s\n' "$*" >>"${TEST_SYSTEMCTL_CALLS:-/dev/null}"
+case "$1" in
+    is-active) [ "${TEST_SYSTEMCTL_INACTIVE:-0}" = 0 ] ;;
+    reload) exit 0 ;;
+    *) exit 2 ;;
+esac
+MOCK_SYSTEMCTL
+chmod 0755 "$tmp_dir/mock-bin/systemctl"
+
 PATH="$tmp_dir/mock-bin:$PATH" \
 TEST_RELEASE_ARCHIVE="$asset" \
 TEST_CURL_SHOULD_FAIL=1 \
+TEST_NGINX_CALLS="$tmp_dir/nginx-calls" \
+TEST_SYSTEMCTL_CALLS="$tmp_dir/systemctl-calls" \
 SUBSITE_MONITOR_ARCHIVE="$asset" \
 SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
 SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
@@ -54,6 +83,9 @@ grep -Fq "access_log $tmp_dir/var/log/subsite-monitor/access.log subsite_monitor
     "$tmp_dir/nginx/conf.d/subsite-monitor.conf"
 grep -Fq "$tmp_dir/var/log/subsite-monitor/access.log {" \
     "$tmp_dir/logrotate.d/subsite-monitor"
+grep -qx 'reload nginx.service' "$tmp_dir/systemctl-calls"
+grep -qx -- '-t' "$tmp_dir/nginx-calls"
+grep -qx -- '-T' "$tmp_dir/nginx-calls"
 printf '# keep administrator edits\n' \
     >>"$tmp_dir/nginx/conf.d/subsite-monitor.conf"
 printf '# keep administrator rotation edits\n' \
@@ -68,6 +100,7 @@ sed -i "1s|^.* {|$tmp_dir/custom/custom-access.log {|" \
     "$tmp_dir/logrotate.d/subsite-monitor"
 PATH="$tmp_dir/mock-bin:$PATH" \
 TEST_RELEASE_ARCHIVE="$asset" \
+TEST_SYSTEMCTL_INACTIVE=1 \
 SUBSITE_MONITOR_ARCHIVE= \
 SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
 SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
@@ -84,6 +117,7 @@ grep -q '^# keep administrator edits$' \
     "$tmp_dir/nginx/conf.d/subsite-monitor.conf"
 grep -q '^# keep administrator rotation edits$' \
     "$tmp_dir/logrotate.d/subsite-monitor"
+test "$(grep -c '^reload nginx.service$' "$tmp_dir/systemctl-calls")" = 1
 grep -Fq "access_log $tmp_dir/custom/custom-access.log subsite_monitor;" \
     "$tmp_dir/nginx/conf.d/subsite-monitor.conf"
 grep -Fq "$tmp_dir/custom/custom-access.log {" \
