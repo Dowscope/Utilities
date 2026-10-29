@@ -1,6 +1,7 @@
 # Subsite Monitor
 
-Current release: **0.1.0-alpha.5**. Release binaries target x86_64 Linux on
+Current development version: **0.1.0-alpha.6**. The latest published release
+is **0.1.0-alpha.5**. Release binaries target x86_64 Linux on
 Debian, Ubuntu, and Arch, statically link ncursesw and the C++ runtime, and use
 host terminfo for the terminal UI.
 
@@ -39,9 +40,11 @@ approved future work.
 
 `./verify.sh` and `./packaging/build-alpha.sh` passed. The clean
 C++23 build, parser/statistics/config/Nginx-config/storage/CLI/service and
-installer-template tests passed without compiler warnings. The local alpha.5
-archive and its checksum-pinned installers were rebuilt. Alpha.5 keeps
-configured sites visible if the selected access log is unavailable.
+installer-template tests passed without compiler warnings. The alpha.5 archive
+and its checksum-pinned installers remain the latest published assets. The
+alpha.6 source tag contains the table readability update but has no release
+archive yet. Alpha.5 keeps configured sites visible if the selected access log
+is unavailable.
 See `packaging/README.md` for alpha build and release steps.
 
 ## Current CLI
@@ -103,7 +106,8 @@ to `subsite-monitor`, allowing CLI commands or a different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.5 is the current published release. Release
+`packaging/README.md`. Alpha.5 is the current published release; alpha.6 is a
+source tag without published binary assets. Release
 binaries target Debian, Ubuntu, and Arch on x86_64.
 The installer seeds the root-only monitor config and installs a host-aware
 snippet at `/etc/nginx/conf.d/subsite-monitor.conf`, a logrotate policy, and the

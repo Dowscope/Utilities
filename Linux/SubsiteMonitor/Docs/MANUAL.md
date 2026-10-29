@@ -104,7 +104,7 @@ The site list comes from `server_name` in the mounted config. Per-site request
 counts require the documented host-aware log format. Nginx's standard
 `access.log` commonly omits the hostname, so it may show configured sites but
 cannot attribute requests to them. When a configured log is missing, the
-development alpha.5 UI shows configured sites and warns that activity is
+development alpha.6 UI shows configured sites and warns that activity is
 unavailable.
 
 ## Commands currently available
@@ -232,7 +232,9 @@ offset, client IP, method/status,
 and request URL columns. Up/down moves through rows, Page Up/Down changes
 100-record pages, and left/right scrolls the selected URL.
 Escape returns to the overview; `r` refreshes the log and `q` exits. It requires
-an interactive terminal. The UI intentionally shows full query strings and IPs.
+an interactive terminal. Unselected rows use normal terminal brightness and the
+selected row is bold white on blue. The UI intentionally shows full query
+strings and IPs.
 
 The config accepts `access_log = /absolute/path` and
 `nginx_config = /absolute/path` entries, ignores blank and comment lines, and

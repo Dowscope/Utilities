@@ -57,5 +57,10 @@ current Git installer is pinned to that artifact. The local rebuild includes
 refreshed documentation and has a different checksum. Replacing the published
 archive requires updating `SHA256SUMS` and the installer pin together.
 
+The development source is now tagged `v0.1.0-alpha.6` and contains the UI row
+contrast update. That tag has no release archive or GitHub release yet; the
+tracked installer remains pinned to the published alpha.5 asset until a
+matching alpha.6 archive and checksum are prepared and uploaded.
+
 The build host is Arch Linux. No Debian or Ubuntu environment is available in
 this checkout, so validate on those systems before production use.

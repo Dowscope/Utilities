@@ -105,7 +105,9 @@ by the user for server testing; no production deployment is implied.
 
 ## Current handoff state
 
-- Current version is `0.1.0-alpha.5`, published for server testing. The user
+- Current development version is `0.1.0-alpha.6`, tagged as `v0.1.0-alpha.6`;
+  alpha.5 remains the latest published binary release for server testing. No
+  alpha.6 release assets or GitHub release have been published. The user
   asked to add a continuously running CSV-updating service and systemd unit;
   the unit must not be enabled on this development host or a production host
   as part of implementation.
@@ -133,6 +135,8 @@ by the user for server testing; no production deployment is implied.
   pages, left/right scrolls a long URL, Escape returns to the overview, `r`
   refreshes, and `q` exits. The UI collects/stores on launch and refresh. If the log is unavailable, it
   can display stored statistics alongside discovered configured sites.
+- Alternating rows in both UI tables use normal terminal text brightness;
+  the selected row is bold white on blue.
 - Request CSVs contain sensitive client IPs and full URLs. Files are mode 0600
   in a mode 0700 directory; storage grows with request volume.
 - `service` follows the configured log and updates event and summary CSVs about

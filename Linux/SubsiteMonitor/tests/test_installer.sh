@@ -4,6 +4,7 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 asset=${1:?usage: test_installer.sh <release-archive>}
 installer=${2:-$script_dir/installer.sh}
+expected_version=$(sed -n "s/^APP_VERSION='\([^']*\)'$/\1/p" "$installer")
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT HUP INT TERM
 mkdir -p "$tmp_dir/mock-bin"
@@ -92,7 +93,7 @@ SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/logrotate.d/subsite-monitor" \
 SUBSITE_MONITOR_ACCESS_LOG="$tmp_dir/var/log/subsite-monitor/access.log" \
     sh "$tmp_dir/installer-debian"
 [ "$("$tmp_dir/install/subsite-monitor" --version)" = \
-  'subsite-monitor 0.1.0-alpha.5' ]
+  "subsite-monitor $expected_version" ]
 [ "$(stat -c '%a' "$tmp_dir/etc/monitor.conf")" = 600 ]
 grep -Fq "access_log = $tmp_dir/var/log/subsite-monitor/access.log" \
     "$tmp_dir/etc/monitor.conf"

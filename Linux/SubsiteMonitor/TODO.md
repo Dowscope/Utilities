@@ -3,8 +3,9 @@
 Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
-Last reviewed: 2026-10-29. Phases 1 through 5 are implemented locally in
-0.1.0-alpha.5, published for server testing. Current default access log:
+Last reviewed: 2026-10-29. Phases 1 through 5 are implemented in development
+version 0.1.0-alpha.6, tagged as v0.1.0-alpha.6. Alpha.5 remains the latest
+published binary release for server testing. Current default access log:
 `/var/log/subsite-monitor/access.log`. The latest local packaging rebuild has
 updated documentation and differs from the uploaded archive; the tracked
 installer remains pinned to the uploaded archive until a replacement is
@@ -37,6 +38,8 @@ approved.
   logrotate policy. The default log is `/var/log/subsite-monitor/access.log`.
   The published alpha.5 archive is checksum-verified; the local documentation
   rebuild has a distinct checksum and has not replaced the published asset.
+- [x] **UI table readability:** remove dim styling from alternating website and
+  request-history rows; keep the selected row highlighted in white on blue.
 - [ ] **Operational follow-up:** test the installed systemd unit against the
   user's actual Nginx configuration and logrotate policy on the subsites server.
   Confirm installer output shows Nginx validation/reload and monitor service

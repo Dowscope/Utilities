@@ -166,7 +166,7 @@ void configure_colors() {
     }
     use_default_colors();
     init_pair(1, COLOR_WHITE, COLOR_BLUE);
-    init_pair(2, COLOR_BLACK, COLOR_CYAN);
+    init_pair(2, COLOR_WHITE, COLOR_BLUE);
     init_pair(3, COLOR_CYAN, -1);
     init_pair(4, COLOR_GREEN, -1);
     init_pair(5, COLOR_YELLOW, -1);
@@ -248,8 +248,6 @@ void draw_screen(const StatisticsReport& report,
         if (site_index == selected) {
             attron(COLOR_PAIR(2) | A_BOLD);
             mvhline(row, 1, ' ', content_width);
-        } else if (visible_row % 2 == 1) {
-            attron(A_DIM);
         }
 
         write_at(row, 2, site.hostname, site_width);
@@ -265,8 +263,6 @@ void draw_screen(const StatisticsReport& report,
 
         if (site_index == selected) {
             attroff(COLOR_PAIR(2) | A_BOLD);
-        } else if (visible_row % 2 == 1) {
-            attroff(A_DIM);
         }
     }
 
@@ -404,8 +400,6 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
             if (index == selected) {
                 attron(COLOR_PAIR(2) | A_BOLD);
                 mvhline(row, 1, ' ', content_width);
-            } else if (line % 2U == 1U) {
-                attron(A_DIM);
             }
 
             write_at(row, 2, format_timestamp_local(record.timestamp_utc),
@@ -429,8 +423,6 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
 
             if (index == selected) {
                 attroff(COLOR_PAIR(2) | A_BOLD);
-            } else if (line % 2U == 1U) {
-                attroff(A_DIM);
             }
         }
     }

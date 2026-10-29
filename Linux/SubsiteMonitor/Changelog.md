@@ -1,5 +1,15 @@
 # Changelog
 
+### Improve table readability — 2026-10-29T09:28:48-04:00
+
+- Removed dim styling from alternating website and request-history rows. All
+  unselected rows now use the terminal's normal text color; the selected row
+  remains bold white on blue.
+- Bumped the development version to `0.1.0-alpha.6` and tagged the source as
+  `v0.1.0-alpha.6`. No GitHub release or binary assets were published; the
+  existing alpha.5 installer and release archive remain unchanged.
+- `./verify.sh` passed with no compiler warnings.
+
 ### Installer enables and starts monitor service — 2026-10-29T09:17:34-04:00
 
 - After installing files and validating/reloading Nginx, the release installer

@@ -16,7 +16,7 @@ grep -q 'stats --log <path>' "$tmp_dir/help.txt"
 grep -q 'stats \[--days <count>\]' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.5' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.6' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2

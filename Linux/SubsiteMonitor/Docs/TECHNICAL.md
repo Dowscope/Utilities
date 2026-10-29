@@ -49,7 +49,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.5` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.6` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -210,9 +210,13 @@ catch-up support only for retained uncompressed numeric rotations, and the
 single documented Nginx log format. Configurable statistics and checkpoint
 directories in the root-only config remain future work.
 
+The website and request-history tables render unselected rows at normal
+terminal brightness. The selected row uses bold white text on a blue
+background.
+
 Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.5
-package workflow.
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.6
+development source. Alpha.5 remains the latest published package.
 
 
 ## Docker Nginx development fixture
