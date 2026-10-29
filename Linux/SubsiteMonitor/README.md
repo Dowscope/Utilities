@@ -1,7 +1,7 @@
 # Subsite Monitor
 
-Current development version: **0.1.0-alpha.9**. The latest published release
-is **0.1.0-alpha.8**. Release binaries target x86_64 Linux on
+Current development version: **0.1.0-alpha.10**. The latest published release
+is **0.1.0-alpha.9**. Release binaries target x86_64 Linux on
 Debian, Ubuntu, and Arch, statically link ncursesw and the C++ runtime, and use
 host terminfo for the terminal UI.
 
@@ -43,10 +43,12 @@ The UI site table opens with most recently active sites first and supports
 sorting by website, request count, or last access with keys `1`–`3`; repeat the
 active key to reverse the direction. The UI command bars use grouped
 `Action: key | Action: key` hints; update availability appears in the lower
-right only when a newer compatible release is found. The alpha.9 source and
+right only when a newer compatible release is found. The alpha.10 source and
 release archive are built and verified. The archive checksum is in
 `packaging/dist/SHA256SUMS`; see `packaging/README.md` for the release title,
 notes, and upload steps.
+The running version appears in the UI header, and the overview links to
+[GitHub Issues](https://github.com/Dowscope/Utilities/issues).
 See `packaging/README.md` for alpha build and release steps.
 
 ## Current CLI
@@ -117,7 +119,7 @@ to `subsite-monitor`, allowing CLI commands or a different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.8 is the latest published binary; alpha.9's
+`packaging/README.md`. Alpha.9 is the latest published binary; alpha.10's
 archive and checksum are ready for its GitHub Release. Release
 binaries target Debian, Ubuntu, and Arch on x86_64.
 The installer seeds the root-only monitor config and installs a host-aware

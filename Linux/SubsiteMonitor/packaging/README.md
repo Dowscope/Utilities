@@ -1,9 +1,13 @@
 # Alpha Release Packaging
 
-The development target is **0.1.0-alpha.9**. Alpha.8 is the latest published
-binary release. Alpha.9 updates the UI command bars to grouped `Action: key`
-labels and shows the update indicator only when a newer compatible release is
-available.
+The development target is **0.1.0-alpha.10**. Alpha.9 is the latest published
+binary release. Alpha.10 adds the running version to the overview and
+request-history headers, and provides a direct GitHub Issues link in the
+overview and CLI help. The existing command-bar groups and update indicator
+behavior are retained.
+
+The alpha.10 archive, checksum, and checksum-pinned installer are built from
+this source. Do not replace the published alpha.9 assets.
 
 ## Build the release package
 
@@ -22,12 +26,12 @@ tradeoffs; test on each target distribution before production use.
 
 The build produces:
 
-- `packaging/dist/subsite-monitor-0.1.0-alpha.9-linux-x86_64-gnu.tar.gz`
+- `packaging/dist/subsite-monitor-0.1.0-alpha.10-linux-x86_64-gnu.tar.gz`
 - `packaging/dist/SHA256SUMS`
 - checksum-pinned `installer.sh` and compatibility `install.sh`
 
-The alpha.9 archive SHA-256 is
-`43afe61193201337797db932b96d23033f77c83d5f1f2d928d2a4fb83497cd50`.
+The alpha.10 archive SHA-256 is
+`6f23a76d8bbb9aa9c9c449eeab57f1c3576ea304c5c70cd518584620b15c28b0`.
 `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
 warnings. The release build's static tests and installer checks passed too.
 
@@ -42,7 +46,7 @@ the main Nginx config or starts an inactive Nginx service.
 For local testing before publication, pass the archive directly:
 
 ```sh
-sudo env SUBSITE_MONITOR_ARCHIVE="$PWD/packaging/dist/subsite-monitor-0.1.0-alpha.9-linux-x86_64-gnu.tar.gz" ./installer.sh
+sudo env SUBSITE_MONITOR_ARCHIVE="$PWD/packaging/dist/subsite-monitor-0.1.0-alpha.10-linux-x86_64-gnu.tar.gz" ./installer.sh
 ```
 
 The installer still checks the archive's embedded checksum. Set
@@ -51,25 +55,21 @@ fresh installation; existing custom configuration is retained.
 
 ## Publish the release
 
-Create tag `v0.1.0-alpha.9` and a GitHub Release with this title:
+Create tag `v0.1.0-alpha.10` and a GitHub Release with this title:
 
-> Subsite Monitor 0.1.0-alpha.9 — Clearer UI Commands and Update Notices
+> Subsite Monitor 0.1.0-alpha.10 — Version and Support Details
 
 Release notes:
 
-> - Reworked overview, request-history, and update-review command bars into
->   `Action: key | Action: key` groups while retaining the existing colors.
-> - Added compact command labels for narrower terminals so the available
->   actions remain visible.
-> - The lower-right update indicator now appears only when a newer compatible
->   release is available.
-> - The installer verifies the selected release archive's SHA-256 before
->   installation. It restarts the monitor service on upgrade and reloads
->   active Nginx when applicable.
+> - Added the running application version to the overview and request-history
+>   headers.
+> - Added a direct GitHub Issues URL to the site overview and CLI help output.
+> - Updated UI and CLI checks and user/technical documentation for the new
+>   version and support details.
 > - Release binaries target x86_64 Linux and use host terminfo.
 
-Attach the matching alpha.9 archive and `SHA256SUMS` from `packaging/dist/`.
-The generated installer is pinned to this archive and will not find alpha.9 as
+Attach the matching alpha.10 archive and `SHA256SUMS` from `packaging/dist/`.
+The generated installer is pinned to this archive and will not find alpha.10 as
 an installable release until both assets are attached to the GitHub Release.
 
 The tracked installer URL is

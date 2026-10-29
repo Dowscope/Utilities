@@ -1,5 +1,22 @@
 # Changelog
 
+### Alpha.10 release preparation — 2026-10-29T14:27:55-04:00
+
+- Bumped development and packaging version to `0.1.0-alpha.10`; alpha.9 is the
+  latest published binary.
+- Added the running version to the overview and request-history headers, and
+  the GitHub Issues URL to the overview and CLI help.
+- Release title: **Subsite Monitor 0.1.0-alpha.10 — Version and Support
+  Details**. Archive SHA-256: `6f23a76d8bbb9aa9c9c449eeab57f1c3576ea304c5c70cd518584620b15c28b0`.
+- `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler warnings; archive checksum verification succeeded.
+
+### Display version and issue tracker in the UI — 2026-10-29T14:24:17-04:00
+
+- Added the running version to the site overview and request-history headers.
+- Added the GitHub issue-tracker URL to the site overview and CLI help output.
+- Added pseudo-terminal and help-output assertions and documented the support
+  URL and header labels. This is post-alpha.9 source work.
+
 ### Alpha.9 release package prepared — 2026-10-29T14:04:00-04:00
 
 - Bumped development and packaging version to `0.1.0-alpha.9`. Alpha.8 is the

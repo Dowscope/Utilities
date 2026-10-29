@@ -120,7 +120,8 @@ void print_help(std::ostream& output) {
               "stored dates. --log prints a one-time log report.\n"
               "Environment overrides: SUBSITE_MONITOR_STATS_DIR.\n"
               "service follows the configured log and updates CSV data.\n"
-              "The ui command requires an interactive terminal.\n";
+              "The ui command requires an interactive terminal.\n\n"
+              "Issues and support: https://github.com/Dowscope/Utilities/issues\n";
 }
 
 int launch_service() {

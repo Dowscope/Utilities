@@ -105,11 +105,10 @@ by the user for server testing; no production deployment is implied.
 
 ## Current handoff state
 
-- Current development work targets `0.1.0-alpha.9`; alpha.8 is the latest
-  published binary release and its archive/checksum are available on GitHub.
-  Alpha.9 updates the overview, request-history, and update-review command bars
-  to labeled `Action: key | Action: key` groups, retaining the existing colors.
-  Narrow terminals use compact labels to keep the commands visible.
+- Current development work targets `0.1.0-alpha.10`; alpha.9 is the latest
+  published binary release and its archive/checksum are on GitHub. Alpha.10
+  displays the running version in the UI headers and the GitHub Issues URL on
+  the overview and in `--help`.
 - In the site overview, `u` fetches up to ten newer compatible GitHub releases,
   shows title/date/notes, and lets the user inspect notes. Enter opens a second
   confirmation; only `y` starts the update. The installed helper at
@@ -123,15 +122,12 @@ by the user for server testing; no production deployment is implied.
   not require GitHub access.
 - The background availability indicator appears only when a newer compatible
   release exists; the command bar stays focused on navigation. `./verify.sh`
-  passed after the alpha.9 UI changes. The alpha.9 package is built with
-  `./packaging/build-alpha.sh`; its archive and SHA-256 are recorded in
-  `packaging/README.md` and `packaging/dist/SHA256SUMS`.
-- The release source tag is `v0.1.0-alpha.9`; verify it exists on the remote
-  before creating the GitHub Release. Its title and notes are in
-  `packaging/README.md`. The archive SHA-256 is
-  `43afe61193201337797db932b96d23033f77c83d5f1f2d928d2a4fb83497cd50`.
-  Attach the matching archive and `SHA256SUMS` to the GitHub Release if release
-  asset upload cannot be done here.
+  and `./packaging/build-alpha.sh` are run for each release candidate. Alpha.10
+  archive/checksum details are recorded in `packaging/README.md` and
+  `packaging/dist/SHA256SUMS`.
+- The source tag for this release is `v0.1.0-alpha.10`. Its title and notes are
+  in `packaging/README.md`; attach the generated archive and `SHA256SUMS` to
+  the GitHub Release after pushing the source tag.
 - Phases 1 through 5 are implemented locally: C++23 CLI, bounded streaming
   Nginx parser, per-site/daily aggregation, Docker-backed development, root-only
   log configuration and virtual-host inventory, private daily summary CSVs, and
@@ -197,7 +193,7 @@ by the user for server testing; no production deployment is implied.
   release's `SHA256SUMS`. The installer uses a distinct `APP_VERSION`
   variable so Debian's `VERSION` from `/etc/os-release` cannot interfere
   with executable version validation.
-  Alpha.8 is the latest published binary asset before alpha.9.
+  Alpha.9 is the latest published binary asset before alpha.10.
 - `./run-dev.sh` with no arguments builds and opens the UI, preferring the
   Docker-generated Nginx log/config when present and otherwise using fixtures.
   Start the fixture in another terminal with `sudo ./run-docker.sh`.

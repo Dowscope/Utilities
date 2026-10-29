@@ -19,6 +19,10 @@ The terminal report and TUI share the statistics model. `src/report.cpp`
 provides text formatting plus UTC storage and local-time display formatting; `src/tui.cpp` manages
 ncurses screen lifecycle, input, and layout.
 
+The TUI header displays the compiled application version on both the site
+overview and request-history screens. The overview reserves the right side of
+its heading row for the GitHub issue URL; `--help` prints the same support URL.
+
 ## Build details
 
 The Makefile uses `g++`, `-std=c++23`, `-O2`, and the warning flags
@@ -53,7 +57,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.9` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.10` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -254,8 +258,8 @@ shortcuts are shown in each view's footer. Footer commands use the
 unselected rows at normal brightness and the selected row in bold white on blue.
 
 Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.9
-development source. Alpha.8 is the latest published package.
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.10
+development source. Alpha.9 is the latest published package.
 
 
 ## Docker Nginx development fixture

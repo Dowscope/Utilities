@@ -200,6 +200,10 @@ subsite-monitor.service`. Logs are available with
 
 ## Software updates in the UI
 
+The running version appears in the top header. The site overview also displays
+the project issue tracker: [https://github.com/Dowscope/Utilities/issues](https://github.com/Dowscope/Utilities/issues).
+The same address appears in `subsite-monitor --help`.
+
 When the site overview opens, Subsite Monitor checks GitHub for newer
 compatible releases in the background. The lower-right indicator appears only
 when an update is available and shows its version and the `u` key. No update

@@ -35,6 +35,8 @@ namespace {
 #endif
 
 constexpr std::string_view current_version = SUBSITE_MONITOR_VERSION;
+constexpr std::string_view github_issues_url =
+    "https://github.com/Dowscope/Utilities/issues";
 const std::filesystem::path release_installer_path =
     SUBSITE_MONITOR_INSTALLER_PATH;
 
@@ -380,13 +382,19 @@ void draw_screen(const StatisticsReport& report,
     attron(COLOR_PAIR(1) | A_BOLD);
     mvhline(0, 0, ' ', columns);
     write_at(0, 2, "SUBSITE MONITOR", content_width - 2);
-    const std::string source = "ACCESS LOG  " + safe_path_label(log_path);
-    const int source_column = std::max(2, columns - static_cast<int>(source.size()) - 2);
+    const std::string source = "v" + std::string{current_version} + " | " +
+                               safe_path_label(log_path);
+    const int source_column = std::max(
+        19, columns - static_cast<int>(source.size()) - 2);
     write_at(0, source_column, source, columns - source_column - 1);
     attroff(COLOR_PAIR(1) | A_BOLD);
 
     attron(COLOR_PAIR(3));
-    write_at(1, 2, "WEBSITE ACTIVITY OVERVIEW", content_width);
+    write_at(1, 2, "SITE ACTIVITY", content_width);
+    const int issues_column =
+        columns - 2 - static_cast<int>(github_issues_url.size());
+    write_at(1, issues_column, github_issues_url,
+             static_cast<int>(github_issues_url.size()));
     attroff(COLOR_PAIR(3));
     mvhline(2, 1, ACS_HLINE, content_width);
 
@@ -531,6 +539,9 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
     attron(COLOR_PAIR(1) | A_BOLD);
     mvhline(0, 0, ' ', columns);
     write_at(0, 2, "REQUEST HISTORY", content_width);
+    const std::string version_label = "v" + std::string{current_version};
+    write_at(0, columns - 2 - static_cast<int>(version_label.size()),
+             version_label, static_cast<int>(version_label.size()));
     attroff(COLOR_PAIR(1) | A_BOLD);
     attron(COLOR_PAIR(3) | A_BOLD);
     write_at(1, 2, hostname, content_width);

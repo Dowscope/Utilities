@@ -9,7 +9,7 @@ CPPFLAGS += $(NCURSES_CFLAGS)
 LDLIBS += $(NCURSES_LIBS)
 
 TARGET := subsite-monitor
-VERSION := 0.1.0-alpha.9
+VERSION := 0.1.0-alpha.10
 CPPFLAGS += -DSUBSITE_MONITOR_VERSION='"$(VERSION)"'
 DATADIR ?= /usr/share/subsite-monitor
 CPPFLAGS += -DSUBSITE_MONITOR_INSTALLER_PATH='"$(DATADIR)/installer.sh"'

@@ -2,7 +2,7 @@
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-version=0.1.0-alpha.9
+version=0.1.0-alpha.10
 architecture=$(uname -m)
 if [ "$architecture" != x86_64 ]; then
     printf 'Alpha release build currently supports x86_64 only (found %s).\n' \
