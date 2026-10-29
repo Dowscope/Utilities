@@ -104,7 +104,7 @@ The site list comes from `server_name` in the mounted config. Per-site request
 counts require the documented host-aware log format. Nginx's standard
 `access.log` commonly omits the hostname, so it may show configured sites but
 cannot attribute requests to them. When a configured log is missing, the
-development alpha.6 UI shows configured sites and warns that activity is
+development UI shows configured sites and warns that activity is
 unavailable.
 
 ## Commands currently available
@@ -226,11 +226,20 @@ on-screen warning; request activity is unavailable until the path is corrected. 
 wildcard names are listed; regex server names and `_` are skipped. The log
 must use the host-aware format below to attribute activity by site. Nginx's
 standard access log usually omits the hostname, so use the documented custom
-format for per-site request counts. The overview is a snapshot. Press up/down or `j`/`k` to select a website;
+format for per-site request counts. The overview defaults to latest access
+first. Press `1` for website, `2` for requests, or `3` for last access; press
+the active number again to reverse sort direction. The active heading displays
+`v` for descending or `^` for ascending. The overview is a snapshot. Press
+up/down or `j`/`k` to select a website;
 Enter opens every stored request for that site. Each request occupies one table row with server-local timestamp and numeric
-offset, client IP, method/status,
-and request URL columns. Up/down moves through rows, Page Up/Down changes
-100-record pages, and left/right scrolls the selected URL.
+offset, client IP, method/status, and request URL columns. The view opens on the
+newest 100 requests, newest first. Down moves toward older requests; Page
+Down loads the next older page. Press `1` for time, `2` for client IP, `3` for
+method/status, or `4` for URL to sort the current page; press the same number
+again to reverse its order. The active header shows `v` for descending or `^`
+for ascending. Up/Page Up move toward newer requests, and left/right scroll the
+selected URL. Sorting is limited to the current page so memory remains bounded
+for large logs.
 Escape returns to the overview; `r` refreshes the log and `q` exits. It requires
 an interactive terminal. Unselected rows use normal terminal brightness and the
 selected row is bold white on blue. The UI intentionally shows full query

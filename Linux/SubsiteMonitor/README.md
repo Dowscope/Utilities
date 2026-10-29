@@ -1,7 +1,7 @@
 # Subsite Monitor
 
-Current development version: **0.1.0-alpha.6**. The latest published release
-is **0.1.0-alpha.5**. Release binaries target x86_64 Linux on
+Current development version: **0.1.0-alpha.7**. The latest published release
+is **0.1.0-alpha.6**. Release binaries target x86_64 Linux on
 Debian, Ubuntu, and Arch, statically link ncursesw and the C++ runtime, and use
 host terminfo for the terminal UI.
 
@@ -38,14 +38,11 @@ design. [Prompt.md](Prompt.md) preserves the project handoff brief,
 [Changelog.md](Changelog.md) records changes, and [TODO.md](TODO.md) tracks
 approved future work.
 
-`./verify.sh` and `./packaging/build-alpha.sh` passed. The clean
-C++23 build, parser/statistics/config/Nginx-config/storage/CLI/service and
-installer-template tests passed without compiler warnings. The alpha.5 archive
-remains the latest published release asset until alpha.6 is published. The
-alpha.6 archive is ready in `packaging/dist/`; its SHA-256 is recorded in
-`packaging/dist/SHA256SUMS`. Alpha.6 includes the table readability update and
-release-version selector. Alpha.5 keeps configured sites visible if the
-selected access log is unavailable.
+The UI site table opens with most recently active sites first and supports
+sorting by website, request count, or last access with keys `1`–`3`; repeat the
+active key to reverse the direction. The latest published binary is alpha.6;
+the alpha.7 source and release archive are ready. Its SHA-256 is recorded in
+`packaging/dist/SHA256SUMS`.
 See `packaging/README.md` for alpha build and release steps.
 
 ## Current CLI
@@ -88,13 +85,17 @@ to select another root-only config.
 
 The `ui` command uses the same configuration, or accepts `--log <path>` as an
 override. Use the arrow keys or `j`/`k` to select a site. Enter opens every stored
-request for that site, including server-local timestamp with offset, client IP, method, status, and
-full request target (path and query). The site name is shown above; the current
-log format does not record the scheme. Use up/down to navigate, left/right to
-inspect long targets, Page
-Up/Down to move through pages, and Escape to return. Press `r` to reread the log
-and `q` to quit. It requires a real interactive terminal. For sample data,
-run:
+request for that site, starting with the newest 100 requests. The site overview
+defaults to latest access first; keys `1`–`3` sort by website, request count,
+and last access. Repeat a key to reverse the sort direction. The history table includes
+server-local timestamp with offset, client IP, method, status, and full request
+target (path and query). Press `1`–`4` to sort the current page by time, IP,
+method/status, or URL; repeat the active key to reverse direction. Up/down and
+Page Up/Down move through requests/pages, left/right inspect long targets, and
+Escape returns to the overview. The site name is shown above; the current log
+format does not record the scheme. Press `r` to reread the log and `q` to quit.
+Sorting is limited to one 100-record page to keep memory bounded. The UI
+requires an interactive terminal. For sample data, run:
 
 ```sh
 ./run-dev.sh
@@ -107,8 +108,8 @@ to `subsite-monitor`, allowing CLI commands or a different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.5 is the current published release; alpha.6 is a
-source tag without published binary assets. Release
+`packaging/README.md`. Alpha.6 is the current published release; alpha.7 is
+being prepared. Release
 binaries target Debian, Ubuntu, and Arch on x86_64.
 The installer seeds the root-only monitor config and installs a host-aware
 snippet at `/etc/nginx/conf.d/subsite-monitor.conf`, a logrotate policy, and the

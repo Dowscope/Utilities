@@ -49,7 +49,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.6` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.7` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -143,9 +143,12 @@ a full collection and reload stored statistics. Arrow keys and
 `j`/`k` change the selected site. Enter opens that site's request records;
 Each request is rendered as one table row with its timestamp converted from
 UTC to the monitor host's local timezone and shown with a numeric offset.
-Up/Down moves between rows, Page
-Up/Down changes 100-record pages, and Left/Right horizontally scrolls the
-selected full URL. Escape returns to the
+The initial request page is the newest 100 events, ordered newest first.
+Up/Down moves within that page, Page Up/Down loads adjacent chronological
+pages, and Left/Right horizontally scrolls the selected full URL. Keys `1` to
+`4` sort the current page by timestamp, client IP, method/status, or URL; pressing
+the active key again reverses its direction. Sorting is page-local to retain a
+bounded 100-record working set. Escape returns to the
 overview and `q` exits. The screen is redrawn on
 terminal resize. Ncursesw is linked through the `pkg-config ncursesw` metadata.
 
@@ -218,13 +221,15 @@ catch-up support only for retained uncompressed numeric rotations, and the
 single documented Nginx log format. Configurable statistics and checkpoint
 directories in the root-only config remain future work.
 
-The website and request-history tables render unselected rows at normal
-terminal brightness. The selected row uses bold white text on a blue
-background.
+The website table defaults to latest access descending. Keys `1` through `3`
+sort by hostname, request count, or last access; pressing the active key toggles
+direction. Request-history sorting applies to its current 100-record page.
+Both tables render unselected rows at normal brightness and the selected row
+in bold white on blue.
 
 Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.6
-development source. Alpha.5 remains the latest published package.
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.7
+development source. Alpha.6 is the latest published package.
 
 
 ## Docker Nginx development fixture

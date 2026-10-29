@@ -4,8 +4,8 @@ Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
 Last reviewed: 2026-10-29. Phases 1 through 5 are implemented in development
-version 0.1.0-alpha.6, tagged as v0.1.0-alpha.6. Alpha.5 remains the latest
-published binary release for server testing. Current default access log:
+version 0.1.0-alpha.7. Alpha.6 is the latest published binary release for
+server testing. Current default access log:
 `/var/log/subsite-monitor/access.log`. The latest local packaging rebuild has
 updated documentation and differs from the uploaded archive; the installer
 now selects among published releases and requires matching archive assets.
@@ -27,10 +27,8 @@ now selects among published releases and requires matching archive assets.
 - [ ] **Phase 6 — Configuration:** add statistics/state directories to the
   root-only config and support validated config values with CLI overrides.
 - [ ] **Phase 7 — Release preparation:** validate the static binary and
-  installer on Debian/Ubuntu and review ABI/terminfo portability. Alpha.6
-  archive and checksum are ready. Create the GitHub release and upload the
-  generated files; this workspace has no authenticated release-management
-  tool.
+  installer on Debian/Ubuntu and review ABI/terminfo portability. Prepare and
+  publish the alpha.7 archive and checksum.
 - [x] **Docker-backed development:** Compose Nginx writes host-aware logs to an
   ignored bind mount; `run-dev.sh` uses those files when available.
 - [x] **Prepare alpha.5 package:** build and verify the static archive, checksum,
@@ -40,6 +38,13 @@ now selects among published releases and requires matching archive assets.
   rebuild has a distinct checksum and has not replaced the published asset.
 - [x] **UI table readability:** remove dim styling from alternating website and
   request-history rows; keep the selected row highlighted in white on blue.
+- [x] **Sortable UI tables:** show sites by most recent access by default and
+  allow sorting the site and request tables by their displayed columns.
+- [ ] **In-UI software update:** add a UI action to check compatible GitHub
+  releases, show the selected version and release notes, verify its SHA-256,
+  then install with clear privilege handling and restart guidance. Do not
+  replace the running binary or elevate privileges without explicit user
+  action; reuse the installer’s trusted release metadata and checksum checks.
 - [ ] **Operational follow-up:** test the installed systemd unit against the
   user's actual Nginx configuration and logrotate policy on the subsites server.
   Confirm installer output shows Nginx validation/reload and monitor service

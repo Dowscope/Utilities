@@ -1,5 +1,29 @@
 # Changelog
 
+### Sortable site overview and alpha.7 package — 2026-10-29T10:42:06-04:00
+
+- The site overview now opens with most recently active sites first and sorts
+  by website, request count, or last access using keys `1`–`3`; repeating a key
+  reverses the direction. The selected row resets to the top after changing
+  columns.
+- Added tests for the new overview controls and kept newest-first request
+  history sorting within its current 100-record page.
+- Added the proposed in-UI software update flow to `TODO.md`; it is not part of
+  this alpha.7 release.
+- Bumped development and packaging version to `0.1.0-alpha.7`. `./verify.sh`
+  and `./packaging/build-alpha.sh` passed with no compiler warnings. Alpha.6 is
+  the latest published binary. The alpha.7 archive SHA-256 is
+  `b824aa354ac7b7ff7e7940f5d077791cfd7f4ceeda0b148ad646f518fc405d23`.
+
+### Newest-first request history and page sorting — 2026-10-29T10:11:29-04:00
+
+- The detailed site view opens on the latest 100 requests, with the newest at
+  the top. Page navigation follows chronological order toward older/newer data.
+- Added sorting by timestamp, client IP, method/status, and URL using keys 1–4;
+  repeat a key to toggle ascending/descending. Sorting is limited to the loaded
+  page so memory stays bounded.
+- `./verify.sh` passed.
+
 ### Release selection and alpha.6 package — 2026-10-29T09:49:30-04:00
 
 - The installer now offers up to 10 recent releases with compatible x86_64

@@ -16,7 +16,7 @@ grep -q 'stats --log <path>' "$tmp_dir/help.txt"
 grep -q 'stats \[--days <count>\]' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.6' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.7' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2
@@ -55,15 +55,29 @@ if command -v script >/dev/null 2>&1; then
     grep -q 'alpha.example.test' "$tmp_dir/ui-missing-log.txt"
     grep -q 'Access log unavailable; showing configured sites only.' \
         "$tmp_dir/ui-missing-log.txt"
+    grep -q '1-3 Sort' "$tmp_dir/ui-missing-log.txt"
+    grep -q '3 LAST ACCESS' "$tmp_dir/ui-missing-log.txt"
 
-    printf 'j\nq' | TERM=xterm \
+    printf '\n2q' | TERM=xterm \
         SUBSITE_MONITOR_LOG=tests/fixtures/access.log \
         SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
         SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-stats" \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-history.txt"
     grep -q 'HISTORY' "$tmp_dir/ui-history.txt"
-    grep -q '203.0.113.11' "$tmp_dir/ui-history.txt"
-    grep -q '/private?token=hidden' "$tmp_dir/ui-history.txt"
+    grep -q '1 TIME' "$tmp_dir/ui-history.txt"
+    newest_site_position=$(grep -abo 'live.lakeheadschools.ca' \
+        "$tmp_dir/ui-history.txt" | head -n 1 | cut -d: -f1)
+    older_site_position=$(grep -abo 'test.lakeheadschools.ca' \
+        "$tmp_dir/ui-history.txt" | head -n 1 | cut -d: -f1)
+    [ "$newest_site_position" -lt "$older_site_position" ]
+    newest_position=$(grep -abo '/health' "$tmp_dir/ui-history.txt" |
+        head -n 1 | cut -d: -f1)
+    older_position=$(grep -abo '/check' "$tmp_dir/ui-history.txt" |
+        head -n 1 | cut -d: -f1)
+    oldest_position=$(grep -abo '/forms/submit' "$tmp_dir/ui-history.txt" |
+        head -n 1 | cut -d: -f1)
+    [ "$newest_position" -lt "$older_position" ]
+    [ "$older_position" -lt "$oldest_position" ]
 fi
 
 "$program" collect --log tests/fixtures/access.log \

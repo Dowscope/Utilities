@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <exception>
 #include <filesystem>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -57,16 +58,45 @@ struct UiSnapshot {
     std::string status_message;
 };
 
-std::vector<SiteRow> sorted_sites(const StatisticsReport& report) {
+enum class SiteSortColumn { hostname, requests, last_access };
+
+int compare_site_field(const SiteRow& left, const SiteRow& right,
+                       SiteSortColumn column) {
+    switch (column) {
+    case SiteSortColumn::hostname:
+        return left.hostname.compare(right.hostname);
+    case SiteSortColumn::requests:
+        if (left.statistics->requests < right.statistics->requests) return -1;
+        if (left.statistics->requests > right.statistics->requests) return 1;
+        return 0;
+    case SiteSortColumn::last_access:
+        if (left.statistics->latest_access_utc <
+            right.statistics->latest_access_utc) {
+            return -1;
+        }
+        if (left.statistics->latest_access_utc >
+            right.statistics->latest_access_utc) {
+            return 1;
+        }
+        return 0;
+    }
+    return 0;
+}
+
+std::vector<SiteRow> sorted_sites(const StatisticsReport& report,
+                                 SiteSortColumn sort_column,
+                                 bool sort_ascending) {
     std::vector<SiteRow> sites;
     sites.reserve(report.sites.size());
     for (const auto& [hostname, statistics] : report.sites) {
         sites.push_back({hostname, &statistics});
     }
-    std::sort(sites.begin(), sites.end(), [](const SiteRow& left,
-                                             const SiteRow& right) {
-        if (left.statistics->requests != right.statistics->requests) {
-            return left.statistics->requests > right.statistics->requests;
+    std::sort(sites.begin(), sites.end(), [sort_column, sort_ascending](
+                                               const SiteRow& left,
+                                               const SiteRow& right) {
+        const int order = compare_site_field(left, right, sort_column);
+        if (order != 0) {
+            return sort_ascending ? order < 0 : order > 0;
         }
         return left.hostname < right.hostname;
     });
@@ -160,6 +190,86 @@ std::string safe_terminal_text(std::string_view text) {
     return safe;
 }
 
+std::size_t count_site_requests(
+    const std::filesystem::path& statistics_directory,
+    const std::string& hostname) {
+    std::size_t total = 0;
+    for (const SiteDayHistory& day :
+         read_site_history(statistics_directory, hostname)) {
+        const std::size_t remaining =
+            std::numeric_limits<std::size_t>::max() - total;
+        if (day.requests > static_cast<std::uint64_t>(remaining)) {
+            throw std::runtime_error("site request history exceeds supported limits");
+        }
+        total += static_cast<std::size_t>(day.requests);
+    }
+    return total;
+}
+
+RequestPage read_newest_requests(
+    const std::filesystem::path& statistics_directory,
+    const std::string& hostname, std::size_t page_offset,
+    std::size_t page_size) {
+    RequestPage page = read_site_requests(statistics_directory, hostname,
+                                          page_offset, page_size);
+    std::reverse(page.records.begin(), page.records.end());
+    page.offset = page_offset;
+    return page;
+}
+
+enum class RequestSortColumn { timestamp, client_ip, method_status, url };
+
+int compare_request_field(const RequestRecord& left,
+                          const RequestRecord& right,
+                          RequestSortColumn column) {
+    switch (column) {
+    case RequestSortColumn::timestamp:
+        if (left.timestamp_utc < right.timestamp_utc) return -1;
+        if (left.timestamp_utc > right.timestamp_utc) return 1;
+        return 0;
+    case RequestSortColumn::client_ip:
+        return left.client_ip.compare(right.client_ip);
+    case RequestSortColumn::method_status:
+        if (const int method_order = left.method.compare(right.method);
+            method_order != 0) {
+            return method_order;
+        }
+        if (left.status < right.status) return -1;
+        if (left.status > right.status) return 1;
+        return 0;
+    case RequestSortColumn::url:
+        return left.url.compare(right.url);
+    }
+    return 0;
+}
+
+void sort_request_page(RequestPage& page, RequestSortColumn column,
+                       bool ascending) {
+    std::stable_sort(page.records.begin(), page.records.end(),
+                     [column, ascending](const RequestRecord& left,
+                                         const RequestRecord& right) {
+        const int order = compare_request_field(left, right, column);
+        return ascending ? order < 0 : order > 0;
+    });
+}
+
+std::string sort_direction(RequestSortColumn column,
+                           RequestSortColumn active_column,
+                           bool ascending) {
+    if (column != active_column) {
+        return {};
+    }
+    return ascending ? " ^" : " v";
+}
+
+std::string sort_direction(SiteSortColumn column,
+                           SiteSortColumn active_column, bool ascending) {
+    if (column != active_column) {
+        return {};
+    }
+    return ascending ? " ^" : " v";
+}
+
 void configure_colors() {
     if (has_colors() == false || start_color() == ERR) {
         return;
@@ -174,6 +284,7 @@ void configure_colors() {
 
 void draw_screen(const StatisticsReport& report,
                  const std::filesystem::path& log_path, std::size_t selected,
+                 SiteSortColumn sort_column, bool sort_ascending,
                  std::string_view status_message) {
     int rows = 0;
     int columns = 0;
@@ -188,7 +299,8 @@ void draw_screen(const StatisticsReport& report,
         return;
     }
 
-    const std::vector<SiteRow> sites = sorted_sites(report);
+    const std::vector<SiteRow> sites =
+        sorted_sites(report, sort_column, sort_ascending);
     const int content_width = columns - 2;
 
     attron(COLOR_PAIR(1) | A_BOLD);
@@ -222,9 +334,20 @@ void draw_screen(const StatisticsReport& report,
     const int requests_column = 2 + site_width + 2;
     const int last_access_column = requests_column + 12;
     attron(A_BOLD);
-    write_at(5, 2, "WEBSITE", site_width);
-    write_at(5, requests_column, "REQUESTS", 10);
-    write_at(5, last_access_column, "LAST ACCESS (SERVER TIME)", columns - last_access_column - 2);
+    write_at(5, 2, "1 WEBSITE" +
+                         sort_direction(SiteSortColumn::hostname, sort_column,
+                                        sort_ascending),
+             site_width);
+    write_at(5, requests_column, "2 REQUESTS" +
+                                      sort_direction(SiteSortColumn::requests,
+                                                     sort_column,
+                                                     sort_ascending),
+             10);
+    write_at(5, last_access_column,
+             "3 LAST ACCESS (SERVER TIME)" +
+                 sort_direction(SiteSortColumn::last_access, sort_column,
+                                sort_ascending),
+             columns - last_access_column - 2);
     attroff(A_BOLD);
     mvhline(6, 1, ACS_HLINE, content_width);
 
@@ -299,7 +422,7 @@ void draw_screen(const StatisticsReport& report,
     mvhline(rows - 2, 0, ' ', columns);
     attron(COLOR_PAIR(1));
     const std::string footer =
-        " UP/DOWN or j/k  Select     Enter  Request data     r  Refresh     q  Quit ";
+        " 1-3 Sort (repeat=toggle) | Up/Dn Select Enter Details r Refresh q Quit";
     write_at(rows - 2, 1, footer, columns - 2);
     attroff(COLOR_PAIR(1));
     if (!status_message.empty()) {
@@ -312,6 +435,8 @@ void draw_screen(const StatisticsReport& report,
 }
 
 void draw_request_screen(std::string_view hostname, const RequestPage& page,
+                         std::size_t total_requests,
+                         RequestSortColumn sort_column, bool sort_ascending,
                          std::size_t selected,
                          std::size_t url_horizontal_offset,
                          std::string_view status_message) {
@@ -339,9 +464,12 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
     std::ostringstream range;
     if (!page.records.empty()) {
         range << "Requests " << page.offset + 1U << "-"
-              << page.offset + page.records.size();
+              << page.offset + page.records.size() << " of " << total_requests;
+        if (sort_column == RequestSortColumn::timestamp && !sort_ascending) {
+            range << " (newest first)";
+        }
         if (page.has_more) {
-            range << "+";
+            range << " (+ newer)";
         }
     } else {
         range << "No request records stored for this site";
@@ -375,10 +503,20 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
     const int url_column = method_column + method_width + 2;
 
     attron(A_BOLD);
-    write_at(3, 2, "SERVER TIME", time_width);
-    write_at(3, ip_column, "CLIENT IP", ip_width);
-    write_at(3, method_column, "METHOD/STATUS", method_width);
-    write_at(3, url_column, "URL", url_width);
+    write_at(3, 2, "1 TIME" + sort_direction(RequestSortColumn::timestamp,
+                                             sort_column, sort_ascending),
+             time_width);
+    write_at(3, ip_column, "2 IP" + sort_direction(RequestSortColumn::client_ip,
+                                                   sort_column, sort_ascending),
+             ip_width);
+    write_at(3, method_column,
+             "3 METHOD/STATUS" +
+                 sort_direction(RequestSortColumn::method_status, sort_column,
+                                sort_ascending),
+             method_width);
+    write_at(3, url_column, "4 URL" + sort_direction(RequestSortColumn::url,
+                                                     sort_column, sort_ascending),
+             url_width);
     attroff(A_BOLD);
     mvhline(4, 1, ACS_HLINE, content_width);
 
@@ -430,7 +568,9 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
     mvhline(rows - 2, 0, ' ', columns);
     attron(COLOR_PAIR(1));
     std::ostringstream footer;
-    footer << " UP/DN Move  LEFT/RIGHT URL  PGUP/PGDN Page  ESC Back  q Quit";
+    footer << " 1-4 Sort (repeat=toggle) "
+           << (sort_ascending ? "ASC" : "DESC")
+           << " | Up/Dn PgUp/Dn L/R URL Esc Back q Quit";
     write_at(rows - 2, 1, footer.str(), columns - 2);
     attroff(COLOR_PAIR(1));
     if (!status_message.empty()) {
@@ -460,15 +600,22 @@ int run_terminal_ui(const std::filesystem::path& log_path,
     configure_colors();
     std::size_t selected = 0;
     std::string status_message = std::move(snapshot.status_message);
+    SiteSortColumn site_sort_column = SiteSortColumn::last_access;
+    bool site_sort_ascending = false;
     bool history_mode = false;
     std::string history_hostname;
     RequestPage request_page;
     std::size_t request_selected = 0;
     std::size_t request_url_offset = 0;
+    std::size_t request_total = 0;
+    RequestSortColumn request_sort_column = RequestSortColumn::timestamp;
+    bool request_sort_ascending = false;
     constexpr std::size_t request_page_size = 100U;
 
     while (true) {
-        const std::vector<SiteRow> sites = sorted_sites(snapshot.report);
+        const std::vector<SiteRow> sites =
+            sorted_sites(snapshot.report, site_sort_column,
+                         site_sort_ascending);
         if (sites.empty()) {
             selected = 0;
         } else if (selected >= sites.size()) {
@@ -477,10 +624,13 @@ int run_terminal_ui(const std::filesystem::path& log_path,
 
         if (history_mode) {
             draw_request_screen(history_hostname, request_page,
+                                request_total,
+                                request_sort_column, request_sort_ascending,
                                 request_selected, request_url_offset,
                                 status_message);
         } else {
-            draw_screen(snapshot.report, log_path, selected, status_message);
+            draw_screen(snapshot.report, log_path, selected, site_sort_column,
+                        site_sort_ascending, status_message);
         }
         status_message.clear();
         const int key = getch();
@@ -492,7 +642,23 @@ int run_terminal_ui(const std::filesystem::path& log_path,
             break;
         }
         if (history_mode) {
-            if (key == KEY_LEFT && request_url_offset > 0U) {
+            if (key >= '1' && key <= '4') {
+                const auto selected_column = static_cast<RequestSortColumn>(
+                    key - '1');
+                if (selected_column == request_sort_column) {
+                    request_sort_ascending = !request_sort_ascending;
+                } else {
+                    request_sort_column = selected_column;
+                    request_sort_ascending = false;
+                }
+                sort_request_page(request_page, request_sort_column,
+                                  request_sort_ascending);
+                request_selected = 0;
+                request_url_offset = 0;
+                status_message = "Sorted this page " +
+                    std::string{request_sort_ascending ? "ascending" :
+                                                        "descending"};
+            } else if (key == KEY_LEFT && request_url_offset > 0U) {
                 request_url_offset = request_url_offset > 4U
                                          ? request_url_offset - 4U
                                          : 0U;
@@ -512,50 +678,73 @@ int run_terminal_ui(const std::filesystem::path& log_path,
                 ++request_selected;
                 request_url_offset = 0;
             } else if ((key == KEY_UP || key == 'k') &&
-                       request_selected == 0U && request_page.offset > 0U) {
+                       request_selected == 0U && request_page.has_more) {
                 const std::size_t new_offset =
-                    request_page.offset > request_page_size
-                        ? request_page.offset - request_page_size
-                        : 0U;
-                request_page = read_site_requests(
+                    request_page.offset + request_page.records.size();
+                request_page = read_newest_requests(
                     statistics_directory, history_hostname, new_offset,
                     request_page_size);
+                sort_request_page(request_page, request_sort_column,
+                                  request_sort_ascending);
                 request_selected = request_page.records.empty()
                                        ? 0U
                                        : request_page.records.size() - 1U;
                 request_url_offset = 0;
             } else if ((key == KEY_DOWN || key == 'j') &&
                        request_selected + 1U == request_page.records.size() &&
-                       request_page.has_more) {
-                const std::size_t new_offset =
-                    request_page.offset + request_page.records.size();
-                request_page = read_site_requests(
-                    statistics_directory, history_hostname, new_offset,
-                    request_page_size);
-                request_selected = 0;
-                request_url_offset = 0;
-            } else if (key == KEY_PPAGE && request_page.offset > 0U) {
+                       request_page.offset > 0U) {
                 const std::size_t new_offset =
                     request_page.offset > request_page_size
                         ? request_page.offset - request_page_size
                         : 0U;
-                request_page = read_site_requests(
+                request_page = read_newest_requests(
                     statistics_directory, history_hostname, new_offset,
                     request_page_size);
+                sort_request_page(request_page, request_sort_column,
+                                  request_sort_ascending);
                 request_selected = 0;
                 request_url_offset = 0;
-            } else if (key == KEY_NPAGE && request_page.has_more) {
+            } else if (key == KEY_PPAGE && request_page.has_more) {
                 const std::size_t new_offset =
                     request_page.offset + request_page.records.size();
-                request_page = read_site_requests(
+                request_page = read_newest_requests(
                     statistics_directory, history_hostname, new_offset,
                     request_page_size);
+                sort_request_page(request_page, request_sort_column,
+                                  request_sort_ascending);
+                request_selected = request_page.records.empty()
+                                       ? 0U
+                                       : request_page.records.size() - 1U;
+                request_url_offset = 0;
+            } else if (key == KEY_NPAGE && request_page.offset > 0U) {
+                const std::size_t new_offset =
+                    request_page.offset > request_page_size
+                        ? request_page.offset - request_page_size
+                        : 0U;
+                request_page = read_newest_requests(
+                    statistics_directory, history_hostname, new_offset,
+                    request_page_size);
+                sort_request_page(request_page, request_sort_column,
+                                  request_sort_ascending);
                 request_selected = 0;
                 request_url_offset = 0;
             }
             continue;
         }
-        if ((key == KEY_UP || key == 'k') && selected > 0) {
+        if (key >= '1' && key <= '3') {
+            const auto selected_column =
+                static_cast<SiteSortColumn>(key - '1');
+            if (selected_column == site_sort_column) {
+                site_sort_ascending = !site_sort_ascending;
+            } else {
+                site_sort_column = selected_column;
+                site_sort_ascending =
+                    selected_column == SiteSortColumn::hostname;
+            }
+            selected = 0;
+            status_message = "Sorted sites " +
+                std::string{site_sort_ascending ? "ascending" : "descending"};
+        } else if ((key == KEY_UP || key == 'k') && selected > 0) {
             --selected;
         } else if ((key == KEY_DOWN || key == 'j') && selected + 1 < sites.size()) {
             ++selected;
@@ -576,9 +765,19 @@ int run_terminal_ui(const std::filesystem::path& log_path,
             const SiteRow& site = sites[std::min(selected, sites.size() - 1)];
             history_hostname = std::string{site.hostname};
             try {
-                request_page = read_site_requests(
-                    statistics_directory, history_hostname, 0,
-                    request_page_size);
+                request_total = count_site_requests(statistics_directory,
+                                                    history_hostname);
+                const std::size_t newest_page_offset =
+                    request_total > request_page_size
+                        ? request_total - request_page_size
+                        : 0U;
+                request_page = read_newest_requests(
+                    statistics_directory, history_hostname,
+                    newest_page_offset, request_page_size);
+                request_sort_column = RequestSortColumn::timestamp;
+                request_sort_ascending = false;
+                sort_request_page(request_page, request_sort_column,
+                                  request_sort_ascending);
                 request_selected = 0;
                 request_url_offset = 0;
                 history_mode = true;
