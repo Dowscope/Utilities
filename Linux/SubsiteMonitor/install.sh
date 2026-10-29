@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 
-VERSION='0.1.0-alpha.5'
+APP_VERSION='0.1.0-alpha.5'
 ASSET='subsite-monitor-0.1.0-alpha.5-linux-x86_64-gnu.tar.gz'
 ASSET_SHA256='c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c'
-ASSET_URL="https://github.com/Dowscope/Utilities/releases/download/v${VERSION}/${ASSET}"
+ASSET_URL="https://github.com/Dowscope/Utilities/releases/download/v${APP_VERSION}/${ASSET}"
 INSTALL_DIR=${SUBSITE_MONITOR_INSTALL_DIR:-/usr/local/bin}
 CONFIG_FILE=${SUBSITE_MONITOR_CONFIG:-/etc/subsite-monitor/monitor.conf}
 SYSTEMD_UNIT_DIR=${SUBSITE_MONITOR_SYSTEMD_UNIT_DIR:-/usr/lib/systemd/system}
@@ -109,7 +109,7 @@ fi
 if [ ! -f "$logrotate_template" ]; then
     fail 'release archive does not contain the logrotate policy'
 fi
-if [ "$("$binary" --version)" != "subsite-monitor $VERSION" ]; then
+if [ "$("$binary" --version)" != "subsite-monitor $APP_VERSION" ]; then
     fail 'downloaded executable version does not match the release'
 fi
 for configured_path in "$ACCESS_LOG" "$NGINX_CONF_DIR" "$LOGROTATE_FILE"; do
@@ -316,7 +316,7 @@ else
 fi
 
 printf 'Installed subsite-monitor %s to %s/subsite-monitor and %s/subsite-monitor.service\n' \
-    "$VERSION" "$INSTALL_DIR" "$SYSTEMD_UNIT_DIR"
+    "$APP_VERSION" "$INSTALL_DIR" "$SYSTEMD_UNIT_DIR"
 printf 'Nginx snippet: %s\n' "$nginx_config_path"
 printf 'Access log: %s\n' "$ACCESS_LOG"
 printf 'Log rotation policy: %s\n' "$LOGROTATE_FILE"

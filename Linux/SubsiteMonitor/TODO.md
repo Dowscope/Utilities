@@ -3,7 +3,7 @@
 Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
-Last reviewed: 2026-10-28. Phases 1 through 5 are implemented locally in
+Last reviewed: 2026-10-29. Phases 1 through 5 are implemented locally in
 0.1.0-alpha.5, published for server testing. Current default access log:
 `/var/log/subsite-monitor/access.log`. The latest local packaging rebuild has
 updated documentation and differs from the uploaded archive; the tracked

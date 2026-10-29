@@ -139,7 +139,7 @@ by the user for server testing; no production deployment is implied.
   uncompressed numeric rotations. Copytruncate has a known truncate-and-regrow
   race between polls. Manual full collection is refused while the service is
   active; the UI reads stored data and refreshes on `r`.
-- `./verify.sh` and `./packaging/build-alpha.sh` passed on 2026-10-28 with
+- `./verify.sh` and `./packaging/build-alpha.sh` passed with
   parser, statistics, config, Nginx config, storage, CLI, service, and
   installer-template tests. The C++23 build had no warnings. The local rebuilt
   alpha.5 package (with refreshed documentation) has SHA-256
@@ -150,7 +150,9 @@ by the user for server testing; no production deployment is implied.
   `installer.sh` and `install.sh` are rendered with the new Nginx validation
   and reload behavior while pinned to that existing release asset. The
   published alpha.5 archive was downloaded and checksum-verified against the
-  release's `SHA256SUMS`.
+  release's `SHA256SUMS`. The installer uses a distinct `APP_VERSION`
+  variable so Debian's `VERSION` from `/etc/os-release` cannot interfere
+  with executable version validation.
 - `./run-dev.sh` with no arguments builds and opens the UI, preferring the
   Docker-generated Nginx log/config when present and otherwise using fixtures.
   Start the fixture in another terminal with `sudo ./run-docker.sh`.

@@ -54,6 +54,11 @@ esac
 MOCK_SYSTEMCTL
 chmod 0755 "$tmp_dir/mock-bin/systemctl"
 
+printf 'ID=debian\nVERSION="12 (bookworm)"\n' >"$tmp_dir/os-release"
+sed "s|^\\. /etc/os-release$|. $tmp_dir/os-release|" "$installer" \
+    >"$tmp_dir/installer-debian"
+chmod 0755 "$tmp_dir/installer-debian"
+
 PATH="$tmp_dir/mock-bin:$PATH" \
 TEST_RELEASE_ARCHIVE="$asset" \
 TEST_CURL_SHOULD_FAIL=1 \
@@ -67,7 +72,7 @@ SUBSITE_MONITOR_STATE_DIR="$tmp_dir/state" \
 SUBSITE_MONITOR_NGINX_CONF_DIR="$tmp_dir/nginx/conf.d" \
 SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/logrotate.d/subsite-monitor" \
 SUBSITE_MONITOR_ACCESS_LOG="$tmp_dir/var/log/subsite-monitor/access.log" \
-    sh "$installer"
+    sh "$tmp_dir/installer-debian"
 [ "$("$tmp_dir/install/subsite-monitor" --version)" = \
   'subsite-monitor 0.1.0-alpha.5' ]
 [ "$(stat -c '%a' "$tmp_dir/etc/monitor.conf")" = 600 ]
@@ -109,7 +114,7 @@ SUBSITE_MONITOR_STATE_DIR="$tmp_dir/state" \
 SUBSITE_MONITOR_NGINX_CONF_DIR="$tmp_dir/nginx/conf.d" \
 SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/logrotate.d/subsite-monitor" \
 SUBSITE_MONITOR_ACCESS_LOG="$tmp_dir/var/log/subsite-monitor/access.log" \
-    sh "$installer"
+    sh "$tmp_dir/installer-debian"
 [ "$(stat -c '%a' "$tmp_dir/etc/monitor.conf")" = 600 ]
 grep -Fq "access_log = $tmp_dir/custom/custom-access.log" \
     "$tmp_dir/etc/monitor.conf"
@@ -137,7 +142,7 @@ SUBSITE_MONITOR_STATE_DIR="$tmp_dir/legacy-state" \
 SUBSITE_MONITOR_NGINX_CONF_DIR="$tmp_dir/legacy-nginx/conf.d" \
 SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/legacy-logrotate/subsite-monitor" \
 SUBSITE_MONITOR_ACCESS_LOG="$tmp_dir/legacy-var/log/subsite-monitor/access.log" \
-    sh "$installer"
+    sh "$tmp_dir/installer-debian"
 grep -Fq "access_log = $tmp_dir/legacy-var/log/subsite-monitor/access.log" \
     "$tmp_dir/legacy/monitor.conf"
 grep -q '^nginx_config = /etc/nginx/nginx.conf$' \

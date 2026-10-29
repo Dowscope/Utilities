@@ -1,5 +1,16 @@
 # Changelog
 
+### Debian installer version variable collision — 2026-10-29T08:46:29-04:00
+
+- Fixed a Debian installer failure where sourcing `/etc/os-release` overwrote
+  the installer's `VERSION` variable with the distribution version. The
+  application version now uses `APP_VERSION`.
+- Added an installer integration test that supplies Debian's
+  `VERSION="12 (bookworm)"` field and verifies the alpha.5 binary version
+  check still succeeds. `./verify.sh` passed, and the regenerated Git
+  installer passed the integration test against the downloaded published
+  alpha.5 archive.
+
 ## 0.1.0 — 2026-10-27
 
 - Established a C++23/GCC CLI foundation with `--help` and `--version`.

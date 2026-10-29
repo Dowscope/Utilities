@@ -21,4 +21,4 @@ permissions, Nginx `server_name` discovery, the packaged host-aware log snippet
 and its automatic loading when `conf.d/*.conf` is included inside `http { }`,
 local archive installation, and request detail privacy and storage behavior.
 
-Last reviewed: 2026-10-28.
+Last reviewed: 2026-10-29.

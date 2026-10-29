@@ -37,7 +37,7 @@ design. [Prompt.md](Prompt.md) preserves the project handoff brief,
 [Changelog.md](Changelog.md) records changes, and [TODO.md](TODO.md) tracks
 approved future work.
 
-`./verify.sh` and `./packaging/build-alpha.sh` passed on 2026-10-28. The clean
+`./verify.sh` and `./packaging/build-alpha.sh` passed. The clean
 C++23 build, parser/statistics/config/Nginx-config/storage/CLI/service and
 installer-template tests passed without compiler warnings. The local alpha.5
 archive and its checksum-pinned installers were rebuilt. Alpha.5 keeps

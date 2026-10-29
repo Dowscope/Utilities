@@ -336,5 +336,5 @@ the saved offset between polls. Only uncompressed numeric logrotate names are
 supported for catch-up after rename rotation. See the project
 [TODO](../TODO.md) for remaining work.
 
-Last reviewed: 2026-10-28. This manual describes the current
+Last reviewed: 2026-10-29. This manual describes the current
 CLI and TUI.

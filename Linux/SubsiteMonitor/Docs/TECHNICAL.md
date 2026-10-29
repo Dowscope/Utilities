@@ -79,6 +79,9 @@ custom configured paths are preserved. Log rotation is daily, retains 14
 rotations, delays compression, and signals the Nginx systemd unit to reopen the
 log. Nginx access-log directives defined at a deeper `server` or `location`
 level override the shared `http`-level log.
+The installer stores its own version in `APP_VERSION` so sourcing
+`/etc/os-release` on Debian cannot overwrite the package version used by the
+executable compatibility check.
 
 The statistics directory defaults to `/var/lib/subsite-monitor/stats` for
 root and to the XDG state path for regular users. `SUBSITE_MONITOR_STATS_DIR`
@@ -206,7 +209,7 @@ catch-up support only for retained uncompressed numeric rotations, and the
 single documented Nginx log format. Configurable statistics and checkpoint
 directories in the root-only config remain future work.
 
-Last reviewed: 2026-10-28. This reference describes the CLI, TUI, root-only
+Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
 log config, CSV storage, checkpointed service, Nginx integration, and alpha.5
 package workflow.
 
