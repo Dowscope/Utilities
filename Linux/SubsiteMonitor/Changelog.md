@@ -1,5 +1,23 @@
 # Changelog
 
+### In-UI verified software updater — 2026-10-29T12:27:40-04:00
+
+- Added `u` in the site overview to fetch up to ten newer releases with a
+  compatible x86_64 archive and published SHA-256 digest. The UI displays
+  release titles, dates, and notes; user-controlled display text is sanitized.
+- Enter opens a separate confirmation screen. Only `y` invokes the installed
+  release installer, which downloads the selected version and verifies its
+  archive digest before replacing the executable. It uses `sudo` when the UI
+  is not root and reports that the UI must be relaunched after success.
+- The release installer installs and refreshes its helper at
+  `/usr/share/subsite-monitor/installer.sh`; `make install` installs the same
+  helper. The installer may reload Nginx and restart the monitoring service.
+- Added release parser/version comparison unit tests, a pty test for the update
+  and confirmation screens, and installer tests for the installed helper.
+  `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
+  warnings. The alpha.8 archive SHA-256 is
+  `f565f158c1fe8fb21ce0084f74e8c8aca4f7a15b0b1a873437575115c490fe8c`.
+
 ### Sortable site overview and alpha.7 package — 2026-10-29T10:42:06-04:00
 
 - The site overview now opens with most recently active sites first and sorts

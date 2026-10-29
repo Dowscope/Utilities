@@ -22,7 +22,8 @@ install `gcc make pkgconf ncurses`.
 The alpha release installer supports x86_64 Debian, Ubuntu, and Arch systems.
 Its binary statically links the runtime libraries; the terminal UI still needs
 a usable terminfo database. The development build requirements above are not
-needed to run the installed release executable.
+needed to run the installed release executable. The UI updater needs Python 3
+and network access to GitHub to read the compatible release list.
 
 ## Build and test
 
@@ -244,6 +245,18 @@ Escape returns to the overview; `r` refreshes the log and `q` exits. It requires
 an interactive terminal. Unselected rows use normal terminal brightness and the
 selected row is bold white on blue. The UI intentionally shows full query
 strings and IPs.
+
+In the site overview, press `u` to check for newer releases that have the
+supported x86_64 Linux archive and a GitHub SHA-256 digest. Select a version to
+read its release notes, then press Enter and `y` to confirm installation. The
+UI invokes the updater helper at `/usr/share/subsite-monitor/installer.sh`;
+when not already root it asks `sudo` to run that helper. The installer verifies
+the downloaded archive digest before replacing the executable, and may reload
+Nginx and restart the monitor service. A successful update leaves the current
+UI process running its old in-memory version; quit and launch it again to use
+the new binary. Press `q` or Escape to leave the release list without changing
+the installation. If the helper is missing, rerun the release installer to
+install it.
 
 The config accepts `access_log = /absolute/path` and
 `nginx_config = /absolute/path` entries, ignores blank and comment lines, and

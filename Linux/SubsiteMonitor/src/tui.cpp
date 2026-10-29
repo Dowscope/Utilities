@@ -4,6 +4,7 @@
 #include "nginx_config.hpp"
 #include "statistics.hpp"
 #include "storage.hpp"
+#include "updater.hpp"
 
 #include <algorithm>
 #include <exception>
@@ -21,6 +22,18 @@
 
 namespace subsite_monitor {
 namespace {
+
+#ifndef SUBSITE_MONITOR_VERSION
+#define SUBSITE_MONITOR_VERSION "0.1.0-alpha.5"
+#endif
+
+#ifndef SUBSITE_MONITOR_INSTALLER_PATH
+#define SUBSITE_MONITOR_INSTALLER_PATH "/usr/share/subsite-monitor/installer.sh"
+#endif
+
+constexpr std::string_view current_version = SUBSITE_MONITOR_VERSION;
+const std::filesystem::path release_installer_path =
+    SUBSITE_MONITOR_INSTALLER_PATH;
 
 class CursesSession {
 public:
@@ -422,7 +435,7 @@ void draw_screen(const StatisticsReport& report,
     mvhline(rows - 2, 0, ' ', columns);
     attron(COLOR_PAIR(1));
     const std::string footer =
-        " 1-3 Sort (repeat=toggle) | Up/Dn Select Enter Details r Refresh q Quit";
+        " 1-3 Sort | Up/Dn Select Enter Details r Refresh u Update q Quit";
     write_at(rows - 2, 1, footer, columns - 2);
     attroff(COLOR_PAIR(1));
     if (!status_message.empty()) {
@@ -581,6 +594,201 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
     refresh();
 }
 
+std::vector<std::string> release_note_lines(std::string_view notes,
+                                            std::size_t width) {
+    std::vector<std::string> lines;
+    std::istringstream input{std::string{notes}};
+    std::string line;
+    while (std::getline(input, line)) {
+        std::string safe_line = safe_terminal_text(line);
+        if (safe_line.empty()) {
+            lines.emplace_back();
+            continue;
+        }
+        while (safe_line.size() > width) {
+            std::size_t split = safe_line.rfind(' ', width);
+            if (split == std::string::npos || split == 0U) split = width;
+            lines.emplace_back(safe_line.substr(0, split));
+            safe_line.erase(0, split);
+            while (!safe_line.empty() && safe_line.front() == ' ') {
+                safe_line.erase(0, 1U);
+            }
+        }
+        lines.push_back(std::move(safe_line));
+    }
+    if (lines.empty()) lines.emplace_back("No release notes were provided.");
+    return lines;
+}
+
+bool is_enter_key(int key);
+
+void draw_update_screen(const std::vector<SoftwareRelease>& releases,
+                        std::size_t selected, std::size_t notes_offset,
+                        std::string_view message) {
+    int rows = 0;
+    int columns = 0;
+    getmaxyx(stdscr, rows, columns);
+    erase();
+    if (rows < 18 || columns < 64) {
+        write_at(0, 0, "Terminal too small. Resize to at least 64 x 18.",
+                 columns);
+        write_at(std::max(1, rows - 1), 0, "Esc: return", columns);
+        refresh();
+        return;
+    }
+
+    attron(COLOR_PAIR(1) | A_BOLD);
+    mvhline(0, 0, ' ', columns);
+    write_at(0, 2, "SUBSITE MONITOR SOFTWARE UPDATE", columns - 4);
+    attroff(COLOR_PAIR(1) | A_BOLD);
+    write_at(1, 2, "Installed version: " + std::string{current_version},
+             columns - 4);
+    write_at(2, 2, "Choose a newer verified release. Enter selects; Esc returns.",
+             columns - 4);
+    mvhline(3, 1, ACS_HLINE, columns - 2);
+
+    const int list_rows = std::max(1, std::min(8, rows - 12));
+    const std::size_t first_release =
+        selected >= static_cast<std::size_t>(list_rows)
+            ? selected - static_cast<std::size_t>(list_rows) + 1U
+            : 0U;
+    for (int line = 0; line < list_rows; ++line) {
+        const std::size_t index = first_release + static_cast<std::size_t>(line);
+        if (index >= releases.size()) break;
+        const int row = 4 + line;
+        const SoftwareRelease& release = releases[index];
+        if (index == selected) {
+            attron(COLOR_PAIR(2) | A_BOLD);
+            mvhline(row, 1, ' ', columns - 2);
+        }
+        std::ostringstream entry;
+        entry << release.version << "   " << release.published_date << "   "
+              << safe_terminal_text(release.title);
+        write_at(row, 2, entry.str(), columns - 4);
+        if (index == selected) attroff(COLOR_PAIR(2) | A_BOLD);
+    }
+
+    const int notes_header_row = 4 + list_rows;
+    mvhline(notes_header_row, 1, ACS_HLINE, columns - 2);
+    if (!releases.empty()) {
+        const SoftwareRelease& release = releases[selected];
+        attron(COLOR_PAIR(3) | A_BOLD);
+        write_at(notes_header_row + 1, 2, safe_terminal_text(release.title),
+                 columns - 4);
+        attroff(COLOR_PAIR(3) | A_BOLD);
+        const std::vector<std::string> notes = release_note_lines(
+            release.notes, static_cast<std::size_t>(columns - 4));
+        const int notes_start = notes_header_row + 2;
+        const int notes_capacity = std::max(0, rows - notes_start - 3);
+        for (int line = 0; line < notes_capacity; ++line) {
+            const std::size_t note_index =
+                notes_offset + static_cast<std::size_t>(line);
+            if (note_index >= notes.size()) break;
+            write_at(notes_start + line, 2, notes[note_index], columns - 4);
+        }
+        if (notes_offset > 0U ||
+            notes_offset + static_cast<std::size_t>(notes_capacity) < notes.size()) {
+            write_at(rows - 3, 2, "n/p: scroll release notes", columns - 4);
+        }
+    }
+
+    attron(COLOR_PAIR(1));
+    write_at(rows - 2, 1,
+             " Up/Dn Select Enter Review n/p Notes Esc Back q Cancel",
+             columns - 2);
+    attroff(COLOR_PAIR(1));
+    if (!message.empty()) {
+        attron(COLOR_PAIR(5) | A_BOLD);
+        write_at(rows - 3, 2, safe_terminal_text(message), columns - 4);
+        attroff(COLOR_PAIR(5) | A_BOLD);
+    }
+    refresh();
+}
+
+int ask_update_confirmation(const SoftwareRelease& release) {
+    const int columns = getmaxx(stdscr);
+    erase();
+    attron(COLOR_PAIR(1) | A_BOLD);
+    mvhline(0, 0, ' ', columns);
+    write_at(0, 2, "CONFIRM SOFTWARE UPDATE", columns - 4);
+    attroff(COLOR_PAIR(1) | A_BOLD);
+    write_at(3, 2, "Install Subsite Monitor " + release.version + "?",
+             columns - 4);
+    write_at(5, 2, "This downloads the release and verifies its SHA-256.",
+             columns - 4);
+    write_at(6, 2, "The installer replaces the executable and may reload Nginx",
+             columns - 4);
+    write_at(7, 2, "and restart the Subsite Monitor systemd service.",
+             columns - 4);
+    write_at(9, 2, "Continue? Press y to install; any other key cancels.",
+             columns - 4);
+    refresh();
+    const int key = getch();
+    return key == 'y' || key == 'Y';
+}
+
+std::string update_from_ui() {
+    erase();
+    write_at(2, 2, "Checking GitHub for verified Subsite Monitor releases...",
+             72);
+    refresh();
+
+    std::vector<SoftwareRelease> releases;
+    try {
+        releases = fetch_software_releases();
+    } catch (const std::exception& error) {
+        return error.what();
+    }
+    std::erase_if(releases, [](const SoftwareRelease& release) {
+        return !version_is_newer(release.version, current_version);
+    });
+    if (releases.empty()) {
+        return "No newer compatible release is available.";
+    }
+
+    std::size_t selected = 0;
+    std::size_t notes_offset = 0;
+    while (true) {
+        draw_update_screen(releases, selected, notes_offset, {});
+        const int key = getch();
+        if (key == 27 || key == 'q' || key == 'Q') return {};
+        if ((key == KEY_UP || key == 'k') && selected > 0U) {
+            --selected;
+            notes_offset = 0;
+        } else if ((key == KEY_DOWN || key == 'j') &&
+                   selected + 1U < releases.size()) {
+            ++selected;
+            notes_offset = 0;
+        } else if (key == 'n') {
+            const std::size_t note_count =
+                release_note_lines(releases[selected].notes,
+                                   static_cast<std::size_t>(
+                                       std::max(1, getmaxx(stdscr) - 4)))
+                    .size();
+            if (notes_offset + 1U < note_count) ++notes_offset;
+        } else if (key == 'p' && notes_offset > 0U) {
+            --notes_offset;
+        } else if (is_enter_key(key)) {
+            if (!ask_update_confirmation(releases[selected])) {
+                continue;
+            }
+            def_prog_mode();
+            endwin();
+            const int status = install_software_release(
+                releases[selected].version, release_installer_path);
+            reset_prog_mode();
+            clear();
+            refresh();
+            if (status == 0) {
+                return "Update installed. Quit and relaunch to use version " +
+                       releases[selected].version + ".";
+            }
+            return "Update installer exited with status " +
+                   std::to_string(status) + "; see the terminal output.";
+        }
+    }
+}
+
 bool is_enter_key(int key) {
     return key == '\n' || key == '\r' || key == KEY_ENTER;
 }
@@ -731,7 +939,9 @@ int run_terminal_ui(const std::filesystem::path& log_path,
             }
             continue;
         }
-        if (key >= '1' && key <= '3') {
+        if (key == 'u' || key == 'U') {
+            status_message = update_from_ui();
+        } else if (key >= '1' && key <= '3') {
             const auto selected_column =
                 static_cast<SiteSortColumn>(key - '1');
             if (selected_column == site_sort_column) {

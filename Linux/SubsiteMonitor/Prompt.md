@@ -105,20 +105,27 @@ by the user for server testing; no production deployment is implied.
 
 ## Current handoff state
 
-- Current work targets `0.1.0-alpha.7`; alpha.6 is the latest published binary
-  release. Alpha.7 adds newest-first site activity by default and sortable site
-  columns (website, request count, last access), using keys `1`–`3` and repeat
-  to reverse direction. Request details open on the latest 100 records and
-  sort within that page using keys `1`–`4`.
-- The user has authorized committing and pushing the work, creating a new tag,
-  and creating the release. Build and verify the alpha.7 archive and checksum.
-  GitHub release creation requires an authenticated release tool; if none is
-  available, push the source/tag and provide asset paths, title, and notes.
-- The user asked whether the UI can update the installed software. Yes; track
-  this as future work. Design an explicit confirmation action that checks
-  compatible release metadata, verifies the archive checksum, installs with
-  clear privilege handling, and explains service restart behavior. Do not claim
-  this is included in alpha.7.
+- Current development work targets `0.1.0-alpha.8`; alpha.6 is the latest
+  published binary release. The `v0.1.0-alpha.7` source tag is pushed, but its
+  GitHub Release and assets were not created because no authenticated release
+  tool was available. Alpha.8 carries forward newest-first/sortable site and
+  request tables, and adds the UI update flow described below.
+- In the site overview, `u` fetches up to ten newer compatible GitHub releases,
+  shows title/date/notes, and lets the user inspect notes. Enter opens a second
+  confirmation; only `y` starts the update. The installed helper at
+  `/usr/share/subsite-monitor/installer.sh` downloads the selected release and
+  verifies the API-provided archive SHA-256 before installing. The installer
+  refreshes its installed helper copy. Non-root UI sessions invoke it through
+  `sudo`; after success, quit and relaunch to use the new binary. Installation
+  may reload Nginx and restart the monitor service. Python 3 and network access
+  are required to query GitHub; the archive download/check is delegated to the
+  installer. Unit and pseudo-terminal tests use fixture release data and do
+  not require GitHub access.
+- The alpha.8 archive is built and checksum-verified at
+  `packaging/dist/subsite-monitor-0.1.0-alpha.8-linux-x86_64-gnu.tar.gz`;
+  SHA-256 is `f565f158c1fe8fb21ce0084f74e8c8aca4f7a15b0b1a873437575115c490fe8c`.
+  `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
+  warnings. Alpha.8 has not been committed, tagged, or published yet.
 - Phases 1 through 5 are implemented locally: C++23 CLI, bounded streaming
   Nginx parser, per-site/daily aggregation, Docker-backed development, root-only
   log configuration and virtual-host inventory, private daily summary CSVs, and
@@ -184,19 +191,17 @@ by the user for server testing; no production deployment is implied.
   release's `SHA256SUMS`. The installer uses a distinct `APP_VERSION`
   variable so Debian's `VERSION` from `/etc/os-release` cannot interfere
   with executable version validation.
-  Alpha.6 is the latest published binary asset. The alpha.7 archive is
-  `packaging/dist/subsite-monitor-0.1.0-alpha.7-linux-x86_64-gnu.tar.gz`,
-  SHA-256 `b824aa354ac7b7ff7e7940f5d077791cfd7f4ceeda0b148ad646f518fc405d23`.
-  It passed `./verify.sh`, package build/tests, SHA-256 verification, shell
-  syntax checks, and `git diff --check`.
+  Alpha.6 is the latest published binary asset. The alpha.7 tag was pushed,
+  but its GitHub release and assets were not created because this environment
+  has no authenticated release-management tool. The alpha.8 archive described
+  above is ready for publication after source commit/tag.
 - `./run-dev.sh` with no arguments builds and opens the UI, preferring the
   Docker-generated Nginx log/config when present and otherwise using fixtures.
   Start the fixture in another terminal with `sudo ./run-docker.sh`.
 - Documentation is in `Docs/MANUAL.md` and `Docs/TECHNICAL.md`; `TODO.md` tracks
-  pending phases and the proposed in-UI updater. When the user says `commit`,
-  update all Markdown, commit, and push to the configured GitHub origin.
-  Alpha.7 release creation is explicitly requested; no production deployment
-  is implied.
+  pending phases. When the user says `commit`, update all Markdown, commit, and
+  push to the configured GitHub origin. Do not publish or deploy alpha.8
+  without explicit approval.
 
 The server-test integration and installer changes are maintained in this
 repository. The release installer validates Nginx and reloads its active

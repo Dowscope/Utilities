@@ -114,6 +114,7 @@ SUBSITE_MONITOR_ARCHIVE="$asset" \
 SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
 SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
 SUBSITE_MONITOR_SYSTEMD_UNIT_DIR="$tmp_dir/systemd" \
+SUBSITE_MONITOR_UPDATER_DIR="$tmp_dir/updater" \
 SUBSITE_MONITOR_STATE_DIR="$tmp_dir/state" \
 SUBSITE_MONITOR_NGINX_CONF_DIR="$tmp_dir/nginx/conf.d" \
 SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/logrotate.d/subsite-monitor" \
@@ -127,6 +128,8 @@ grep -Fq "access_log = $tmp_dir/var/log/subsite-monitor/access.log" \
 grep -Fq "ExecStart=$tmp_dir/install/subsite-monitor service" \
     "$tmp_dir/systemd/subsite-monitor.service"
 [ "$(stat -c '%a' "$tmp_dir/state")" = 700 ]
+[ "$(stat -c '%a' "$tmp_dir/updater/installer.sh")" = 755 ]
+grep -q "^APP_VERSION='$expected_version'$" "$tmp_dir/updater/installer.sh"
 [ "$(stat -c '%a' "$tmp_dir/var/log/subsite-monitor")" = 750 ]
 grep -q '^log_format subsite_monitor ' \
     "$tmp_dir/nginx/conf.d/subsite-monitor.conf"
@@ -164,6 +167,7 @@ SUBSITE_MONITOR_ARCHIVE= \
 SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
 SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
 SUBSITE_MONITOR_SYSTEMD_UNIT_DIR="$tmp_dir/systemd" \
+SUBSITE_MONITOR_UPDATER_DIR="$tmp_dir/updater" \
 SUBSITE_MONITOR_STATE_DIR="$tmp_dir/state" \
 SUBSITE_MONITOR_NGINX_CONF_DIR="$tmp_dir/nginx/conf.d" \
 SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/logrotate.d/subsite-monitor" \
@@ -194,6 +198,7 @@ SUBSITE_MONITOR_ARCHIVE="$asset" \
 SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/legacy-bin" \
 SUBSITE_MONITOR_CONFIG="$tmp_dir/legacy/monitor.conf" \
 SUBSITE_MONITOR_SYSTEMD_UNIT_DIR="$tmp_dir/legacy-systemd" \
+SUBSITE_MONITOR_UPDATER_DIR="$tmp_dir/legacy-updater" \
 SUBSITE_MONITOR_STATE_DIR="$tmp_dir/legacy-state" \
 SUBSITE_MONITOR_NGINX_CONF_DIR="$tmp_dir/legacy-nginx/conf.d" \
 SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/legacy-logrotate/subsite-monitor" \
@@ -205,6 +210,7 @@ grep -Fq "access_log = $tmp_dir/legacy-var/log/subsite-monitor/access.log" \
     "$tmp_dir/legacy/monitor.conf"
 grep -q '^nginx_config = /etc/nginx/nginx.conf$' \
     "$tmp_dir/legacy/monitor.conf"
+[ "$(stat -c '%a' "$tmp_dir/legacy-updater/installer.sh")" = 755 ]
 [ "$(stat -c '%a' "$tmp_dir/legacy/monitor.conf")" = 600 ]
 grep -Fq "access_log $tmp_dir/legacy-var/log/subsite-monitor/access.log subsite_monitor;" \
     "$tmp_dir/legacy-nginx/conf.d/subsite-monitor.conf"

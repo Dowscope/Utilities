@@ -16,7 +16,7 @@ grep -q 'stats --log <path>' "$tmp_dir/help.txt"
 grep -q 'stats \[--days <count>\]' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.7' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.8' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2
@@ -57,6 +57,22 @@ if command -v script >/dev/null 2>&1; then
         "$tmp_dir/ui-missing-log.txt"
     grep -q '1-3 Sort' "$tmp_dir/ui-missing-log.txt"
     grep -q '3 LAST ACCESS' "$tmp_dir/ui-missing-log.txt"
+    grep -q 'u Update' "$tmp_dir/ui-missing-log.txt"
+
+    mkdir -p "$tmp_dir/mock-bin"
+    cat >"$tmp_dir/mock-bin/python3" <<'MOCK_PYTHON'
+#!/bin/sh
+printf '0.1.0-alpha.9\t2026-10-30\tU3Vic2l0ZSBNb25pdG9yIGFscGhhLjk=\tUmVwYWlyZWQgYnVncyBhbmQgaW1wcm92ZWQgdXBkYXRlciBzYWZldHku\n'
+MOCK_PYTHON
+    chmod 0755 "$tmp_dir/mock-bin/python3"
+    printf 'u\nnqq' | TERM=xterm PATH="$tmp_dir/mock-bin:$PATH" \
+        SUBSITE_MONITOR_LOG=tests/fixtures/access.log \
+        SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
+        SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-updater-stats" \
+        script -q -e -c "$program" /dev/null >"$tmp_dir/ui-updater.txt"
+    grep -q 'alpha.9' "$tmp_dir/ui-updater.txt"
+    grep -q 'Repair' "$tmp_dir/ui-updater.txt"
+    grep -q 'CONFIRM' "$tmp_dir/ui-updater.txt"
 
     printf '\n2q' | TERM=xterm \
         SUBSITE_MONITOR_LOG=tests/fixtures/access.log \

@@ -1,13 +1,13 @@
 # Alpha Release Packaging
 
-The current development target is alpha.7. Alpha.6 is the latest published
-binary release. The alpha.7 archive and checksum have been built locally and
-are ready to attach to the `v0.1.0-alpha.7` GitHub release.
-The archive is `packaging/dist/subsite-monitor-0.1.0-alpha.7-linux-x86_64-gnu.tar.gz`
-with SHA-256 `b824aa354ac7b7ff7e7940f5d077791cfd7f4ceeda0b148ad646f518fc405d23`.
+The current development target is alpha.8. Alpha.6 is the latest published
+binary release. Alpha.8 adds an in-UI release updater. The archive and checksum
+were built and verified after the final test suite passed:
+`packaging/dist/subsite-monitor-0.1.0-alpha.8-linux-x86_64-gnu.tar.gz`, SHA-256
+`f565f158c1fe8fb21ce0084f74e8c8aca4f7a15b0b1a873437575115c490fe8c`.
 
 The published alpha.5 package included configured-site fallback and continuous
-CSV collection. The alpha.7 build targets x86_64 Linux. The executable statically links
+CSV collection. The alpha.8 build targets x86_64 Linux. The executable statically links
 ncursesw, libstdc++, libgcc, and glibc; the UI still uses host terminfo. Static
 glibc binaries have portability tradeoffs. This build has only been exercised
 on Arch; validate it on each intended server before production use. The static
@@ -62,34 +62,36 @@ current Git installer is pinned to that artifact. The local rebuild includes
 refreshed documentation and has a different checksum. Replacing the published
 archive requires updating `SHA256SUMS` and the installer pin together.
 
-The alpha.7 source adds sortable site columns, defaulting to latest access
-first. The installer template lists the ten newest compatible
+The alpha.8 source adds sortable site columns, defaulting to latest access
+first, and an update action in the UI. The updater lists newer compatible
+releases with their notes and requires explicit confirmation before invoking
+the installed installer. The installer template lists the ten newest compatible
 GitHub releases, lets interactive users choose a version, defaults to the
 newest in non-interactive use, and offers `--latest`, `--list`, and
 `--version <version>`. It requires Python 3 to parse GitHub's release API
 response and curl or wget for downloads. It only offers releases with the
 expected x86_64 archive, `SHA256SUMS`, and valid SHA-256 metadata.
 
-The alpha.7 archive, checksum, and standalone installer are prepared by
+The alpha.8 archive, checksum, and standalone installer are prepared by
 `./packaging/build-alpha.sh`. Create the GitHub release as
-`v0.1.0-alpha.7`, then attach the matching archive and `SHA256SUMS` from
+`v0.1.0-alpha.8`, then attach the matching archive and `SHA256SUMS` from
 `packaging/dist/`. Until those assets are uploaded, the installer will keep
 offering alpha.6 as the newest installable release; a tag alone is not
 installable.
 
 Suggested release title:
 
-> Subsite Monitor 0.1.0-alpha.7 — Sortable Site Activity
+> Subsite Monitor 0.1.0-alpha.8 — In-UI Software Updates
 
 Suggested release notes:
 
-> - The site list now shows the most recently active websites first by default.
-> - Sort sites by website, request count, or last access with keys `1`–`3`;
->   press the same key again to reverse the sort.
-> - Request history opens with the newest records first and sorts the displayed
->   page by timestamp, IP, method/status, or URL.
-> - The installer continues to list compatible releases and verify archive
->   SHA-256 values before installation.
+> - Added a UI updater that lists newer compatible releases with their release
+>   notes. Installation requires explicit confirmation.
+> - The updater uses the installed release installer, which verifies archive
+>   SHA-256 before replacing the executable.
+> - The installer refreshes its installed update helper during installation.
+> - Site activity defaults to most recently active first; site and request
+>   tables remain sortable by their displayed columns.
 > - Release binaries target x86_64 Linux; the terminal UI uses system terminfo.
 
 The build host is Arch Linux. No Debian or Ubuntu environment is available in

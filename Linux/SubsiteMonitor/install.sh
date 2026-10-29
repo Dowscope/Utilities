@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-APP_VERSION='0.1.0-alpha.7'
-ASSET='subsite-monitor-0.1.0-alpha.7-linux-x86_64-gnu.tar.gz'
-ASSET_SHA256='b824aa354ac7b7ff7e7940f5d077791cfd7f4ceeda0b148ad646f518fc405d23'
+APP_VERSION='0.1.0-alpha.8'
+ASSET='subsite-monitor-0.1.0-alpha.8-linux-x86_64-gnu.tar.gz'
+ASSET_SHA256='f565f158c1fe8fb21ce0084f74e8c8aca4f7a15b0b1a873437575115c490fe8c'
 RELEASE_API_URL='https://api.github.com/repos/Dowscope/Utilities/releases?per_page=100'
 RELEASE_MODE='auto'
 REQUESTED_VERSION=''
@@ -13,6 +13,7 @@ SYSTEMD_UNIT_DIR=${SUBSITE_MONITOR_SYSTEMD_UNIT_DIR:-/usr/lib/systemd/system}
 STATE_DIR=${SUBSITE_MONITOR_STATE_DIR:-/var/lib/subsite-monitor}
 NGINX_CONF_DIR=${SUBSITE_MONITOR_NGINX_CONF_DIR:-/etc/nginx/conf.d}
 LOGROTATE_FILE=${SUBSITE_MONITOR_LOGROTATE_FILE:-/etc/logrotate.d/subsite-monitor}
+UPDATER_DIR=${SUBSITE_MONITOR_UPDATER_DIR:-/usr/share/subsite-monitor}
 ACCESS_LOG=${SUBSITE_MONITOR_ACCESS_LOG:-/var/log/subsite-monitor/access.log}
 
 fail() {
@@ -88,6 +89,7 @@ work_dir=$(mktemp -d "${TMPDIR:-/tmp}/subsite-monitor.XXXXXX") ||
     fail 'could not create a temporary directory'
 staged_binary=''
 staged_config=''
+staged_updater=''
 cleanup() {
     rm -rf "$work_dir"
     if [ -n "$staged_binary" ]; then
@@ -96,9 +98,13 @@ cleanup() {
     if [ -n "$staged_config" ]; then
         rm -f "$staged_config"
     fi
+    if [ -n "$staged_updater" ]; then
+        rm -f "$staged_updater"
+    fi
 }
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
+cp "$0" "$work_dir/installer.sh" || fail 'could not stage the updater installer'
 
 download_file() {
     output_path=$1
@@ -274,6 +280,16 @@ for configured_path in "$ACCESS_LOG" "$NGINX_CONF_DIR" "$LOGROTATE_FILE"; do
             ;;
     esac
 done
+case "$UPDATER_DIR" in
+    /*) ;;
+    *) fail 'updater directory must be absolute' ;;
+esac
+case "$UPDATER_DIR" in
+    *[!A-Za-z0-9_./-]*) fail 'updater directory contains unsupported characters' ;;
+esac
+case "$UPDATER_DIR" in
+    */../*|*/..|*/./*|*/.) fail 'updater directory contains a dot segment' ;;
+esac
 case "$INSTALL_DIR" in
     /*) ;;
     *) fail 'installation directory must be absolute' ;;
@@ -442,6 +458,23 @@ install -m 0644 "$service_file" \
     "$SYSTEMD_UNIT_DIR/subsite-monitor.service" ||
     fail 'could not install systemd unit'
 
+if [ -L "$UPDATER_DIR" ]; then
+    fail 'updater directory must not be a symbolic link'
+fi
+install -d -m 0755 "$UPDATER_DIR" ||
+    fail "cannot create updater directory: $UPDATER_DIR"
+updater_file="$UPDATER_DIR/installer.sh"
+if [ -L "$updater_file" ]; then
+    fail 'updater installer must not be a symbolic link'
+fi
+staged_updater=$(mktemp "$UPDATER_DIR/.installer.XXXXXX") ||
+    fail "cannot stage updater installer in: $UPDATER_DIR"
+install -m 0755 "$work_dir/installer.sh" "$staged_updater" ||
+    fail 'could not stage updater installer'
+mv -f "$staged_updater" "$updater_file" ||
+    fail 'could not install updater installer'
+staged_updater=''
+
 if command -v nginx >/dev/null 2>&1; then
     nginx -t || fail 'Nginx configuration test failed; Nginx was not reloaded'
     nginx_dump="$work_dir/nginx-config.txt"
@@ -488,4 +521,5 @@ printf 'Installed subsite-monitor %s to %s/subsite-monitor and %s/subsite-monito
 printf 'Nginx snippet: %s\n' "$nginx_config_path"
 printf 'Access log: %s\n' "$ACCESS_LOG"
 printf 'Log rotation policy: %s\n' "$LOGROTATE_FILE"
+printf 'Update helper: %s\n' "$updater_file"
 printf '%s\n' 'The installer did not edit the main Nginx configuration.'

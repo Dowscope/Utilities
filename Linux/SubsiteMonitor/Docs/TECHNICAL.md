@@ -2,7 +2,7 @@
 
 ## Current architecture
 
-The executable has ten translation units: `src/main.cpp` handles CLI
+The executable has eleven translation units: `src/main.cpp` handles CLI
 arguments, `src/config.cpp` parses and secures the root config,
 `src/nginx_config.cpp` discovers configured virtual-host names,
 `src/collector.cpp` streams log files, `src/log_parser.cpp`
@@ -12,6 +12,8 @@ interactive screen with ncursesw. Their interfaces are declared in
 corresponding headers. `src/storage.cpp` implements daily CSV persistence,
 checkpoint recovery, directory locking, atomic replacement, and history reads.
 `src/service.cpp` implements the foreground log follower and rotation handling.
+`src/updater.cpp` fetches and validates bounded release-catalog data and starts
+the installed updater without invoking a shell.
 
 The terminal report and TUI share the statistics model. `src/report.cpp`
 provides text formatting plus UTC storage and local-time display formatting; `src/tui.cpp` manages
@@ -34,7 +36,9 @@ The default install prefix is `/usr/local`, with the executable installed in
 0600 under a mode 0700 directory, preserving an existing config, and installs
 `systemd/subsite-monitor.service` under `/usr/lib/systemd/system`. It does not
 enable or start the unit. It also creates `/var/lib/subsite-monitor` mode 0700
-for service state. `STATEDIR` changes that path, and `DESTDIR` prepends a
+for service state and installs the current release installer at
+`/usr/share/subsite-monitor/installer.sh`. `DATADIR` changes that path, and
+`STATEDIR` changes the state path; `DESTDIR` prepends a
 staging root to install paths. It creates `/var/log/subsite-monitor` mode 0750,
 installs the Nginx snippet to `/etc/nginx/conf.d/subsite-monitor.conf`, and
 installs a separate `/etc/logrotate.d/subsite-monitor` policy. The snippet is
@@ -49,7 +53,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.7` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.8` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -68,8 +72,18 @@ fields are absolute `access_log` and `nginx_config` paths. The latter defaults
 to `/etc/nginx/nginx.conf`. `SUBSITE_MONITOR_CONFIG` selects another config
 file, while `SUBSITE_MONITOR_LOG` and `SUBSITE_MONITOR_NGINX_CONFIG` override
 individual paths. The CLI `--log` option takes precedence for that command.
-The program performs no network access. Collection writes CSV state as
-described below.
+Normal collection and reporting perform no network access. Pressing `u` in the
+UI starts a separate Python 3 helper process that requests the public GitHub
+Releases API over HTTPS. It selects up to ten published releases with the
+expected x86_64 archive, `SHA256SUMS`, and a valid API SHA-256 digest. C++
+parses bounded tab-separated helper output; release title and notes are base64
+encoded, bounded, and sanitized before terminal display. Only versions newer
+than the running version are shown. Enter opens an explicit confirmation; `y`
+executes the installed installer with the selected version, directly as root
+or through `sudo`. The installer performs the download and digest check, replaces
+the executable atomically, and may reload Nginx and restart the monitor service.
+The update subprocess is launched with `fork`/`exec`, never through a shell.
+Collection writes CSV state as described below.
 
 The release installer accepts `SUBSITE_MONITOR_ARCHIVE=/path/to/archive` for
 offline testing. It applies the same pinned SHA-256 check as a downloaded
@@ -228,7 +242,7 @@ Both tables render unselected rows at normal brightness and the selected row
 in bold white on blue.
 
 Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.7
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.8
 development source. Alpha.6 is the latest published package.
 
 

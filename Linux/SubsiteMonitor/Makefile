@@ -9,10 +9,12 @@ CPPFLAGS += $(NCURSES_CFLAGS)
 LDLIBS += $(NCURSES_LIBS)
 
 TARGET := subsite-monitor
-VERSION := 0.1.0-alpha.7
+VERSION := 0.1.0-alpha.8
 CPPFLAGS += -DSUBSITE_MONITOR_VERSION='"$(VERSION)"'
+DATADIR ?= /usr/share/subsite-monitor
+CPPFLAGS += -DSUBSITE_MONITOR_INSTALLER_PATH='"$(DATADIR)/installer.sh"'
 SOURCES := src/main.cpp src/config.cpp src/nginx_config.cpp src/collector.cpp src/log_parser.cpp \
-	src/statistics.cpp src/storage.cpp src/service.cpp src/report.cpp src/tui.cpp
+	src/statistics.cpp src/storage.cpp src/service.cpp src/report.cpp src/updater.cpp src/tui.cpp
 OBJECTS := $(SOURCES:.cpp=.o)
 DEPS := $(OBJECTS:.o=.d)
 PARSER_TEST := tests/test_parser
@@ -20,6 +22,7 @@ STATISTICS_TEST := tests/test_statistics
 CONFIG_TEST := tests/test_config
 NGINX_CONFIG_TEST := tests/test_nginx_config
 STORAGE_TEST := tests/test_storage
+UPDATER_TEST := tests/test_updater
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
 SYSCONFDIR ?= /etc
@@ -60,13 +63,17 @@ $(STORAGE_TEST): tests/test_storage.cpp src/storage.o src/statistics.o \
 	src/report.o src/collector.o src/log_parser.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
+$(UPDATER_TEST): tests/test_updater.cpp src/updater.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
+
 test: $(TARGET) $(PARSER_TEST) $(STATISTICS_TEST) $(CONFIG_TEST) \
-	$(NGINX_CONFIG_TEST) $(STORAGE_TEST)
+	$(NGINX_CONFIG_TEST) $(STORAGE_TEST) $(UPDATER_TEST)
 	./$(PARSER_TEST)
 	./$(STATISTICS_TEST)
 	./$(CONFIG_TEST)
 	./$(NGINX_CONFIG_TEST)
 	./$(STORAGE_TEST)
+	./$(UPDATER_TEST)
 	sh ./tests/test_cli.sh ./$(TARGET)
 	sh ./tests/test_service.sh ./$(TARGET)
 	sh ./tests/test_installer_template.sh ./$(TARGET)
@@ -76,6 +83,7 @@ install: $(TARGET)
 	install -Dm644 systemd/subsite-monitor.service \
 		"$(DESTDIR)$(SYSTEMD_UNITDIR)/subsite-monitor.service"
 	install -d -m700 "$(DESTDIR)$(STATEDIR)"
+	install -Dm755 installer.sh "$(DESTDIR)$(DATADIR)/installer.sh"
 	install -d -m700 "$(DESTDIR)$(CONFIGDIR)"
 	set -e; if [ ! -e "$(DESTDIR)$(CONFIGFILE)" ]; then \
 		install -m600 config/monitor.conf.example \
@@ -104,6 +112,6 @@ install: $(TARGET)
 
 clean:
 	rm -f $(TARGET) $(OBJECTS) $(DEPS) $(PARSER_TEST) $(STATISTICS_TEST) \
-		$(CONFIG_TEST) $(NGINX_CONFIG_TEST) $(STORAGE_TEST)
+		$(CONFIG_TEST) $(NGINX_CONFIG_TEST) $(STORAGE_TEST) $(UPDATER_TEST)
 
 -include $(DEPS)
