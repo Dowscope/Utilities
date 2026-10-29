@@ -105,10 +105,14 @@ by the user for server testing; no production deployment is implied.
 
 ## Current handoff state
 
-- Current development work targets `0.1.0-alpha.10`; alpha.9 is the latest
-  published binary release and its archive/checksum are on GitHub. Alpha.10
-  displays the running version in the UI headers and the GitHub Issues URL on
-  the overview and in `--help`.
+- `0.1.0-alpha.10` is published and visible in the UI release list. It displays
+  the running version in the UI headers and the GitHub Issues URL on the
+  overview and in `--help`.
+- Alpha.11 fixes the updater confirmation screen closing
+  after 250 ms. The overview's background polling timeout was leaking into the
+  confirmation input; confirmation now waits for the user's key. The release
+  archive and checksum are built; `packaging/README.md` has the release title,
+  notes, and archive SHA-256.
 - In the site overview, `u` fetches up to ten newer compatible GitHub releases,
   shows title/date/notes, and lets the user inspect notes. Enter opens a second
   confirmation; only `y` starts the update. The installed helper at
@@ -125,9 +129,9 @@ by the user for server testing; no production deployment is implied.
   and `./packaging/build-alpha.sh` are run for each release candidate. Alpha.10
   archive/checksum details are recorded in `packaging/README.md` and
   `packaging/dist/SHA256SUMS`.
-- The source tag for this release is `v0.1.0-alpha.10`. Its title and notes are
-  in `packaging/README.md`; attach the generated archive and `SHA256SUMS` to
-  the GitHub Release after pushing the source tag.
+- The latest published release is tagged `v0.1.0-alpha.10`. Alpha.11 uses
+  source tag `v0.1.0-alpha.11`; the package is in `packaging/dist/`. The
+  GitHub Release entry and asset upload are separate.
 - Phases 1 through 5 are implemented locally: C++23 CLI, bounded streaming
   Nginx parser, per-site/daily aggregation, Docker-backed development, root-only
   log configuration and virtual-host inventory, private daily summary CSVs, and
@@ -193,7 +197,7 @@ by the user for server testing; no production deployment is implied.
   release's `SHA256SUMS`. The installer uses a distinct `APP_VERSION`
   variable so Debian's `VERSION` from `/etc/os-release` cannot interfere
   with executable version validation.
-  Alpha.9 is the latest published binary asset before alpha.10.
+  Alpha.10 is the latest published binary release before alpha.11.
 - `./run-dev.sh` with no arguments builds and opens the UI, preferring the
   Docker-generated Nginx log/config when present and otherwise using fixtures.
   Start the fixture in another terminal with `sudo ./run-docker.sh`.

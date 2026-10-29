@@ -1,5 +1,23 @@
 # Changelog
 
+### Alpha.11 release preparation — 2026-10-29T15:00:03-04:00
+
+- Bumped development and packaging version to `0.1.0-alpha.11`; alpha.10 is
+  the latest published binary release.
+- Fixed the updater confirmation screen so it waits for a choice instead of
+  inheriting the overview's 250 ms input timeout.
+- Release title: **Subsite Monitor 0.1.0-alpha.11 — Reliable Update
+  Confirmation**. Archive SHA-256:
+  `c36fbbd197158501a38c97348880ad1908d51624c19092a430109ecb9f045cf5`.
+- `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
+  warnings; the archive checksum verified successfully.
+
+### Keep updater confirmation open — 2026-10-29T14:42:22-04:00
+
+- Fixed the update confirmation screen closing after 250 ms. It now waits for
+  the user's choice, while the overview retains its background refresh timeout.
+- Clarified the confirmation behavior in the user and technical manuals.
+
 ### Alpha.10 release preparation — 2026-10-29T14:27:55-04:00
 
 - Bumped development and packaging version to `0.1.0-alpha.10`; alpha.9 is the

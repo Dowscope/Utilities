@@ -801,7 +801,11 @@ int ask_update_confirmation(const SoftwareRelease& release) {
     write_at(9, 2, "Continue? Press y to install; any other key cancels.",
              columns - 4);
     refresh();
+    // The main UI uses a short timeout to refresh the background update
+    // indicator. Confirmation must wait for the user's decision instead.
+    timeout(-1);
     const int key = getch();
+    timeout(250);
     return key == 'y' || key == 'Y';
 }
 

@@ -212,9 +212,10 @@ command bar stays focused on navigation; press `u` when the update indicator
 appears to review releases. Python 3 and network access to GitHub are required
 for the check.
 
-Press `u` to review release titles and notes. Select a version, press Enter,
-then press `y` on the confirmation screen to install it. The installer
-verifies the downloaded archive checksum before replacing packaged files. It
+Press `u` to review release titles and notes. Select a version and press
+Enter. The confirmation screen waits until you press `y` to install or another
+key to cancel. The installer verifies the downloaded archive checksum before
+replacing packaged files. It
 preserves the existing configuration and statistics, refreshes the installed
 installer helper, and restarts an active Subsite Monitor service. When Nginx
 is installed and active, it validates the configuration and reloads Nginx.
