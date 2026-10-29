@@ -28,11 +28,12 @@ directory. It creates private state and log directories, installs the snippet
 under `/etc/nginx/conf.d`, the rotation policy under `/etc/logrotate.d`, and the
 service unit under `/usr/lib/systemd/system`. It migrates the previous default
 log path while preserving custom config and existing snippet/rotation files.
-It does not edit the main Nginx config or enable/start the monitor service.
+It does not edit the main Nginx config or start an inactive Nginx service.
 When Nginx is installed, it runs `nginx -t`, verifies the snippet appears in
-`nginx -T`, and reloads `nginx.service` when active. It does not start an
-inactive Nginx service. `make install` only installs the files and does not
-test or reload Nginx.
+`nginx -T`, and reloads `nginx.service` when active. It enables and starts
+the monitor service when the configured log is readable, and restarts an
+active monitor on upgrade. `make install` only installs files and does not
+test/reload Nginx or enable/start the monitor service.
 For pre-release testing, pass the matching local archive as
 `SUBSITE_MONITOR_ARCHIVE=/path/to/archive`; the installer still checks its
 embedded SHA-256 and does not require the GitHub release asset to exist.

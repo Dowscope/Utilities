@@ -95,10 +95,12 @@ URL parameters in reports. Trusted reverse-proxy requirements must be
 documented for accurate client IPs. Monitoring failures must not affect the
 web server. A local alpha.5 installer/package now prepares the executable,
 root-only monitor config, private state/log directories, Nginx `conf.d` snippet,
-logrotate policy, and disabled systemd unit. It accepts a checksum-verified
+logrotate policy, and systemd unit. It accepts a checksum-verified
 local archive for pre-release testing. It deliberately does not edit the main
 Nginx config; it validates the config and reloads `nginx.service` when active.
-It does not start an inactive Nginx or monitor service. Alpha.5 was published
+It does not start an inactive Nginx service. When the configured log is
+readable, it enables/starts the monitor service and restarts it on upgrade.
+Alpha.5 was published
 by the user for server testing; no production deployment is implied.
 
 ## Current handoff state
@@ -139,6 +141,11 @@ by the user for server testing; no production deployment is implied.
   uncompressed numeric rotations. Copytruncate has a known truncate-and-regrow
   race between polls. Manual full collection is refused while the service is
   active; the UI reads stored data and refreshes on `r`.
+- The release installer now reloads systemd and enables/starts the monitor
+  service when the configured access log is readable. It restarts the service
+  on upgrades and skips activation if systemd or the log is unavailable.
+  Unlike manual `make install`, the release installer does not backfill old
+  log history before starting the service.
 - `./verify.sh` and `./packaging/build-alpha.sh` passed with
   parser, statistics, config, Nginx config, storage, CLI, service, and
   installer-template tests. The C++23 build had no warnings. The local rebuilt
@@ -172,6 +179,6 @@ release installer places the access log at
 `nginx -t`, confirms the snippet appears in `nginx -T`, then reloads
 `nginx.service` if active. It does not edit the main config or start an
 inactive Nginx service. Use the local archive option for pre-release server
-testing. Phase 6 remains future work. Validate on the subsites server before
-enabling the monitor service; do not publish another release without explicit
-approval.
+testing. Phase 6 remains future work. Validate the automatically started
+service and confirm it records requests on the subsites server; do not publish
+another release without explicit approval.

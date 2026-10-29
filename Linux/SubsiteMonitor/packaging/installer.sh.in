@@ -315,10 +315,31 @@ else
     printf '%s\n' 'Nginx is not installed; configuration test and reload were skipped.'
 fi
 
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl daemon-reload || fail 'could not reload systemd unit definitions'
+    if [ -r "$ACCESS_LOG" ]; then
+        if systemctl is-active --quiet subsite-monitor.service; then
+            systemctl enable subsite-monitor.service ||
+                fail 'could not enable the Subsite Monitor service'
+            systemctl restart subsite-monitor.service ||
+                fail 'could not restart the Subsite Monitor service'
+            printf '%s\n' 'Subsite Monitor service enabled and restarted.'
+        else
+            systemctl enable --now subsite-monitor.service ||
+                fail 'could not enable and start the Subsite Monitor service'
+            printf '%s\n' 'Subsite Monitor service enabled and started.'
+        fi
+    else
+        printf 'Subsite Monitor service was not enabled or started because the access log is not readable: %s\n' \
+            "$ACCESS_LOG"
+    fi
+else
+    printf '%s\n' 'systemctl is unavailable; the Subsite Monitor service was not enabled or started.'
+fi
+
 printf 'Installed subsite-monitor %s to %s/subsite-monitor and %s/subsite-monitor.service\n' \
     "$APP_VERSION" "$INSTALL_DIR" "$SYSTEMD_UNIT_DIR"
 printf 'Nginx snippet: %s\n' "$nginx_config_path"
 printf 'Access log: %s\n' "$ACCESS_LOG"
 printf 'Log rotation policy: %s\n' "$LOGROTATE_FILE"
-printf '%s\n' 'The service is installed but not enabled or started.'
 printf '%s\n' 'The installer did not edit the main Nginx configuration.'

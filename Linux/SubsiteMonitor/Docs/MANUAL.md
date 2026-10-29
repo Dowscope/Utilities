@@ -177,8 +177,10 @@ The UI can read the CSVs while the service is active; press `r` to refresh the
 screen after new requests have been collected.
 
 On a fresh state directory, the service starts at the current end of the log
-and records only future requests. To include existing log history, perform a
-one-time collection first, using the same configured log and statistics
+and records future requests. The release installer enables and starts the
+service when the configured log is readable; it does not backfill earlier
+history. For a manual installation using `make install`, collect history
+before starting the service, using the same configured log and statistics
 directory:
 
 ```sh
@@ -255,8 +257,13 @@ The release installer does not edit the main Nginx configuration. It runs
 `nginx -t`, checks `nginx -T` to confirm the snippet was loaded, and reloads
 `nginx.service` if systemd reports that it is active. If Nginx is missing or
 inactive, the installer reports that it skipped validation/reload as
-applicable; it does not start Nginx. Confirm the include is in the `http { }`
-context with `sudo nginx -T`. A server block with its own `access_log`
+applicable; it does not start Nginx. Once the configured access log is
+readable, the installer reloads systemd and enables/starts the monitor service.
+On reinstallation, it restarts an already active monitor so it uses the
+installed binary. If the log is unavailable, it skips automatic activation and
+reports why; it does not stop a monitor that is already running. Confirm the
+include is in the `http { }` context with `sudo nginx -T`. A server block with
+its own `access_log`
 directive overrides the shared log, so update that block to use the
 `subsite_monitor` format if you need its requests.
 
@@ -314,18 +321,21 @@ sudo env SUBSITE_MONITOR_ARCHIVE=/tmp/subsite-monitor-0.1.0-alpha.5-linux-x86_64
 The installer preserves an existing monitor config, Nginx snippet, and
 logrotate policy. It migrates the previous default log path to
 `/var/log/subsite-monitor/access.log`, but preserves custom paths. It does not
-enable the monitor service or edit the main Nginx configuration. When Nginx is
-installed, the installer tests its configuration, confirms the snippet is
-included, and reloads `nginx.service` if active. It leaves an inactive Nginx
-service stopped. Check the installation output and inspect the loaded config:
+edit the main Nginx configuration. When Nginx is installed, the installer
+tests its configuration, confirms the snippet is included, and reloads
+`nginx.service` if active. When the configured log is readable, it enables
+and starts the monitor service; on upgrades it restarts an active monitor. It
+leaves an inactive Nginx service stopped. Check the installation output and
+inspect the loaded config and service:
 
 ```sh
 sudo nginx -T
 sudo logrotate -d /etc/logrotate.d/subsite-monitor
+sudo systemctl status subsite-monitor.service
 ```
 
-Then run one `collect` for historical data and enable the monitor unit as
-described in [Continuous collection service](#continuous-collection-service).
+The installer does not import historical log data; it starts collection from
+the current end of the log.
 
 ## Current limits
 

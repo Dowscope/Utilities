@@ -40,10 +40,11 @@ installs the Nginx snippet to `/etc/nginx/conf.d/subsite-monitor.conf`, and
 installs a separate `/etc/logrotate.d/subsite-monitor` policy. The snippet is
 automatically loaded when the main Nginx config includes `conf.d/*.conf` from
 inside `http { }`; the installer does not edit the main config. The release
-installer tests Nginx, checks that the
-snippet appears in `nginx -T`, and reloads `nginx.service` when active. It skips
-the validation/reload when Nginx is not installed, and leaves an inactive
-service stopped. Existing snippets and logrotate files are preserved.
+installer tests Nginx, checks that the snippet appears in `nginx -T`, and
+reloads `nginx.service` when active. It reloads systemd and enables/starts the
+monitor service when the configured log is readable, and restarts an active
+monitor on upgrade. It skips service activation if systemd or the log is
+unavailable. Existing snippets and logrotate files are preserved.
 
 ## CLI and process behavior
 

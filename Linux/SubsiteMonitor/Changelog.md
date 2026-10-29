@@ -1,5 +1,17 @@
 # Changelog
 
+### Installer enables and starts monitor service — 2026-10-29T09:17:34-04:00
+
+- After installing files and validating/reloading Nginx, the release installer
+  reloads systemd and enables/starts the monitor when its configured log is
+  readable. On upgrades it restarts an active monitor. It skips automatic
+  activation when systemd or the log is unavailable, and never starts Nginx.
+- Added integration coverage for service enable/start and active-service
+  restart behavior. Updated the README, user/technical manuals, packaging guide,
+  handoff prompt, and TODO.
+- The alpha.5 release archive is unchanged; the tracked Git installer handles
+  activation. `./verify.sh` passed.
+
 ### Debian installer version variable collision — 2026-10-29T08:46:29-04:00
 
 - Fixed a Debian installer failure where sourcing `/etc/os-release` overwrote

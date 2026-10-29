@@ -47,8 +47,25 @@ cat >"$tmp_dir/mock-bin/systemctl" <<'MOCK_SYSTEMCTL'
 set -eu
 printf '%s\n' "$*" >>"${TEST_SYSTEMCTL_CALLS:-/dev/null}"
 case "$1" in
-    is-active) [ "${TEST_SYSTEMCTL_INACTIVE:-0}" = 0 ] ;;
-    reload) exit 0 ;;
+    is-active)
+        case "$3" in
+            nginx.service)
+                [ "${TEST_SYSTEMCTL_NGINX_INACTIVE:-0}" = 0 ]
+                ;;
+            subsite-monitor.service)
+                [ "${TEST_SYSTEMCTL_MONITOR_ACTIVE:-0}" = 1 ]
+                ;;
+            *) exit 2 ;;
+        esac
+        ;;
+    reload)
+        if [ "$2" = nginx.service ]; then
+            mkdir -p "$(dirname "$TEST_ACCESS_LOG")"
+            : >"$TEST_ACCESS_LOG"
+        fi
+        ;;
+    daemon-reload) ;;
+    enable|restart) ;;
     *) exit 2 ;;
 esac
 MOCK_SYSTEMCTL
@@ -64,6 +81,7 @@ TEST_RELEASE_ARCHIVE="$asset" \
 TEST_CURL_SHOULD_FAIL=1 \
 TEST_NGINX_CALLS="$tmp_dir/nginx-calls" \
 TEST_SYSTEMCTL_CALLS="$tmp_dir/systemctl-calls" \
+TEST_ACCESS_LOG="$tmp_dir/var/log/subsite-monitor/access.log" \
 SUBSITE_MONITOR_ARCHIVE="$asset" \
 SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
 SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
@@ -89,6 +107,8 @@ grep -Fq "access_log $tmp_dir/var/log/subsite-monitor/access.log subsite_monitor
 grep -Fq "$tmp_dir/var/log/subsite-monitor/access.log {" \
     "$tmp_dir/logrotate.d/subsite-monitor"
 grep -qx 'reload nginx.service' "$tmp_dir/systemctl-calls"
+grep -qx 'daemon-reload' "$tmp_dir/systemctl-calls"
+grep -qx 'enable --now subsite-monitor.service' "$tmp_dir/systemctl-calls"
 grep -qx -- '-t' "$tmp_dir/nginx-calls"
 grep -qx -- '-T' "$tmp_dir/nginx-calls"
 printf '# keep administrator edits\n' \
@@ -99,13 +119,18 @@ printf '# keep administrator rotation edits\n' \
 printf 'access_log = %s/custom/custom-access.log\n' "$tmp_dir" \
     >"$tmp_dir/etc/monitor.conf"
 chmod 0644 "$tmp_dir/etc/monitor.conf"
+mkdir -p "$tmp_dir/custom"
+: >"$tmp_dir/custom/custom-access.log"
 sed -i "s|^access_log .* subsite_monitor;\$|access_log $tmp_dir/custom/custom-access.log subsite_monitor;|" \
     "$tmp_dir/nginx/conf.d/subsite-monitor.conf"
 sed -i "1s|^.* {|$tmp_dir/custom/custom-access.log {|" \
     "$tmp_dir/logrotate.d/subsite-monitor"
 PATH="$tmp_dir/mock-bin:$PATH" \
 TEST_RELEASE_ARCHIVE="$asset" \
-TEST_SYSTEMCTL_INACTIVE=1 \
+TEST_SYSTEMCTL_NGINX_INACTIVE=1 \
+TEST_SYSTEMCTL_MONITOR_ACTIVE=1 \
+TEST_SYSTEMCTL_CALLS="$tmp_dir/systemctl-calls" \
+TEST_ACCESS_LOG="$tmp_dir/custom/custom-access.log" \
 SUBSITE_MONITOR_ARCHIVE= \
 SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/install" \
 SUBSITE_MONITOR_CONFIG="$tmp_dir/etc/monitor.conf" \
@@ -123,6 +148,8 @@ grep -q '^# keep administrator edits$' \
 grep -q '^# keep administrator rotation edits$' \
     "$tmp_dir/logrotate.d/subsite-monitor"
 test "$(grep -c '^reload nginx.service$' "$tmp_dir/systemctl-calls")" = 1
+grep -qx 'enable subsite-monitor.service' "$tmp_dir/systemctl-calls"
+grep -qx 'restart subsite-monitor.service' "$tmp_dir/systemctl-calls"
 grep -Fq "access_log $tmp_dir/custom/custom-access.log subsite_monitor;" \
     "$tmp_dir/nginx/conf.d/subsite-monitor.conf"
 grep -Fq "$tmp_dir/custom/custom-access.log {" \
@@ -142,6 +169,8 @@ SUBSITE_MONITOR_STATE_DIR="$tmp_dir/legacy-state" \
 SUBSITE_MONITOR_NGINX_CONF_DIR="$tmp_dir/legacy-nginx/conf.d" \
 SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/legacy-logrotate/subsite-monitor" \
 SUBSITE_MONITOR_ACCESS_LOG="$tmp_dir/legacy-var/log/subsite-monitor/access.log" \
+TEST_SYSTEMCTL_CALLS="$tmp_dir/systemctl-calls" \
+TEST_ACCESS_LOG="$tmp_dir/legacy-var/log/subsite-monitor/access.log" \
     sh "$tmp_dir/installer-debian"
 grep -Fq "access_log = $tmp_dir/legacy-var/log/subsite-monitor/access.log" \
     "$tmp_dir/legacy/monitor.conf"

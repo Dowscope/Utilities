@@ -109,6 +109,8 @@ The installer seeds the root-only monitor config and installs a host-aware
 snippet at `/etc/nginx/conf.d/subsite-monitor.conf`, a logrotate policy, and the
 systemd unit. The snippet loads when the main Nginx config includes
 `conf.d/*.conf` inside `http { }`. The installer checks that include, tests the
-Nginx configuration, and reloads `nginx.service` when it is active. It does not
-edit the main Nginx config, start Nginx, or enable the monitor service. The
-default monitored log is `/var/log/subsite-monitor/access.log`.
+Nginx configuration, and reloads `nginx.service` when it is active. If the
+configured log is readable, it reloads systemd and enables/starts the monitor
+service; on upgrades it restarts an active monitor. It does not edit the main
+Nginx config or start an inactive Nginx service. The default monitored log is
+`/var/log/subsite-monitor/access.log`.

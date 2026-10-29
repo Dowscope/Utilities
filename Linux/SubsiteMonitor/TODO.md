@@ -39,6 +39,5 @@ approved.
   rebuild has a distinct checksum and has not replaced the published asset.
 - [ ] **Operational follow-up:** test the installed systemd unit against the
   user's actual Nginx configuration and logrotate policy on the subsites server.
-  Confirm installer output shows Nginx validation and reload, then verify log
-  writes before enabling the monitor service. If Nginx was inactive during
-  install, start it only after reviewing the config.
+  Confirm installer output shows Nginx validation/reload and monitor service
+  activation, then verify log writes and collected requests.
