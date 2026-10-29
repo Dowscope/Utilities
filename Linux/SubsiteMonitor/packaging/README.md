@@ -57,10 +57,34 @@ current Git installer is pinned to that artifact. The local rebuild includes
 refreshed documentation and has a different checksum. Replacing the published
 archive requires updating `SHA256SUMS` and the installer pin together.
 
-The development source is now tagged `v0.1.0-alpha.6` and contains the UI row
-contrast update. That tag has no release archive or GitHub release yet; the
-tracked installer remains pinned to the published alpha.5 asset until a
-matching alpha.6 archive and checksum are prepared and uploaded.
+The development source is tagged `v0.1.0-alpha.6` and contains the UI row
+contrast update. The installer template lists the ten newest compatible
+GitHub releases, lets interactive users choose a version, defaults to the
+newest in non-interactive use, and offers `--latest`, `--list`, and
+`--version <version>`. It requires Python 3 to parse GitHub's release API
+response and curl or wget for downloads. It only offers releases with the
+expected x86_64 archive, `SHA256SUMS`, and valid SHA-256 metadata.
+
+The alpha.6 archive, checksum, and standalone installer are prepared by
+`./packaging/build-alpha.sh`. Create the GitHub release as
+`v0.1.0-alpha.6`, then attach the matching archive and `SHA256SUMS` from
+`packaging/dist/`. Until those assets are uploaded, the installer will keep
+offering alpha.5 as the newest installable release; a tag alone is not
+installable.
+
+Suggested release title:
+
+> Subsite Monitor 0.1.0-alpha.6 — Clearer UI and Version Selection
+
+Suggested release notes:
+
+> - Improved terminal-table readability: regular rows use normal text
+>   brightness, and the selected row is bold white on blue.
+> - The installer now lists up to 10 compatible releases for interactive
+>   selection. Non-interactive runs select the newest available release.
+> - Added `--latest`, `--list`, and `--version <version>` installer options.
+> - Installer downloads are checked against GitHub's SHA-256 release metadata.
+> - Release binaries target x86_64 Linux; the terminal UI uses system terminfo.
 
 The build host is Arch Linux. No Debian or Ubuntu environment is available in
 this checkout, so validate on those systems before production use.

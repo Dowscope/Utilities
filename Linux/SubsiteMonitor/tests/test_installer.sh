@@ -5,6 +5,8 @@ script_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 asset=${1:?usage: test_installer.sh <release-archive>}
 installer=${2:-$script_dir/installer.sh}
 expected_version=$(sed -n "s/^APP_VERSION='\([^']*\)'$/\1/p" "$installer")
+asset_name="subsite-monitor-$expected_version-linux-x86_64-gnu.tar.gz"
+asset_digest=$(sha256sum "$asset" | awk '{print $1}')
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT HUP INT TERM
 mkdir -p "$tmp_dir/mock-bin"
@@ -13,20 +15,34 @@ cat >"$tmp_dir/mock-bin/curl" <<'MOCK_CURL'
 #!/bin/sh
 set -eu
 output=''
+source_url=''
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --output|-o)
             output=$2
             shift 2
             ;;
-        *) shift ;;
+        *) source_url=$1; shift ;;
     esac
 done
 [ -n "$output" ]
 [ "${TEST_CURL_SHOULD_FAIL:-0}" != 1 ] || exit 9
-cp "$TEST_RELEASE_ARCHIVE" "$output"
+case "$source_url" in
+    *api.github.com*) cp "$TEST_RELEASES_JSON" "$output" ;;
+    *) cp "$TEST_RELEASE_ARCHIVE" "$output" ;;
+esac
 MOCK_CURL
 chmod 0755 "$tmp_dir/mock-bin/curl"
+
+cat >"$tmp_dir/releases.json" <<EOF
+[
+  {"tag_name":"v9.9.9","draft":false,"published_at":"2026-10-29T00:00:00Z","assets":[]},
+  {"tag_name":"v$expected_version","draft":false,"published_at":"2026-10-28T00:00:00Z","assets":[
+    {"name":"$asset_name","digest":"sha256:$asset_digest"},
+    {"name":"SHA256SUMS","digest":null}
+  ]}
+]
+EOF
 
 cat >"$tmp_dir/mock-bin/nginx" <<'MOCK_NGINX'
 #!/bin/sh
@@ -76,6 +92,17 @@ printf 'ID=debian\nVERSION="12 (bookworm)"\n' >"$tmp_dir/os-release"
 sed "s|^\\. /etc/os-release$|. $tmp_dir/os-release|" "$installer" \
     >"$tmp_dir/installer-debian"
 chmod 0755 "$tmp_dir/installer-debian"
+
+PATH="$tmp_dir/mock-bin:$PATH" \
+TEST_RELEASES_JSON="$tmp_dir/releases.json" \
+TEST_RELEASE_ARCHIVE="$asset" \
+SUBSITE_MONITOR_ARCHIVE= \
+    sh "$tmp_dir/installer-debian" --list >"$tmp_dir/release-list.txt"
+grep -q "$expected_version" "$tmp_dir/release-list.txt"
+if grep -q '9.9.9' "$tmp_dir/release-list.txt"; then
+    echo 'release picker listed a release without compatible assets' >&2
+    exit 1
+fi
 
 PATH="$tmp_dir/mock-bin:$PATH" \
 TEST_RELEASE_ARCHIVE="$asset" \
@@ -128,6 +155,7 @@ sed -i "1s|^.* {|$tmp_dir/custom/custom-access.log {|" \
     "$tmp_dir/logrotate.d/subsite-monitor"
 PATH="$tmp_dir/mock-bin:$PATH" \
 TEST_RELEASE_ARCHIVE="$asset" \
+TEST_RELEASES_JSON="$tmp_dir/releases.json" \
 TEST_SYSTEMCTL_NGINX_INACTIVE=1 \
 TEST_SYSTEMCTL_MONITOR_ACTIVE=1 \
 TEST_SYSTEMCTL_CALLS="$tmp_dir/systemctl-calls" \
@@ -186,6 +214,7 @@ grep -Fq "$tmp_dir/legacy-var/log/subsite-monitor/access.log {" \
 printf 'not the release archive\n' >"$tmp_dir/corrupted.tar.gz"
 if PATH="$tmp_dir/mock-bin:$PATH" \
     TEST_RELEASE_ARCHIVE="$tmp_dir/corrupted.tar.gz" \
+    SUBSITE_MONITOR_ARCHIVE="$tmp_dir/corrupted.tar.gz" \
     SUBSITE_MONITOR_INSTALL_DIR="$tmp_dir/should-not-install" \
     SUBSITE_MONITOR_CONFIG="$tmp_dir/should-not-config/monitor.conf" \
     sh "$installer" >"$tmp_dir/out" 2>"$tmp_dir/error"; then

@@ -23,6 +23,7 @@ local archive installation, and request detail privacy and storage behavior.
 
 The current development version is alpha.6; its UI uses normal brightness for
 unselected rows and bold white on blue for the selected row. Alpha.5 remains
-the latest published binary release.
+the latest published binary release. The installer lists up to 10 compatible
+published releases and verifies the selected archive's SHA-256 before install.
 
 Last reviewed: 2026-10-29.

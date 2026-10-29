@@ -41,10 +41,11 @@ approved future work.
 `./verify.sh` and `./packaging/build-alpha.sh` passed. The clean
 C++23 build, parser/statistics/config/Nginx-config/storage/CLI/service and
 installer-template tests passed without compiler warnings. The alpha.5 archive
-and its checksum-pinned installers remain the latest published assets. The
-alpha.6 source tag contains the table readability update but has no release
-archive yet. Alpha.5 keeps configured sites visible if the selected access log
-is unavailable.
+remains the latest published release asset until alpha.6 is published. The
+alpha.6 archive is ready in `packaging/dist/`; its SHA-256 is recorded in
+`packaging/dist/SHA256SUMS`. Alpha.6 includes the table readability update and
+release-version selector. Alpha.5 keeps configured sites visible if the
+selected access log is unavailable.
 See `packaging/README.md` for alpha build and release steps.
 
 ## Current CLI
@@ -117,4 +118,7 @@ Nginx configuration, and reloads `nginx.service` when it is active. If the
 configured log is readable, it reloads systemd and enables/starts the monitor
 service; on upgrades it restarts an active monitor. It does not edit the main
 Nginx config or start an inactive Nginx service. The default monitored log is
-`/var/log/subsite-monitor/access.log`.
+`/var/log/subsite-monitor/access.log`. The installer lists up to 10 compatible
+published releases and verifies the selected archive's SHA-256. Use
+`--list`, `--latest`, or `--version <version>` to control selection; remote
+installation requires Python 3 and curl or wget.

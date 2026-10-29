@@ -316,7 +316,7 @@ The generated installer accepts the local archive path while still checking
 its pinned SHA-256:
 
 ```sh
-sudo env SUBSITE_MONITOR_ARCHIVE=/tmp/subsite-monitor-0.1.0-alpha.5-linux-x86_64-gnu.tar.gz \
+sudo env SUBSITE_MONITOR_ARCHIVE=/tmp/subsite-monitor-0.1.0-alpha.6-linux-x86_64-gnu.tar.gz \
   ./installer.sh
 ```
 
@@ -338,6 +338,15 @@ sudo systemctl status subsite-monitor.service
 
 The installer does not import historical log data; it starts collection from
 the current end of the log.
+
+Without options, an interactive installer lists up to 10 compatible published
+releases; press Enter to accept the newest or enter another displayed number.
+Use `./installer.sh --list` to inspect the options without installing,
+`sudo ./installer.sh --latest` for a non-interactive latest install, or
+`sudo ./installer.sh --version 0.1.0-alpha.5` to select a specific version.
+Only releases with the x86_64 archive, `SHA256SUMS`, and valid SHA-256 asset
+metadata are offered. Remote selection uses Python 3 and requires `curl` or
+`wget` for downloads.
 
 ## Current limits
 

@@ -4,7 +4,9 @@ set -eu
 APP_VERSION='@VERSION@'
 ASSET='subsite-monitor-@VERSION@-linux-x86_64-gnu.tar.gz'
 ASSET_SHA256='@ASSET_SHA256@'
-ASSET_URL="https://github.com/Dowscope/Utilities/releases/download/v${APP_VERSION}/${ASSET}"
+RELEASE_API_URL='https://api.github.com/repos/Dowscope/Utilities/releases?per_page=100'
+RELEASE_MODE='auto'
+REQUESTED_VERSION=''
 INSTALL_DIR=${SUBSITE_MONITOR_INSTALL_DIR:-/usr/local/bin}
 CONFIG_FILE=${SUBSITE_MONITOR_CONFIG:-/etc/subsite-monitor/monitor.conf}
 SYSTEMD_UNIT_DIR=${SUBSITE_MONITOR_SYSTEMD_UNIT_DIR:-/usr/lib/systemd/system}
@@ -17,6 +19,35 @@ fail() {
     printf 'subsite-monitor installer: %s\n' "$1" >&2
     exit 1
 }
+
+case "$#" in
+    0) ;;
+    1)
+        case "$1" in
+            --latest) RELEASE_MODE='latest' ;;
+            --list) RELEASE_MODE='list' ;;
+            --help|-h)
+                cat <<'HELP'
+Usage: installer.sh [--latest | --list | --version <version>]
+
+Without options, interactively choose from up to 10 available releases. In a
+non-interactive shell, the newest available release is selected automatically.
+HELP
+                exit 0
+                ;;
+            *) fail "unknown option: $1" ;;
+        esac
+        ;;
+    2)
+        if [ "$1" = '--version' ]; then
+            RELEASE_MODE='version'
+            REQUESTED_VERSION=$2
+        else
+            fail 'usage: installer.sh [--latest | --list | --version <version>]'
+        fi
+        ;;
+    *) fail 'usage: installer.sh [--latest | --list | --version <version>]' ;;
+esac
 
 case "$(uname -s)" in
     Linux) ;;
@@ -44,6 +75,14 @@ fi
 if ! command -v tar >/dev/null 2>&1; then
     fail 'tar is required to extract the release archive'
 fi
+if { [ -z "${SUBSITE_MONITOR_ARCHIVE:-}" ] || [ "$RELEASE_MODE" = 'list' ]; } &&
+    ! command -v python3 >/dev/null 2>&1; then
+    fail 'python3 is required to read the GitHub release list safely'
+fi
+if { [ -z "${SUBSITE_MONITOR_ARCHIVE:-}" ] || [ "$RELEASE_MODE" = 'list' ]; } &&
+    ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+    fail 'curl or wget is required to download the release'
+fi
 
 work_dir=$(mktemp -d "${TMPDIR:-/tmp}/subsite-monitor.XXXXXX") ||
     fail 'could not create a temporary directory'
@@ -61,6 +100,116 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
 
+download_file() {
+    output_path=$1
+    source_url=$2
+    if command -v curl >/dev/null 2>&1; then
+        curl --fail --location --silent --show-error \
+            --output "$output_path" "$source_url"
+    else
+        wget --quiet --output-document="$output_path" "$source_url"
+    fi
+}
+
+select_release() {
+    catalog_json="$work_dir/releases.json"
+    release_list="$work_dir/available-releases.txt"
+    download_file "$catalog_json" "$RELEASE_API_URL" ||
+        fail 'could not retrieve the GitHub release list'
+
+    if ! python3 - "$catalog_json" >"$release_list" <<'PYTHON'
+import json
+import re
+import sys
+
+version_pattern = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?\Z")
+digest_pattern = re.compile(r"sha256:([0-9a-fA-F]{64})\Z")
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as source:
+        releases = json.load(source)
+except (OSError, json.JSONDecodeError) as error:
+    print(f"cannot parse GitHub release data: {error}", file=sys.stderr)
+    sys.exit(1)
+
+if not isinstance(releases, list):
+    print("GitHub returned an unexpected release-list response", file=sys.stderr)
+    sys.exit(1)
+
+available = []
+for release in releases:
+    if not isinstance(release, dict) or release.get("draft") is True:
+        continue
+    tag = release.get("tag_name", "")
+    version = tag[1:] if tag.startswith("v") else tag
+    if not version_pattern.fullmatch(version):
+        continue
+    assets = release.get("assets", [])
+    if not isinstance(assets, list):
+        continue
+    expected_archive = f"subsite-monitor-{version}-linux-x86_64-gnu.tar.gz"
+    archive = next((item for item in assets
+                   if isinstance(item, dict) and item.get("name") == expected_archive), None)
+    checksums = any(isinstance(item, dict) and item.get("name") == "SHA256SUMS"
+                    for item in assets)
+    archive_digest = archive.get("digest") if archive else None
+    digest = digest_pattern.fullmatch(archive_digest) \
+        if isinstance(archive_digest, str) else None
+    if not checksums or digest is None:
+        continue
+    published = release.get("published_at", "")
+    date = published[:10] if isinstance(published, str) else ""
+    available.append((version, tag, digest.group(1), date))
+    if len(available) == 10:
+        break
+
+for version, tag, digest, date in available:
+    print(f"{version}\t{tag}\t{digest}\t{date}")
+PYTHON
+    then
+        fail 'invalid GitHub release-list response'
+    fi
+    [ -s "$release_list" ] || fail 'no compatible releases with verified assets were found'
+
+    if [ "$RELEASE_MODE" = 'list' ]; then
+        printf '%s\n' 'Available Subsite Monitor releases (x86_64 Linux):'
+        awk -F '\t' '{ printf "  %2d) %-22s %s\n", NR, $1, $4 }' "$release_list"
+        exit 0
+    fi
+
+    if [ "$RELEASE_MODE" = 'version' ]; then
+        selected_line=$(awk -F '\t' -v wanted="$REQUESTED_VERSION" \
+            '$1 == wanted || $2 == wanted { print; found=1 } END { exit !found }' \
+            "$release_list") ||
+            fail "version is not among the 10 newest available releases: $REQUESTED_VERSION"
+    elif [ "$RELEASE_MODE" = 'auto' ] && [ -t 0 ] && [ -t 1 ]; then
+        printf '%s\n' 'Available Subsite Monitor releases (x86_64 Linux):'
+        awk -F '\t' '{ printf "  %2d) %-22s %s\n", NR, $1, $4 }' "$release_list"
+        printf 'Select a version [1]: '
+        IFS= read -r selection || selection=''
+        case "$selection" in
+            '') selection=1 ;;
+            0) fail 'release selection is out of range' ;;
+            *[!0-9]*) fail 'selection must be a release number' ;;
+        esac
+        selected_line=$(sed -n "${selection}p" "$release_list")
+        [ -n "$selected_line" ] || fail 'release selection is out of range'
+    else
+        selected_line=$(sed -n '1p' "$release_list")
+    fi
+
+    IFS="$(printf '\t')" read -r APP_VERSION RELEASE_TAG ASSET_SHA256 RELEASE_DATE <<EOF
+$selected_line
+EOF
+    ASSET="subsite-monitor-$APP_VERSION-linux-x86_64-gnu.tar.gz"
+    ASSET_URL="https://github.com/Dowscope/Utilities/releases/download/$RELEASE_TAG/$ASSET"
+    printf 'Selected Subsite Monitor %s (%s).\n' "$APP_VERSION" "$RELEASE_DATE"
+}
+
+if [ -z "${SUBSITE_MONITOR_ARCHIVE:-}" ] || [ "$RELEASE_MODE" = 'list' ]; then
+    select_release
+fi
+
 archive="$work_dir/$ASSET"
 if [ -n "${SUBSITE_MONITOR_ARCHIVE:-}" ]; then
     if [ -L "$SUBSITE_MONITOR_ARCHIVE" ] ||
@@ -69,14 +218,11 @@ if [ -n "${SUBSITE_MONITOR_ARCHIVE:-}" ]; then
     fi
     cp "$SUBSITE_MONITOR_ARCHIVE" "$archive" ||
         fail 'cannot copy local release archive'
-elif command -v curl >/dev/null 2>&1; then
-    curl --fail --location --silent --show-error \
-        --output "$archive" "$ASSET_URL" || fail 'release download failed'
-elif command -v wget >/dev/null 2>&1; then
-    wget --quiet --output-document="$archive" "$ASSET_URL" ||
-        fail 'release download failed'
+    [ "$RELEASE_MODE" != 'version' ] ||
+        [ "$REQUESTED_VERSION" = "$APP_VERSION" ] ||
+        fail 'local archive version does not match the requested version'
 else
-    fail 'curl or wget is required to download the release'
+    download_file "$archive" "$ASSET_URL" || fail 'release download failed'
 fi
 
 printf '%s  %s\n' "$ASSET_SHA256" "$archive" | sha256sum --check --status - ||

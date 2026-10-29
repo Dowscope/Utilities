@@ -1,5 +1,21 @@
 # Changelog
 
+### Release selection and alpha.6 package — 2026-10-29T09:49:30-04:00
+
+- The installer now offers up to 10 recent releases with compatible x86_64
+  archives and valid SHA-256 metadata. Interactive installs show a numbered
+  menu; non-interactive installs choose the newest. Added `--latest`, `--list`,
+  and `--version <version>` options. Remote installs require Python 3 plus
+  curl or wget.
+- Added installer tests for API parsing, filtering releases without compatible
+  assets, and automatic latest selection. `./verify.sh` and
+  `./packaging/build-alpha.sh` passed.
+- Built `packaging/dist/subsite-monitor-0.1.0-alpha.6-linux-x86_64-gnu.tar.gz`.
+  Its SHA-256 is
+  `cdd784ae4d029ff370327260f8b735382e0d596d19c14be3719f6e52ae061903`.
+  GitHub release creation and asset upload remain pending; this environment
+  has no authenticated GitHub release-management tool.
+
 ### Improve table readability — 2026-10-29T09:28:48-04:00
 
 - Removed dim styling from alternating website and request-history rows. All

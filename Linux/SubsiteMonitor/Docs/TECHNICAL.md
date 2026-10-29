@@ -84,6 +84,14 @@ The installer stores its own version in `APP_VERSION` so sourcing
 `/etc/os-release` on Debian cannot overwrite the package version used by the
 executable compatibility check.
 
+For remote installs, `installer.sh` queries the public GitHub Releases API,
+filters for up to 10 non-draft releases with the expected x86_64 archive,
+`SHA256SUMS`, and a valid SHA-256 archive digest, then offers an interactive
+version menu. Non-interactive runs select the newest compatible release.
+`--latest`, `--list`, and `--version <version>` support unattended, inspection,
+and pinned installs. Python 3 parses the API JSON; curl or wget downloads the
+metadata and archive. Release tags are validated before use in download URLs.
+
 The statistics directory defaults to `/var/lib/subsite-monitor/stats` for
 root and to the XDG state path for regular users. `SUBSITE_MONITOR_STATS_DIR`
 or `--stats-dir` overrides it. The directory is mode 0700 and must be owned by

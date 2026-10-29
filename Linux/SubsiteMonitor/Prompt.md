@@ -106,8 +106,11 @@ by the user for server testing; no production deployment is implied.
 ## Current handoff state
 
 - Current development version is `0.1.0-alpha.6`, tagged as `v0.1.0-alpha.6`;
-  alpha.5 remains the latest published binary release for server testing. No
-  alpha.6 release assets or GitHub release have been published. The user
+  alpha.5 remains the latest published binary release for server testing. The
+  user requested an alpha.6 release and intends to upload generated assets.
+  Its archive and checksum have been built locally. This environment has no
+  authenticated GitHub release-management tool, so a GitHub release draft has
+  not been created. The user
   asked to add a continuously running CSV-updating service and systemd unit;
   the unit must not be enabled on this development host or a production host
   as part of implementation.
@@ -150,6 +153,11 @@ by the user for server testing; no production deployment is implied.
   on upgrades and skips activation if systemd or the log is unavailable.
   Unlike manual `make install`, the release installer does not backfill old
   log history before starting the service.
+- The installer template lists up to 10 compatible GitHub releases and offers
+  an interactive picker. Non-interactive runs choose the newest; `--latest`,
+  `--list`, and `--version <version>` are supported. Python 3 and curl or wget
+  are required for remote selection and downloads. Tags without compatible
+  release assets are excluded.
 - `./verify.sh` and `./packaging/build-alpha.sh` passed with
   parser, statistics, config, Nginx config, storage, CLI, service, and
   installer-template tests. The C++23 build had no warnings. The local rebuilt
@@ -158,18 +166,22 @@ by the user for server testing; no production deployment is implied.
   archive includes the systemd unit, Nginx snippet, and logrotate policy. The
   already published alpha.5 archive remains SHA-256
   `c2ce6821abe4b95afce815e60c9afb59c1606fdf3812783ff5baf5541ee0235c`.
-  `installer.sh` and `install.sh` are rendered with the new Nginx validation
-  and reload behavior while pinned to that existing release asset. The
+  `installer.sh` and `install.sh` are rendered with Nginx validation/reload and
+  dynamic release selection. The
   published alpha.5 archive was downloaded and checksum-verified against the
   release's `SHA256SUMS`. The installer uses a distinct `APP_VERSION`
   variable so Debian's `VERSION` from `/etc/os-release` cannot interfere
   with executable version validation.
+  The current alpha.6 archive is
+  `packaging/dist/subsite-monitor-0.1.0-alpha.6-linux-x86_64-gnu.tar.gz`,
+  SHA-256 `cdd784ae4d029ff370327260f8b735382e0d596d19c14be3719f6e52ae061903`.
 - `./run-dev.sh` with no arguments builds and opens the UI, preferring the
   Docker-generated Nginx log/config when present and otherwise using fixtures.
   Start the fixture in another terminal with `sudo ./run-docker.sh`.
 - Documentation is in `Docs/MANUAL.md` and `Docs/TECHNICAL.md`; `TODO.md` tracks
   pending phases. When the user says `commit`, update all Markdown, commit, and
-  push to the configured GitHub origin. Do not release without approval.
+  push to the configured GitHub origin. Alpha.6 release creation is explicitly
+  requested; no production deployment is implied.
 
 The server-test integration and installer changes are maintained in this
 repository. The release installer validates Nginx and reloads its active
@@ -184,5 +196,4 @@ release installer places the access log at
 `nginx.service` if active. It does not edit the main config or start an
 inactive Nginx service. Use the local archive option for pre-release server
 testing. Phase 6 remains future work. Validate the automatically started
-service and confirm it records requests on the subsites server; do not publish
-another release without explicit approval.
+service and confirm it records requests on the subsites server.
