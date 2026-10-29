@@ -57,7 +57,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.11` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.12` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -82,7 +82,9 @@ Releases API over HTTPS. It selects up to ten published releases with the
 expected x86_64 archive, `SHA256SUMS`, and a valid API SHA-256 digest. C++
 parses bounded tab-separated helper output; release title and notes are base64
 encoded, bounded, and sanitized before terminal display. Only versions newer
-than the running version are shown. Enter opens an explicit confirmation that
+than the running version are shown, sorted by semantic version descending
+rather than API response order. The installer picker applies the same ordering
+before limiting results to the newest ten. Enter opens an explicit confirmation that
 waits for input; `y` executes the installed installer with the selected
 version, directly as root or through `sudo`. The installer performs the
 download and digest check, replaces the executable atomically, and may reload
@@ -259,8 +261,8 @@ shortcuts are shown in each view's footer. Footer commands use the
 unselected rows at normal brightness and the selected row in bold white on blue.
 
 Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.11
-development source. Alpha.10 is the latest published package.
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.12
+development source. Alpha.11 is the latest published package.
 
 
 ## Docker Nginx development fixture

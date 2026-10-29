@@ -17,7 +17,7 @@ grep -q 'stats \[--days <count>\]' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 grep -q 'https://github.com/Dowscope/Utilities/issues' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.11' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.12' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2
@@ -54,7 +54,7 @@ if command -v script >/dev/null 2>&1; then
         SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-missing-log.txt"
     grep -q 'alpha.example.test' "$tmp_dir/ui-missing-log.txt"
-    grep -q 'v0.1.0-alpha.11' "$tmp_dir/ui-missing-log.txt"
+    grep -q 'v0.1.0-alpha.12' "$tmp_dir/ui-missing-log.txt"
     grep -q 'https://github.com/Dowscope/Utilities/issues' \
         "$tmp_dir/ui-missing-log.txt"
     grep -q 'Access log unavailable; showing configured sites only.' \
@@ -70,7 +70,7 @@ if command -v script >/dev/null 2>&1; then
     mkdir -p "$tmp_dir/mock-bin"
     cat >"$tmp_dir/mock-bin/python3" <<'MOCK_PYTHON'
 #!/bin/sh
-printf '0.1.0-alpha.12\t2026-10-30\tU3Vic2l0ZSBNb25pdG9yIGFscGhhLjEy\tUmVwYWlyZWQgYnVncyBhbmQgaW1wcm92ZWQgdXBkYXRlciBzYWZldHku\n'
+printf '0.1.0-alpha.13\t2026-10-30\tU3Vic2l0ZSBNb25pdG9yIGFscGhhLjEz\tUmVwYWlyZWQgYnVncyBhbmQgaW1wcm92ZWQgdXBkYXRlciBzYWZldHku\n'
 MOCK_PYTHON
     chmod 0755 "$tmp_dir/mock-bin/python3"
     { sleep 1; printf 'q'; } | TERM=xterm PATH="$tmp_dir/mock-bin:$PATH" \
@@ -78,14 +78,14 @@ MOCK_PYTHON
         SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
         SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-badge-stats" \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-badge.txt"
-    grep -q 'Update 0.1.0-alpha.12 (u)' "$tmp_dir/ui-badge.txt"
+    grep -q 'Update 0.1.0-alpha.13 (u)' "$tmp_dir/ui-badge.txt"
 
     printf 'u\nnqq' | TERM=xterm PATH="$tmp_dir/mock-bin:$PATH" \
         SUBSITE_MONITOR_LOG=tests/fixtures/access.log \
         SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
         SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-updater-stats" \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-updater.txt"
-    grep -q 'alpha.12' "$tmp_dir/ui-updater.txt"
+    grep -q 'alpha.13' "$tmp_dir/ui-updater.txt"
     grep -q 'Repair' "$tmp_dir/ui-updater.txt"
     grep -q 'CONFIRM' "$tmp_dir/ui-updater.txt"
 
@@ -111,7 +111,7 @@ MOCK_NO_UPDATE
         SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-stats" \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-history.txt"
     grep -q 'HISTORY' "$tmp_dir/ui-history.txt"
-    grep -q 'v0.1.0-alpha.11' "$tmp_dir/ui-history.txt"
+    grep -q 'v0.1.0-alpha.12' "$tmp_dir/ui-history.txt"
     grep -q 'TIME' "$tmp_dir/ui-history.txt"
     grep -Eq 'Sort: ?1-4' "$tmp_dir/ui-history.txt"
     grep -Eq 'Rows: ?Up/Dn' "$tmp_dir/ui-history.txt"

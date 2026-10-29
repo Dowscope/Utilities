@@ -1,5 +1,18 @@
 # Changelog
 
+### Alpha.12 release preparation — 2026-10-29T15:11:55-04:00
+
+- Bumped development and packaging version to `0.1.0-alpha.12`; alpha.11 is
+  the latest published binary release.
+- Sort compatible releases by semantic version, newest first, in the installer
+  picker and in-UI updater rather than trusting GitHub API order.
+- Added tests for release ordering and selecting the latest version by default.
+- Release title: **Subsite Monitor 0.1.0-alpha.12 — Correct Release
+  Ordering**. Archive SHA-256:
+  `8ba1e0bf110a6d689bea3901a879575182667c660580cd350f6583f65d955ffc`.
+- `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
+  warnings; the archive checksum verified successfully.
+
 ### Alpha.11 release preparation — 2026-10-29T15:00:03-04:00
 
 - Bumped development and packaging version to `0.1.0-alpha.11`; alpha.10 is

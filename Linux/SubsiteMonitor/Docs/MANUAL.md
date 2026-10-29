@@ -388,7 +388,8 @@ The installer does not import historical log data; it starts collection from
 the current end of the log.
 
 Without options, an interactive installer lists up to 10 compatible published
-releases; press Enter to accept the newest or enter another displayed number.
+releases sorted newest by semantic version; press Enter to accept the newest
+or enter another displayed number.
 Use `./installer.sh --list` to inspect the options without installing,
 `sudo ./installer.sh --latest` for a non-interactive latest install, or
 `sudo ./installer.sh --version 0.1.0-alpha.5` to select a specific version.

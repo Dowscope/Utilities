@@ -4,12 +4,12 @@ Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
 Last reviewed: 2026-10-29. Phases 1 through 5 are implemented in development
-version 0.1.0-alpha.11. Alpha.10 is the latest published binary release for
-server testing. The alpha.11 archive and checksum are prepared for publication.
+version 0.1.0-alpha.12. Alpha.11 is the latest published binary release for
+server testing. The alpha.12 archive and checksum are prepared for publication.
 Current default access log:
 `/var/log/subsite-monitor/access.log`. Alpha.9 polishes the UI command bars and
 shows update availability only when a compatible release exists. The updater
-confirmation timeout fix is included in alpha.11.
+release ordering fix is included in alpha.12.
 
 - [x] **Phase 2 — Nginx log parser:** define and document a host-aware log
   format; parse required request fields safely; stream logs; add sample logs,
@@ -29,7 +29,7 @@ confirmation timeout fix is included in alpha.11.
   root-only config and support validated config values with CLI overrides.
 - [ ] **Phase 7 — Release preparation:** validate the static binary and
   installer on Debian/Ubuntu, review ABI/terminfo portability, and publish the
-  alpha.11 archive and checksum.
+  alpha.12 archive and checksum.
 - [x] **Docker-backed development:** Compose Nginx writes host-aware logs to an
   ignored bind mount; `run-dev.sh` uses those files when available.
 - [x] **Prepare alpha.5 package:** build and verify the static archive, checksum,

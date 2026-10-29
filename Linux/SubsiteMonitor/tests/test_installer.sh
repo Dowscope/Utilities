@@ -36,9 +36,16 @@ chmod 0755 "$tmp_dir/mock-bin/curl"
 
 cat >"$tmp_dir/releases.json" <<EOF
 [
-  {"tag_name":"v9.9.9","draft":false,"published_at":"2026-10-29T00:00:00Z","assets":[]},
+  {"tag_name":"v0.1.0-alpha.10","draft":false,"published_at":"2026-10-30T00:00:00Z","assets":[
+    {"name":"subsite-monitor-0.1.0-alpha.10-linux-x86_64-gnu.tar.gz","digest":"sha256:0000000000000000000000000000000000000000000000000000000000000000"},
+    {"name":"SHA256SUMS","digest":null}
+  ]},
   {"tag_name":"v$expected_version","draft":false,"published_at":"2026-10-28T00:00:00Z","assets":[
     {"name":"$asset_name","digest":"sha256:$asset_digest"},
+    {"name":"SHA256SUMS","digest":null}
+  ]},
+  {"tag_name":"v0.1.0-alpha.9","draft":false,"published_at":"2026-10-27T00:00:00Z","assets":[
+    {"name":"subsite-monitor-0.1.0-alpha.9-linux-x86_64-gnu.tar.gz","digest":"sha256:0000000000000000000000000000000000000000000000000000000000000000"},
     {"name":"SHA256SUMS","digest":null}
   ]}
 ]
@@ -99,8 +106,8 @@ TEST_RELEASE_ARCHIVE="$asset" \
 SUBSITE_MONITOR_ARCHIVE= \
     sh "$tmp_dir/installer-debian" --list >"$tmp_dir/release-list.txt"
 grep -q "$expected_version" "$tmp_dir/release-list.txt"
-if grep -q '9.9.9' "$tmp_dir/release-list.txt"; then
-    echo 'release picker listed a release without compatible assets' >&2
+if ! sed -n '2p' "$tmp_dir/release-list.txt" | grep -q " 1) $expected_version"; then
+    echo 'release picker did not put the highest semantic version first' >&2
     exit 1
 fi
 
@@ -172,7 +179,8 @@ SUBSITE_MONITOR_STATE_DIR="$tmp_dir/state" \
 SUBSITE_MONITOR_NGINX_CONF_DIR="$tmp_dir/nginx/conf.d" \
 SUBSITE_MONITOR_LOGROTATE_FILE="$tmp_dir/logrotate.d/subsite-monitor" \
 SUBSITE_MONITOR_ACCESS_LOG="$tmp_dir/var/log/subsite-monitor/access.log" \
-    sh "$tmp_dir/installer-debian"
+    sh "$tmp_dir/installer-debian" >"$tmp_dir/upgrade-output.txt"
+grep -q "Selected Subsite Monitor $expected_version" "$tmp_dir/upgrade-output.txt"
 [ "$(stat -c '%a' "$tmp_dir/etc/monitor.conf")" = 600 ]
 grep -Fq "access_log = $tmp_dir/custom/custom-access.log" \
     "$tmp_dir/etc/monitor.conf"

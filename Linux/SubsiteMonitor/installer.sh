@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-APP_VERSION='0.1.0-alpha.11'
-ASSET='subsite-monitor-0.1.0-alpha.11-linux-x86_64-gnu.tar.gz'
-ASSET_SHA256='c36fbbd197158501a38c97348880ad1908d51624c19092a430109ecb9f045cf5'
+APP_VERSION='0.1.0-alpha.12'
+ASSET='subsite-monitor-0.1.0-alpha.12-linux-x86_64-gnu.tar.gz'
+ASSET_SHA256='8ba1e0bf110a6d689bea3901a879575182667c660580cd350f6583f65d955ffc'
 RELEASE_API_URL='https://api.github.com/repos/Dowscope/Utilities/releases?per_page=100'
 RELEASE_MODE='auto'
 REQUESTED_VERSION=''
@@ -131,6 +131,17 @@ import sys
 version_pattern = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?\Z")
 digest_pattern = re.compile(r"sha256:([0-9a-fA-F]{64})\Z")
 
+def version_key(version):
+    core, separator, prerelease = version.partition("-")
+    core_key = tuple(int(part) for part in core.split("."))
+    if not separator:
+        return core_key, 1, ()
+    prerelease_key = tuple(
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in prerelease.split(".")
+    )
+    return core_key, 0, prerelease_key
+
 try:
     with open(sys.argv[1], encoding="utf-8") as source:
         releases = json.load(source)
@@ -166,8 +177,8 @@ for release in releases:
     published = release.get("published_at", "")
     date = published[:10] if isinstance(published, str) else ""
     available.append((version, tag, digest.group(1), date))
-    if len(available) == 10:
-        break
+available.sort(key=lambda release: version_key(release[0]), reverse=True)
+available = available[:10]
 
 for version, tag, digest, date in available:
     print(f"{version}\t{tag}\t{digest}\t{date}")

@@ -131,6 +131,17 @@ import sys
 version_pattern = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?\Z")
 digest_pattern = re.compile(r"sha256:([0-9a-fA-F]{64})\Z")
 
+def version_key(version):
+    core, separator, prerelease = version.partition("-")
+    core_key = tuple(int(part) for part in core.split("."))
+    if not separator:
+        return core_key, 1, ()
+    prerelease_key = tuple(
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in prerelease.split(".")
+    )
+    return core_key, 0, prerelease_key
+
 try:
     with open(sys.argv[1], encoding="utf-8") as source:
         releases = json.load(source)
@@ -166,8 +177,8 @@ for release in releases:
     published = release.get("published_at", "")
     date = published[:10] if isinstance(published, str) else ""
     available.append((version, tag, digest.group(1), date))
-    if len(available) == 10:
-        break
+available.sort(key=lambda release: version_key(release[0]), reverse=True)
+available = available[:10]
 
 for version, tag, digest, date in available:
     print(f"{version}\t{tag}\t{digest}\t{date}")

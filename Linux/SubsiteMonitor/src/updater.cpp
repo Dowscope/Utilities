@@ -1,5 +1,6 @@
 #include "updater.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cerrno>
 #include <charconv>
@@ -51,7 +52,19 @@ if not isinstance(releases, list):
 
 version_pattern = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?\Z")
 digest_pattern = re.compile(r"sha256:[0-9a-fA-F]{64}\Z")
-count = 0
+available = []
+
+def version_key(version):
+    core, separator, prerelease = version.partition("-")
+    core_key = tuple(int(part) for part in core.split("."))
+    if not separator:
+        return core_key, 1, ()
+    prerelease_key = tuple(
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in prerelease.split(".")
+    )
+    return core_key, 0, prerelease_key
+
 for release in releases:
     if not isinstance(release, dict) or release.get("draft") is True:
         continue
@@ -81,10 +94,11 @@ for release in releases:
     fields = (version, date,
               base64.b64encode(title.encode("utf-8")).decode("ascii"),
               base64.b64encode(notes.encode("utf-8")).decode("ascii"))
+    available.append(fields)
+
+available.sort(key=lambda release: version_key(release[0]), reverse=True)
+for fields in available[:10]:
     print("\t".join(fields))
-    count += 1
-    if count >= 10:
-        break
 )PYTHON";
 
 struct NumericVersion {
@@ -336,6 +350,12 @@ std::vector<SoftwareRelease> parse_release_catalog(std::string_view catalog) {
         }
         if (releases.size() == 10U) break;
     }
+    std::stable_sort(releases.begin(), releases.end(),
+                     [](const SoftwareRelease& left,
+                        const SoftwareRelease& right) {
+                         return version_is_newer(left.version, right.version);
+                     });
+    if (releases.size() > 10U) releases.resize(10U);
     return releases;
 }
 
