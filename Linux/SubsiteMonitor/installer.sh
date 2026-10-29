@@ -1,9 +1,9 @@
 #!/bin/sh
 set -eu
 
-APP_VERSION='0.1.0-alpha.8'
-ASSET='subsite-monitor-0.1.0-alpha.8-linux-x86_64-gnu.tar.gz'
-ASSET_SHA256='f565f158c1fe8fb21ce0084f74e8c8aca4f7a15b0b1a873437575115c490fe8c'
+APP_VERSION='0.1.0-alpha.9'
+ASSET='subsite-monitor-0.1.0-alpha.9-linux-x86_64-gnu.tar.gz'
+ASSET_SHA256='43afe61193201337797db932b96d23033f77c83d5f1f2d928d2a4fb83497cd50'
 RELEASE_API_URL='https://api.github.com/repos/Dowscope/Utilities/releases?per_page=100'
 RELEASE_MODE='auto'
 REQUESTED_VERSION=''

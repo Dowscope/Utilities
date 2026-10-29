@@ -198,6 +198,24 @@ filesystem protections. Stop it with `sudo systemctl disable --now
 subsite-monitor.service`. Logs are available with
 `sudo journalctl -u subsite-monitor.service`.
 
+## Software updates in the UI
+
+When the site overview opens, Subsite Monitor checks GitHub for newer
+compatible releases in the background. The lower-right indicator appears only
+when an update is available and shows its version and the `u` key. No update
+message appears when the installed version is current or the check fails. The
+command bar stays focused on navigation; press `u` when the update indicator
+appears to review releases. Python 3 and network access to GitHub are required
+for the check.
+
+Press `u` to review release titles and notes. Select a version, press Enter,
+then press `y` on the confirmation screen to install it. The installer
+verifies the downloaded archive checksum before replacing packaged files. It
+preserves the existing configuration and statistics, refreshes the installed
+installer helper, and restarts an active Subsite Monitor service. When Nginx
+is installed and active, it validates the configuration and reloads Nginx.
+Quit and relaunch the UI after installation so the new executable is used.
+
 The service checkpoints the log device, inode, offset, and committed event CSV
 sizes. Event rows are synced before the checkpoint advances. After an
 interrupted append, startup truncates uncommitted CSV tails and rebuilds the
@@ -240,9 +258,12 @@ method/status, or `4` for URL to sort the current page; press the same number
 again to reverse its order. The active header shows `v` for descending or `^`
 for ascending. Up/Page Up move toward newer requests, and left/right scroll the
 selected URL. Sorting is limited to the current page so memory remains bounded
-for large logs.
+for large logs. Column headers use descriptive names; the sort keys remain
+shown in the overview and request-history footers.
 Escape returns to the overview; `r` refreshes the log and `q` exits. It requires
-an interactive terminal. Unselected rows use normal terminal brightness and the
+an interactive terminal. Footer actions use the `Action: key | Action: key`
+style, grouped by purpose and separated with vertical dividers. Unselected rows
+use normal terminal brightness and the
 selected row is bold white on blue. The UI intentionally shows full query
 strings and IPs.
 

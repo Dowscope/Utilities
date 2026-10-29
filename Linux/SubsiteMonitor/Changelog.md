@@ -1,5 +1,52 @@
 # Changelog
 
+### Alpha.9 release package prepared — 2026-10-29T14:04:00-04:00
+
+- Bumped development and packaging version to `0.1.0-alpha.9`. Alpha.8 is the
+  latest published binary release.
+- `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
+  warnings. The archive SHA-256 is
+  `43afe61193201337797db932b96d23033f77c83d5f1f2d928d2a4fb83497cd50`.
+- Release title: **Subsite Monitor 0.1.0-alpha.9 — Clearer UI Commands and
+  Update Notices**.
+- Attach the generated archive and `SHA256SUMS` to the alpha.9 GitHub Release.
+
+### Match command-bar action/key labels — 2026-10-29T14:02:44-04:00
+
+- Changed overview, request-history, and update-review footers to the
+  `Action: key | Action: key` layout used in the LazyGit reference, retaining
+  the existing Subsite Monitor colors.
+- Updated pseudo-terminal assertions and documentation.
+
+### Group UI footer commands — 2026-10-29T13:54:00-04:00
+
+- Reorganized the overview, request-history, and update-review command bars
+  into task-labeled groups separated by vertical dividers.
+- Updated pseudo-terminal checks and manual/technical documentation.
+
+### Show update prompt only when applicable — 2026-10-29T13:51:52-04:00
+
+- Removed the `u Update` hint from the command bar. The lower-right update
+  indicator now appears only when a newer compatible release is available.
+- Updated the UI tests and manuals to reflect the quieter no-update state.
+
+### Background update availability indicator — 2026-10-29T12:57:17-04:00
+
+- The UI checks for newer compatible releases in the background and shows a
+  compact lower-right indicator with the available version and `u` shortcut.
+  The release review and confirmation are still required to install an update.
+- Added a pseudo-terminal check for the update indicator. The updater replaces
+  the packaged executable and service unit, refreshes the installer helper,
+  restarts an active monitor service, and reloads active Nginx when applicable;
+  the open UI must be relaunched to use the updated executable.
+
+### Remove numeric prefixes from UI column headings — 2026-10-29T12:52:01-04:00
+
+- Removed sort-key numbers from the site and request-history column headings.
+  Keyboard shortcuts remain listed in the view footers.
+- Updated the user and technical manuals. Existing test expectations now match
+  the plain column labels.
+
 ### In-UI verified software updater — 2026-10-29T12:27:40-04:00
 
 - Added `u` in the site overview to fetch up to ten newer releases with a

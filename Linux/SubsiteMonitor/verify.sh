@@ -9,6 +9,6 @@ make -j
 make test
 ./subsite-monitor --help >/dev/null
 version_output=$(./subsite-monitor --version)
-[ "$version_output" = 'subsite-monitor 0.1.0-alpha.8' ]
+[ "$version_output" = 'subsite-monitor 0.1.0-alpha.9' ]
 
 printf '%s\n' 'Verification passed: build, tests, help, and version.'

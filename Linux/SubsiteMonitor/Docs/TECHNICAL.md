@@ -53,7 +53,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.8` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.9` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -84,6 +84,16 @@ or through `sudo`. The installer performs the download and digest check, replace
 the executable atomically, and may reload Nginx and restart the monitor service.
 The update subprocess is launched with `fork`/`exec`, never through a shell.
 Collection writes CSV state as described below.
+
+The UI starts the same bounded release lookup on a detached background thread
+and publishes its result through a mutex-protected shared status object. A
+250 ms curses input timeout lets the interface repaint the lower-right update
+indicator without blocking for network I/O. The indicator is rendered only
+when a newer compatible release is found; current and failed checks remain
+visually silent. The thread owns the shared result until it completes, so
+closing the UI does not leave references into the UI stack. The indicator
+does not install anything; installation still requires the release review
+and explicit confirmation described above.
 
 The release installer accepts `SUBSITE_MONITOR_ARCHIVE=/path/to/archive` for
 offline testing. It applies the same pinned SHA-256 check as a downloaded
@@ -238,12 +248,14 @@ directories in the root-only config remain future work.
 The website table defaults to latest access descending. Keys `1` through `3`
 sort by hostname, request count, or last access; pressing the active key toggles
 direction. Request-history sorting applies to its current 100-record page.
-Both tables render unselected rows at normal brightness and the selected row
-in bold white on blue.
+Column headings use descriptive labels without numeric key prefixes; the sort
+shortcuts are shown in each view's footer. Footer commands use the
+`Action: key | Action: key` style and are grouped by task. Both tables render
+unselected rows at normal brightness and the selected row in bold white on blue.
 
 Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.8
-development source. Alpha.6 is the latest published package.
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.9
+development source. Alpha.8 is the latest published package.
 
 
 ## Docker Nginx development fixture

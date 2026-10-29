@@ -21,10 +21,12 @@ permissions, Nginx `server_name` discovery, the packaged host-aware log snippet
 and its automatic loading when `conf.d/*.conf` is included inside `http { }`,
 local archive installation, and request detail privacy and storage behavior.
 
-The current development version is alpha.8; the site overview defaults to
+The current development version is alpha.9; the site overview defaults to
 latest access first and supports sorting by its columns. Unselected rows use
-normal brightness and the selected row is bold white on blue. Alpha.6 is the
-latest published binary release. The installer lists up to 10 compatible
+normal brightness and the selected row is bold white on blue. Alpha.8 is the
+latest published binary release. Command bars show grouped action/key hints,
+and the update indicator appears only when a newer compatible release exists.
+The installer lists up to 10 compatible
 published releases and verifies the selected archive's SHA-256 before install.
 The UI updater reviews release notes and invokes the installed checksum-
 verifying installer only after explicit confirmation.

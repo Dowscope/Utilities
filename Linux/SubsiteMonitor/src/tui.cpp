@@ -10,10 +10,13 @@
 #include <exception>
 #include <filesystem>
 #include <limits>
+#include <memory>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <string_view>
 #include <stdexcept>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -70,6 +73,64 @@ struct UiSnapshot {
     StatisticsReport report;
     std::string status_message;
 };
+
+void write_at(int row, int column, std::string_view text, int max_width);
+
+enum class UpdateCheckState { checking, available, current, failed };
+
+struct UpdateCheckResult {
+    std::mutex mutex;
+    UpdateCheckState state{UpdateCheckState::checking};
+    std::string version;
+};
+
+std::shared_ptr<UpdateCheckResult> start_update_check() {
+    auto result = std::make_shared<UpdateCheckResult>();
+    std::thread([result] {
+        UpdateCheckState state = UpdateCheckState::current;
+        std::string version;
+        try {
+            const std::vector<SoftwareRelease> releases =
+                fetch_software_releases();
+            for (const SoftwareRelease& release : releases) {
+                if (version_is_newer(release.version, current_version)) {
+                    state = UpdateCheckState::available;
+                    version = release.version;
+                    break;
+                }
+            }
+        } catch (...) {
+            state = UpdateCheckState::failed;
+        }
+        std::lock_guard lock{result->mutex};
+        result->version = std::move(version);
+        result->state = state;
+    }).detach();
+    return result;
+}
+
+std::string update_badge_text(
+    const std::shared_ptr<UpdateCheckResult>& update_check) {
+    std::lock_guard lock{update_check->mutex};
+    if (update_check->state == UpdateCheckState::available) {
+        return "[ Update " + update_check->version + " (u) ]";
+    }
+    return {};
+}
+
+void draw_update_badge(int rows, int columns,
+                       const std::shared_ptr<UpdateCheckResult>& update_check) {
+    constexpr int maximum_badge_width = 36;
+    if (rows < 18 || columns < 48) return;
+    const std::string label = update_badge_text(update_check);
+    if (label.empty()) return;
+    const int badge_width = std::min(
+        maximum_badge_width, static_cast<int>(label.size()));
+    const int left = columns - badge_width - 2;
+    attron(COLOR_PAIR(4) | A_BOLD);
+    write_at(rows - 3, left, label, badge_width);
+    attroff(COLOR_PAIR(4) | A_BOLD);
+}
 
 enum class SiteSortColumn { hostname, requests, last_access };
 
@@ -347,17 +408,17 @@ void draw_screen(const StatisticsReport& report,
     const int requests_column = 2 + site_width + 2;
     const int last_access_column = requests_column + 12;
     attron(A_BOLD);
-    write_at(5, 2, "1 WEBSITE" +
+    write_at(5, 2, "WEBSITE" +
                          sort_direction(SiteSortColumn::hostname, sort_column,
                                         sort_ascending),
              site_width);
-    write_at(5, requests_column, "2 REQUESTS" +
+    write_at(5, requests_column, "REQUESTS" +
                                       sort_direction(SiteSortColumn::requests,
                                                      sort_column,
                                                      sort_ascending),
              10);
     write_at(5, last_access_column,
-             "3 LAST ACCESS (SERVER TIME)" +
+             "LAST ACCESS (SERVER TIME)" +
                  sort_direction(SiteSortColumn::last_access, sort_column,
                                 sort_ascending),
              columns - last_access_column - 2);
@@ -434,8 +495,9 @@ void draw_screen(const StatisticsReport& report,
 
     mvhline(rows - 2, 0, ' ', columns);
     attron(COLOR_PAIR(1));
-    const std::string footer =
-        " 1-3 Sort | Up/Dn Select Enter Details r Refresh u Update q Quit";
+    const std::string footer = columns >= 68
+        ? " Sort: 1-3 | Select: Up/Dn | Details: Enter | Refresh: r | Quit: q"
+        : "Sort:1-3 | Select:Up/Dn | Details:Enter | Refresh:r | Quit:q";
     write_at(rows - 2, 1, footer, columns - 2);
     attroff(COLOR_PAIR(1));
     if (!status_message.empty()) {
@@ -516,18 +578,18 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
     const int url_column = method_column + method_width + 2;
 
     attron(A_BOLD);
-    write_at(3, 2, "1 TIME" + sort_direction(RequestSortColumn::timestamp,
+    write_at(3, 2, "TIME" + sort_direction(RequestSortColumn::timestamp,
                                              sort_column, sort_ascending),
              time_width);
-    write_at(3, ip_column, "2 IP" + sort_direction(RequestSortColumn::client_ip,
+    write_at(3, ip_column, "IP" + sort_direction(RequestSortColumn::client_ip,
                                                    sort_column, sort_ascending),
              ip_width);
     write_at(3, method_column,
-             "3 METHOD/STATUS" +
+             "METHOD/STATUS" +
                  sort_direction(RequestSortColumn::method_status, sort_column,
                                 sort_ascending),
              method_width);
-    write_at(3, url_column, "4 URL" + sort_direction(RequestSortColumn::url,
+    write_at(3, url_column, "URL" + sort_direction(RequestSortColumn::url,
                                                      sort_column, sort_ascending),
              url_width);
     attroff(A_BOLD);
@@ -581,9 +643,12 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
     mvhline(rows - 2, 0, ' ', columns);
     attron(COLOR_PAIR(1));
     std::ostringstream footer;
-    footer << " 1-4 Sort (repeat=toggle) "
-           << (sort_ascending ? "ASC" : "DESC")
-           << " | Up/Dn PgUp/Dn L/R URL Esc Back q Quit";
+    if (columns >= 100) {
+        footer << " Sort: 1-4 " << (sort_ascending ? "ASC" : "DESC")
+               << " | Rows: Up/Dn | Pages: PgUp/Dn | URL: L/R | Back: Esc | Quit: q";
+    } else {
+        footer << "Sort:1-4 | Rows:Up/Dn | Page:PgUp/Dn | URL:L/R | Back:Esc | Quit:q";
+    }
     write_at(rows - 2, 1, footer.str(), columns - 2);
     attroff(COLOR_PAIR(1));
     if (!status_message.empty()) {
@@ -694,7 +759,9 @@ void draw_update_screen(const std::vector<SoftwareRelease>& releases,
 
     attron(COLOR_PAIR(1));
     write_at(rows - 2, 1,
-             " Up/Dn Select Enter Review n/p Notes Esc Back q Cancel",
+             columns >= 69
+                 ? " Select: Up/Dn | Review: Enter | Notes: n/p | Back: Esc | Cancel: q"
+                 : "Select:Up/Dn | Review:Enter | Notes:n/p | Back:Esc | Cancel:q",
              columns - 2);
     attroff(COLOR_PAIR(1));
     if (!message.empty()) {
@@ -806,6 +873,9 @@ int run_terminal_ui(const std::filesystem::path& log_path,
         build_ui_statistics(log_path, nginx_config, statistics_directory);
     CursesSession session;
     configure_colors();
+    const std::shared_ptr<UpdateCheckResult> update_check =
+        start_update_check();
+    timeout(250);
     std::size_t selected = 0;
     std::string status_message = std::move(snapshot.status_message);
     SiteSortColumn site_sort_column = SiteSortColumn::last_access;
@@ -840,8 +910,16 @@ int run_terminal_ui(const std::filesystem::path& log_path,
             draw_screen(snapshot.report, log_path, selected, site_sort_column,
                         site_sort_ascending, status_message);
         }
+        int rows = 0;
+        int columns = 0;
+        getmaxyx(stdscr, rows, columns);
+        draw_update_badge(rows, columns, update_check);
+        refresh();
         status_message.clear();
         const int key = getch();
+        if (key == ERR) {
+            continue;
+        }
         if (key == 'q' || key == 'Q' || key == 27) {
             if (history_mode && key == 27) {
                 history_mode = false;
