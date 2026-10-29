@@ -7,6 +7,8 @@
 #include "updater.hpp"
 
 #include <algorithm>
+#include <cerrno>
+#include <cstring>
 #include <exception>
 #include <filesystem>
 #include <limits>
@@ -34,11 +36,17 @@ namespace {
 #define SUBSITE_MONITOR_INSTALLER_PATH "/usr/share/subsite-monitor/installer.sh"
 #endif
 
+#ifndef SUBSITE_MONITOR_EXECUTABLE_PATH
+#define SUBSITE_MONITOR_EXECUTABLE_PATH "/usr/local/bin/subsite-monitor"
+#endif
+
 constexpr std::string_view current_version = SUBSITE_MONITOR_VERSION;
 constexpr std::string_view github_issues_url =
     "https://github.com/Dowscope/Utilities/issues";
 const std::filesystem::path release_installer_path =
     SUBSITE_MONITOR_INSTALLER_PATH;
+const std::filesystem::path installed_executable_path =
+    SUBSITE_MONITOR_EXECUTABLE_PATH;
 
 class CursesSession {
 public:
@@ -809,7 +817,7 @@ int ask_update_confirmation(const SoftwareRelease& release) {
     return key == 'y' || key == 'Y';
 }
 
-std::string update_from_ui() {
+std::string update_from_ui(std::span<char* const> startup_arguments) {
     erase();
     write_at(2, 2, "Checking GitHub for verified Subsite Monitor releases...",
              72);
@@ -862,8 +870,35 @@ std::string update_from_ui() {
             clear();
             refresh();
             if (status == 0) {
-                return "Update installed. Quit and relaunch to use version " +
-                       releases[selected].version + ".";
+                std::vector<std::string> restart_storage;
+                restart_storage.reserve(startup_arguments.size());
+                for (const char* argument : startup_arguments) {
+                    restart_storage.emplace_back(argument);
+                }
+                if (restart_storage.empty()) {
+                    restart_storage.emplace_back(
+                        installed_executable_path.string());
+                } else {
+                    restart_storage.front() =
+                        installed_executable_path.string();
+                }
+                std::vector<char*> restart_arguments;
+                restart_arguments.reserve(restart_storage.size() + 1U);
+                for (std::string& argument : restart_storage) {
+                    restart_arguments.push_back(argument.data());
+                }
+                restart_arguments.push_back(nullptr);
+
+                endwin();
+                execv(installed_executable_path.c_str(),
+                      restart_arguments.data());
+                const std::string restart_error = std::strerror(errno);
+                reset_prog_mode();
+                clear();
+                refresh();
+                return "Installed " + releases[selected].version +
+                       ", but could not restart the UI: " + restart_error +
+                       ". Press q and relaunch manually.";
             }
             return "Update installer exited with status " +
                    std::to_string(status) + "; see the terminal output.";
@@ -879,7 +914,8 @@ bool is_enter_key(int key) {
 
 int run_terminal_ui(const std::filesystem::path& log_path,
                     const std::filesystem::path& nginx_config,
-                    const std::filesystem::path& statistics_directory) {
+                    const std::filesystem::path& statistics_directory,
+                    std::span<char* const> startup_arguments) {
     if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
         throw std::runtime_error("ui requires an interactive terminal");
     }
@@ -1033,7 +1069,7 @@ int run_terminal_ui(const std::filesystem::path& log_path,
             continue;
         }
         if (key == 'u' || key == 'U') {
-            status_message = update_from_ui();
+            status_message = update_from_ui(startup_arguments);
         } else if (key >= '1' && key <= '3') {
             const auto selected_column =
                 static_cast<SiteSortColumn>(key - '1');

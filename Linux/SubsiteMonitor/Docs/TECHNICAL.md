@@ -57,7 +57,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.12` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.13` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -88,8 +88,10 @@ before limiting results to the newest ten. Enter opens an explicit confirmation 
 waits for input; `y` executes the installed installer with the selected
 version, directly as root or through `sudo`. The installer performs the
 download and digest check, replaces the executable atomically, and may reload
-Nginx and restart the monitor service.
-The update subprocess is launched with `fork`/`exec`, never through a shell.
+Nginx and restart the monitor service. After a successful install, the UI uses
+`execv` to restart the installed executable while preserving its original
+arguments. The update subprocess is launched with `fork`/`exec`, never through
+a shell.
 Collection writes CSV state as described below.
 
 The UI starts the same bounded release lookup on a detached background thread
@@ -261,8 +263,8 @@ shortcuts are shown in each view's footer. Footer commands use the
 unselected rows at normal brightness and the selected row in bold white on blue.
 
 Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.12
-development source. Alpha.11 is the latest published package.
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.13
+development source. Alpha.12 is the latest published package.
 
 
 ## Docker Nginx development fixture

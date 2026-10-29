@@ -9,7 +9,7 @@ CPPFLAGS += $(NCURSES_CFLAGS)
 LDLIBS += $(NCURSES_LIBS)
 
 TARGET := subsite-monitor
-VERSION := 0.1.0-alpha.12
+VERSION := 0.1.0-alpha.13
 CPPFLAGS += -DSUBSITE_MONITOR_VERSION='"$(VERSION)"'
 DATADIR ?= /usr/share/subsite-monitor
 CPPFLAGS += -DSUBSITE_MONITOR_INSTALLER_PATH='"$(DATADIR)/installer.sh"'
@@ -25,6 +25,7 @@ STORAGE_TEST := tests/test_storage
 UPDATER_TEST := tests/test_updater
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
+CPPFLAGS += -DSUBSITE_MONITOR_EXECUTABLE_PATH='"$(BINDIR)/subsite-monitor"'
 SYSCONFDIR ?= /etc
 CONFIGDIR ?= $(SYSCONFDIR)/subsite-monitor
 CONFIGFILE ?= $(CONFIGDIR)/monitor.conf
@@ -77,6 +78,7 @@ test: $(TARGET) $(PARSER_TEST) $(STATISTICS_TEST) $(CONFIG_TEST) \
 	sh ./tests/test_cli.sh ./$(TARGET)
 	sh ./tests/test_service.sh ./$(TARGET)
 	sh ./tests/test_installer_template.sh ./$(TARGET)
+	python3 ./tests/test_ui_restart.py
 
 install: $(TARGET)
 	install -Dm755 $(TARGET) "$(DESTDIR)$(BINDIR)/$(TARGET)"

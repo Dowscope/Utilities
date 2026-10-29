@@ -1,9 +1,9 @@
 # Alpha Release Packaging
 
-The development target is **0.1.0-alpha.12**. Alpha.11 is the latest
-published binary release. Alpha.12 sorts compatible releases by semantic
-version, newest first, in the installer picker and in-UI updater. GitHub's API
-order can differ from version order, so alpha.11 appeared below older releases.
+The development target is **0.1.0-alpha.13**. Alpha.12 is the latest
+published binary release. Alpha.13 automatically restarts the UI from the
+newly installed executable after a successful update, preserving the original
+UI arguments.
 
 ## Build the release package
 
@@ -22,14 +22,16 @@ tradeoffs; test on each target distribution before production use.
 
 The build produces:
 
-- `packaging/dist/subsite-monitor-0.1.0-alpha.12-linux-x86_64-gnu.tar.gz`
+- `packaging/dist/subsite-monitor-0.1.0-alpha.13-linux-x86_64-gnu.tar.gz`
 - `packaging/dist/SHA256SUMS`
 - checksum-pinned `installer.sh` and compatibility `install.sh`
 
-The alpha.12 archive SHA-256 is
-`8ba1e0bf110a6d689bea3901a879575182667c660580cd350f6583f65d955ffc`.
+The alpha.13 archive SHA-256 is
+`d6378c9595ef664692df63c12f4f364388fa2ea7d7d0cd8c836d471ec8baf7f3`.
 `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
-warnings. The archive checksum verified successfully.
+warnings. The archive checksum verified successfully. A pseudo-terminal test
+also confirmed the UI re-executes the installed binary and preserves `ui --log`
+arguments after a successful update.
 
 The archive contains the executable, README, user manual, example configs,
 Nginx log-format snippet, logrotate policy, and systemd unit. The installer
@@ -42,7 +44,7 @@ the main Nginx config or starts an inactive Nginx service.
 For local testing before publication, pass the archive directly:
 
 ```sh
-sudo env SUBSITE_MONITOR_ARCHIVE="$PWD/packaging/dist/subsite-monitor-0.1.0-alpha.12-linux-x86_64-gnu.tar.gz" ./installer.sh
+sudo env SUBSITE_MONITOR_ARCHIVE="$PWD/packaging/dist/subsite-monitor-0.1.0-alpha.13-linux-x86_64-gnu.tar.gz" ./installer.sh
 ```
 
 The installer still checks the archive's embedded checksum. Set
@@ -51,22 +53,21 @@ fresh installation; existing custom configuration is retained.
 
 ## Publish the release
 
-Create tag `v0.1.0-alpha.12` and a GitHub Release with this title:
+Create tag `v0.1.0-alpha.13` and a GitHub Release with this title:
 
-> Subsite Monitor 0.1.0-alpha.12 — Correct Release Ordering
+> Subsite Monitor 0.1.0-alpha.13 — Automatic UI Restart After Update
 
 Release notes:
 
-> - Installer release selection now sorts valid releases by semantic version,
->   placing the newest version first regardless of GitHub API ordering.
-> - The installer still limits its interactive list to the 10 newest compatible
->   releases and selects the newest compatible release by default.
-> - The in-UI updater release list now uses the same newest-first ordering.
-> - Added tests for numeric prerelease sorting and default latest selection.
+> - After a verified update, the UI automatically restarts into the newly
+>   installed version instead of leaving the old version running.
+> - The restart preserves the original UI command-line arguments.
+> - If the installed executable cannot be restarted, the UI reports the error
+>   and explains how to relaunch it manually.
 > - Release binaries target x86_64 Linux and use host terminfo.
 
-Attach the matching alpha.12 archive and `SHA256SUMS` from `packaging/dist/`.
-The generated installer is pinned to this archive and will not offer alpha.12
+Attach the matching alpha.13 archive and `SHA256SUMS` from `packaging/dist/`.
+The generated installer is pinned to this archive and will not offer alpha.13
 as an installable update until both assets are attached to the GitHub Release.
 
 The tracked installer URL is

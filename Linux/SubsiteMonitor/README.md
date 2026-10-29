@@ -1,7 +1,7 @@
 # Subsite Monitor
 
-Current development version: **0.1.0-alpha.12**. The latest published release
-is **0.1.0-alpha.11**. Release binaries target x86_64 Linux on
+Current development version: **0.1.0-alpha.13**. The latest published release
+is **0.1.0-alpha.12**. Release binaries target x86_64 Linux on
 Debian, Ubuntu, and Arch, statically link ncursesw and the C++ runtime, and use
 host terminfo for the terminal UI.
 
@@ -43,7 +43,7 @@ The UI site table opens with most recently active sites first and supports
 sorting by website, request count, or last access with keys `1`–`3`; repeat the
 active key to reverse the direction. The UI command bars use grouped
 `Action: key | Action: key` hints; update availability appears in the lower
-right only when a newer compatible release is found. The alpha.12 source and
+right only when a newer compatible release is found. The alpha.13 source and
 release archive are built and verified. The archive checksum is in
 `packaging/dist/SHA256SUMS`; see `packaging/README.md` for the release title,
 notes, and upload steps.
@@ -106,7 +106,9 @@ newer compatible releases, review release notes, and confirm installation. The
 updater uses Python 3 to read GitHub release metadata and requires network
 access. It runs the installed checksum-verifying installer, invoking `sudo`
 when needed. Installation can reload Nginx and restart the monitor service.
-Quit and relaunch the UI after an update. For sample data, run:
+After a verified update, the UI restarts automatically into the installed
+version. If that restart fails, quit and relaunch manually. For sample data,
+run:
 
 ```sh
 ./run-dev.sh
@@ -119,7 +121,7 @@ to `subsite-monitor`, allowing CLI commands or a different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.11 is the latest published binary; alpha.12's
+`packaging/README.md`. Alpha.12 is the latest published binary; alpha.13's
 archive and checksum are ready for its GitHub Release. Release
 binaries target Debian, Ubuntu, and Arch on x86_64.
 The installer seeds the root-only monitor config and installs a host-aware

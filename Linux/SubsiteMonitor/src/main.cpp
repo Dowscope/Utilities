@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <iostream>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <utility>
 
@@ -73,21 +74,24 @@ UiSettings configured_ui_settings() {
 
 int launch_ui(const std::filesystem::path& log_path,
               const std::filesystem::path& nginx_config,
-              const std::filesystem::path& statistics_directory) {
+              const std::filesystem::path& statistics_directory,
+              std::span<char* const> startup_arguments) {
     try {
         return subsite_monitor::run_terminal_ui(log_path, nginx_config,
-                                                statistics_directory);
+                                                statistics_directory,
+                                                startup_arguments);
     } catch (const std::exception& error) {
         std::cerr << "subsite-monitor: " << error.what() << '\n';
         return 1;
     }
 }
 
-int launch_default_ui() {
+int launch_default_ui(int argc, char* argv[]) {
     try {
         const UiSettings settings = configured_ui_settings();
         return launch_ui(settings.access_log, settings.nginx_config,
-                         settings.statistics_directory);
+                         settings.statistics_directory,
+                         {argv, static_cast<std::size_t>(argc)});
     } catch (const std::exception& error) {
         std::cerr << "subsite-monitor: " << error.what() << '\n';
         return 1;
@@ -266,7 +270,7 @@ int run_stats(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
     if (argc == 1) {
-        return launch_default_ui();
+        return launch_default_ui(argc, argv);
     }
 
     const std::string_view argument{argv[1]};
@@ -298,7 +302,7 @@ int main(int argc, char* argv[]) {
 
     if (argument == "ui") {
         if (argc == 2) {
-            return launch_default_ui();
+            return launch_default_ui(argc, argv);
         }
         if (argc != 4 || std::string_view{argv[2]} != "--log" ||
             std::string_view{argv[3]}.empty()) {
@@ -314,7 +318,8 @@ int main(int argc, char* argv[]) {
                 ? std::filesystem::path{environment_nginx_config}
                 : std::filesystem::path{};
         return launch_ui(argv[3], nginx_config,
-                         configured_statistics_directory());
+                         configured_statistics_directory(),
+                         {argv, static_cast<std::size_t>(argc)});
     }
 
     std::cerr << "subsite-monitor: unrecognized or incomplete argument";

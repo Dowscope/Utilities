@@ -1,5 +1,20 @@
 # Changelog
 
+### Alpha.13 release preparation — 2026-10-29T15:25:28-04:00
+
+- Bumped development and packaging version to `0.1.0-alpha.13`; alpha.12 is
+  the latest published binary release.
+- After an update succeeds, replace the running UI process with the installed
+  executable and preserve the original startup arguments.
+- Added a pseudo-terminal integration test for automatic restart and argument
+  preservation after a successful update.
+- Release title: **Subsite Monitor 0.1.0-alpha.13 — Automatic UI Restart
+  After Update**. Archive SHA-256:
+  `d6378c9595ef664692df63c12f4f364388fa2ea7d7d0cd8c836d471ec8baf7f3`.
+- `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
+  warnings; the archive checksum verified successfully. A pseudo-terminal
+  update flow confirmed automatic restart and preservation of `ui --log`.
+
 ### Alpha.12 release preparation — 2026-10-29T15:11:55-04:00
 
 - Bumped development and packaging version to `0.1.0-alpha.12`; alpha.11 is

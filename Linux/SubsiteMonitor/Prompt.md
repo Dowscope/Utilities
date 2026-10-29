@@ -105,34 +105,33 @@ by the user for server testing; no production deployment is implied.
 
 ## Current handoff state
 
-- `0.1.0-alpha.11` is published and visible in the UI release list. It displays
+- `0.1.0-alpha.12` is published and visible in the UI release list. It displays
   the running version in the UI headers and the GitHub Issues URL on the
-  overview and in `--help`.
-- Alpha.11 fixed the updater confirmation timeout. Alpha.12 sorts compatible
-  published releases by semantic version (newest first) in both the installer
-  picker and in-UI release list; API publication order is not reliable. The
-  release archive and checksum are built for alpha.12; their SHA-256 is in
-  `packaging/README.md` and `packaging/dist/SHA256SUMS`.
+  overview and in `--help`. Alpha.12 sorts compatible releases by semantic
+  version, newest first, in both the installer and in-UI release list.
+- Alpha.13 automatically restarts the UI from the installed executable after
+  a successful update, preserving the original UI arguments. The release
+  archive and checksum are built; details are in `packaging/README.md`.
 - In the site overview, `u` fetches up to ten newer compatible GitHub releases,
   shows title/date/notes, and lets the user inspect notes. Enter opens a second
   confirmation; only `y` starts the update. The installed helper at
   `/usr/share/subsite-monitor/installer.sh` downloads the selected release and
   verifies the API-provided archive SHA-256 before installing. The installer
   refreshes its installed helper copy. Non-root UI sessions invoke it through
-  `sudo`; after success, quit and relaunch to use the new binary. Installation
+  `sudo`; after success, the UI re-execs the newly installed binary. Installation
   may reload Nginx and restart the monitor service. Python 3 and network access
   are required to query GitHub; the archive download/check is delegated to the
   installer. Unit and pseudo-terminal tests use fixture release data and do
   not require GitHub access.
 - The background availability indicator appears only when a newer compatible
   release exists; the command bar stays focused on navigation. `./verify.sh`
-  and `./packaging/build-alpha.sh` are run for each release candidate. Alpha.11
+  and `./packaging/build-alpha.sh` are run for each release candidate. Alpha.12
   archive/checksum details are recorded in `packaging/README.md` and
   `packaging/dist/SHA256SUMS`.
-- The latest published release is tagged `v0.1.0-alpha.11`. Alpha.12 uses
-  source tag `v0.1.0-alpha.12`; its
-  package is in `packaging/dist/` after the build. The GitHub Release entry and
-  asset upload are separate.
+- The latest published release is tagged `v0.1.0-alpha.12`. Alpha.13 is the
+  current local release candidate; its package and checksum are built in
+  `packaging/dist/`, but it has not been committed, tagged, or published.
+  The GitHub Release entry and asset upload are separate.
 - Phases 1 through 5 are implemented locally: C++23 CLI, bounded streaming
   Nginx parser, per-site/daily aggregation, Docker-backed development, root-only
   log configuration and virtual-host inventory, private daily summary CSVs, and
@@ -198,7 +197,7 @@ by the user for server testing; no production deployment is implied.
   release's `SHA256SUMS`. The installer uses a distinct `APP_VERSION`
   variable so Debian's `VERSION` from `/etc/os-release` cannot interfere
   with executable version validation.
-  Alpha.11 is the latest published binary release before alpha.12.
+  Alpha.12 is the latest published binary release before alpha.13.
 - `./run-dev.sh` with no arguments builds and opens the UI, preferring the
   Docker-generated Nginx log/config when present and otherwise using fixtures.
   Start the fixture in another terminal with `sudo ./run-docker.sh`.

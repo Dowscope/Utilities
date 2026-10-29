@@ -4,12 +4,13 @@ Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
 Last reviewed: 2026-10-29. Phases 1 through 5 are implemented in development
-version 0.1.0-alpha.12. Alpha.11 is the latest published binary release for
-server testing. The alpha.12 archive and checksum are prepared for publication.
+version 0.1.0-alpha.13. Alpha.12 is the latest published binary release for
+server testing. The alpha.13 archive and checksum are prepared for publication.
 Current default access log:
 `/var/log/subsite-monitor/access.log`. Alpha.9 polishes the UI command bars and
 shows update availability only when a compatible release exists. The updater
-release ordering fix is included in alpha.12.
+release ordering fix is included in alpha.12; automatic UI restart after update
+is included in alpha.13.
 
 - [x] **Phase 2 — Nginx log parser:** define and document a host-aware log
   format; parse required request fields safely; stream logs; add sample logs,
@@ -29,7 +30,7 @@ release ordering fix is included in alpha.12.
   root-only config and support validated config values with CLI overrides.
 - [ ] **Phase 7 — Release preparation:** validate the static binary and
   installer on Debian/Ubuntu, review ABI/terminfo portability, and publish the
-  alpha.12 archive and checksum.
+  alpha.13 archive and checksum.
 - [x] **Docker-backed development:** Compose Nginx writes host-aware logs to an
   ignored bind mount; `run-dev.sh` uses those files when available.
 - [x] **Prepare alpha.5 package:** build and verify the static archive, checksum,
@@ -45,7 +46,7 @@ release ordering fix is included in alpha.12.
   displays release notes. Installation requires a second explicit `y`
   confirmation and runs the installed release installer, which verifies the
   release archive SHA-256. It uses `sudo` only after that confirmation when the
-  UI is not root, then tells the user to relaunch the UI.
+  UI is not root, then automatically restarts the UI into the newly installed version.
 - [ ] **Operational follow-up:** test the installed systemd unit against the
   user's actual Nginx configuration and logrotate policy on the subsites server.
   Confirm installer output shows Nginx validation/reload and monitor service

@@ -215,11 +215,13 @@ for the check.
 Press `u` to review release titles and notes. Select a version and press
 Enter. The confirmation screen waits until you press `y` to install or another
 key to cancel. The installer verifies the downloaded archive checksum before
-replacing packaged files. It
-preserves the existing configuration and statistics, refreshes the installed
+replacing packaged files. It preserves the existing configuration and
+statistics, refreshes the installed
 installer helper, and restarts an active Subsite Monitor service. When Nginx
 is installed and active, it validates the configuration and reloads Nginx.
-Quit and relaunch the UI after installation so the new executable is used.
+After installation, the UI automatically restarts using the new executable
+and preserves its startup arguments. If it cannot restart, quit and relaunch
+manually.
 
 The service checkpoints the log device, inode, offset, and committed event CSV
 sizes. Event rows are synced before the checkpoint advances. After an
@@ -278,10 +280,10 @@ read its release notes, then press Enter and `y` to confirm installation. The
 UI invokes the updater helper at `/usr/share/subsite-monitor/installer.sh`;
 when not already root it asks `sudo` to run that helper. The installer verifies
 the downloaded archive digest before replacing the executable, and may reload
-Nginx and restart the monitor service. A successful update leaves the current
-UI process running its old in-memory version; quit and launch it again to use
-the new binary. Press `q` or Escape to leave the release list without changing
-the installation. If the helper is missing, rerun the release installer to
+Nginx and restart the monitor service. After a successful update, the UI
+restarts itself from the installed executable and preserves its original
+arguments. Press `q` or Escape to leave the release list without changing the
+installation. If the helper is missing, rerun the release installer to
 install it.
 
 The config accepts `access_log = /absolute/path` and
