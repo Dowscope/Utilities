@@ -45,6 +45,9 @@ namespace {
 constexpr std::string_view current_version = SUBSITE_MONITOR_VERSION;
 constexpr std::string_view github_issues_url =
     "https://github.com/Dowscope/Utilities/issues";
+constexpr auto live_refresh_interval = std::chrono::seconds{5};
+constexpr std::string_view service_live_status =
+    "Monitoring service active; CSV data updates automatically.";
 const std::filesystem::path release_installer_path =
     SUBSITE_MONITOR_INSTALLER_PATH;
 const std::filesystem::path installed_executable_path =
@@ -266,7 +269,7 @@ std::vector<SiteRow> sorted_sites(
     const StatisticsReport& report,
     const RequestActivityTotals& activity_totals,
     RequestPeriod request_period, SiteSortColumn sort_column,
-    bool sort_ascending) {
+    bool sort_active, bool sort_ascending) {
     std::vector<SiteRow> sites;
     sites.reserve(report.sites.size());
     for (const auto& [hostname, statistics] : report.sites) {
@@ -277,12 +280,16 @@ std::vector<SiteRow> sorted_sites(
                 : period_count(site_totals->second, request_period);
         sites.push_back({hostname, &statistics, period_requests});
     }
-    std::sort(sites.begin(), sites.end(), [sort_column, sort_ascending](
-                                               const SiteRow& left,
-                                               const SiteRow& right) {
-        const int order = compare_site_field(left, right, sort_column);
+    const SiteSortColumn effective_column =
+        sort_active ? sort_column : SiteSortColumn::last_access;
+    const bool effective_ascending = sort_active && sort_ascending;
+    std::sort(sites.begin(), sites.end(),
+              [effective_column, effective_ascending](const SiteRow& left,
+                                                       const SiteRow& right) {
+        const int order =
+            compare_site_field(left, right, effective_column);
         if (order != 0) {
-            return sort_ascending ? order < 0 : order > 0;
+            return effective_ascending ? order < 0 : order > 0;
         }
         return left.hostname < right.hostname;
     });
@@ -297,8 +304,7 @@ UiSnapshot build_ui_statistics(
     try {
         if (monitor_service_is_active(statistics_directory)) {
             snapshot.report = read_stored_statistics(statistics_directory);
-            snapshot.status_message =
-                "Monitoring service active; CSV data updates automatically.";
+            snapshot.status_message = service_live_status;
         } else {
             const StatisticsReport current_report =
                 collect_and_store(log_path, statistics_directory);
@@ -308,8 +314,7 @@ UiSnapshot build_ui_statistics(
     } catch (const std::runtime_error& error) {
         const std::string_view message{error.what()};
         if (message.starts_with("monitor service is running;")) {
-            snapshot.status_message =
-                "Monitoring service active; CSV data updates automatically.";
+            snapshot.status_message = service_live_status;
             snapshot.report = read_stored_statistics(statistics_directory);
         } else {
             if (nginx_config.empty() ||
@@ -455,16 +460,17 @@ void sort_request_page(RequestPage& page, RequestSortColumn column,
 
 std::string sort_direction(RequestSortColumn column,
                            RequestSortColumn active_column,
-                           bool ascending) {
-    if (column != active_column) {
+                           bool active, bool ascending) {
+    if (!active || column != active_column) {
         return {};
     }
     return ascending ? " ^" : " v";
 }
 
 std::string sort_direction(SiteSortColumn column,
-                           SiteSortColumn active_column, bool ascending) {
-    if (column != active_column) {
+                           SiteSortColumn active_column, bool active,
+                           bool ascending) {
+    if (!active || column != active_column) {
         return {};
     }
     return ascending ? " ^" : " v";
@@ -486,6 +492,7 @@ void draw_screen(const StatisticsReport& report,
                  const RequestActivityTotals& activity_totals,
                  RequestPeriod request_period,
                  const std::filesystem::path& log_path, std::size_t selected,
+                 bool sort_active,
                  SiteSortColumn sort_column, bool sort_ascending,
                  std::string_view status_message) {
     int rows = 0;
@@ -503,7 +510,7 @@ void draw_screen(const StatisticsReport& report,
 
     const std::vector<SiteRow> sites =
         sorted_sites(report, activity_totals, request_period, sort_column,
-                     sort_ascending);
+                     sort_active, sort_ascending);
     const int content_width = columns - 2;
 
     attron(COLOR_PAIR(1) | A_BOLD);
@@ -547,7 +554,7 @@ void draw_screen(const StatisticsReport& report,
     } else {
         period_summary << "n/a";
     }
-    period_summary << "     Press p to change period";
+    period_summary << "     Live: 5s  |  Press p to change period";
     write_at(4, 2, period_summary.str(), content_width);
     const int separator_row = 5;
     mvhline(separator_row, 1, ACS_HLINE, content_width);
@@ -559,17 +566,17 @@ void draw_screen(const StatisticsReport& report,
     attron(A_BOLD);
     write_at(header_row, 2, "WEBSITE" +
                          sort_direction(SiteSortColumn::hostname, sort_column,
-                                        sort_ascending),
+                            sort_active, sort_ascending),
              site_width);
     write_at(header_row, requests_column,
              "REQUESTS " + std::string{request_period_label(request_period)} +
                  sort_direction(SiteSortColumn::requests, sort_column,
-                                sort_ascending),
+                                sort_active, sort_ascending),
              18);
     write_at(header_row, last_access_column,
              "LAST ACCESS (SERVER TIME)" +
                  sort_direction(SiteSortColumn::last_access, sort_column,
-                                sort_ascending),
+                            sort_active, sort_ascending),
              columns - last_access_column - 2);
     attroff(A_BOLD);
     mvhline(header_row + 1, 1, ACS_HLINE, content_width);
@@ -649,8 +656,8 @@ void draw_screen(const StatisticsReport& report,
     mvhline(rows - 2, 0, ' ', columns);
     attron(COLOR_PAIR(1));
     const std::string footer = columns >= 90
-        ? " Sort: 1-3 | Period: p | Select: Up/Dn | Details: Enter | Refresh: r | Quit: q"
-        : "Sort:1-3 | Period:p | Move:Up/Dn | Enter:open | r:refresh | q:quit";
+        ? " Sort: 1-3 (cycle/off) | Period: p | Select: Up/Dn | Details: Enter | Refresh: r | Quit: q"
+        : "Sort:1-3 cycle/off | Period:p | Move:Up/Dn | Enter:open | r:refresh | q:quit";
     write_at(rows - 2, 1, footer, columns - 2);
     attroff(COLOR_PAIR(1));
     if (!status_message.empty()) {
@@ -664,7 +671,8 @@ void draw_screen(const StatisticsReport& report,
 
 void draw_request_screen(std::string_view hostname, const RequestPage& page,
                          std::size_t total_requests,
-                         RequestSortColumn sort_column, bool sort_ascending,
+                         RequestSortColumn sort_column, bool sort_active,
+                         bool sort_ascending,
                          std::size_t selected,
                          std::size_t url_horizontal_offset,
                          std::string_view status_message) {
@@ -735,18 +743,21 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
 
     attron(A_BOLD);
     write_at(3, 2, "TIME" + sort_direction(RequestSortColumn::timestamp,
-                                             sort_column, sort_ascending),
+                                           sort_column, sort_active,
+                                           sort_ascending),
              time_width);
     write_at(3, ip_column, "IP" + sort_direction(RequestSortColumn::client_ip,
-                                                   sort_column, sort_ascending),
+                                                   sort_column, sort_active,
+                                                   sort_ascending),
              ip_width);
     write_at(3, method_column,
              "METHOD/STATUS" +
                  sort_direction(RequestSortColumn::method_status, sort_column,
-                                sort_ascending),
+                                sort_active, sort_ascending),
              method_width);
     write_at(3, url_column, "URL" + sort_direction(RequestSortColumn::url,
-                                                     sort_column, sort_ascending),
+                                                     sort_column, sort_active,
+                                                     sort_ascending),
              url_width);
     attroff(A_BOLD);
     mvhline(4, 1, ACS_HLINE, content_width);
@@ -800,10 +811,11 @@ void draw_request_screen(std::string_view hostname, const RequestPage& page,
     attron(COLOR_PAIR(1));
     std::ostringstream footer;
     if (columns >= 100) {
-        footer << " Sort: 1-4 " << (sort_ascending ? "ASC" : "DESC")
-               << " | Rows: Up/Dn | Pages: PgUp/Dn | URL: L/R | Back: Esc | Quit: q";
+        footer << " Sort: 1-4 (cycle/off) | Rows: Up/Dn | Pages: PgUp/Dn"
+               << " | URL: L/R | Back: Esc | Quit: q";
     } else {
-        footer << "Sort:1-4 | Rows:Up/Dn | Page:PgUp/Dn | URL:L/R | Back:Esc | Quit:q";
+        footer << "Sort:1-4 cycle/off | Rows:Up/Dn | Page:PgUp/Dn"
+               << " | URL:L/R | Back:Esc | Quit:q";
     }
     write_at(rows - 2, 1, footer.str(), columns - 2);
     attroff(COLOR_PAIR(1));
@@ -1068,11 +1080,14 @@ int run_terminal_ui(const std::filesystem::path& log_path,
         monitor_service_state(statistics_directory);
     auto next_service_check = std::chrono::steady_clock::now() +
                               std::chrono::seconds{2};
+    auto next_data_refresh = std::chrono::steady_clock::now() +
+                             live_refresh_interval;
     std::size_t selected = 0;
     std::string status_message = std::move(snapshot.status_message);
     RequestPeriod request_period = RequestPeriod::today;
     SiteSortColumn site_sort_column = SiteSortColumn::last_access;
     bool site_sort_ascending = false;
+    bool site_sort_active = false;
     bool history_mode = false;
     std::string history_hostname;
     RequestPage request_page;
@@ -1081,12 +1096,29 @@ int run_terminal_ui(const std::filesystem::path& log_path,
     std::size_t request_total = 0;
     RequestSortColumn request_sort_column = RequestSortColumn::timestamp;
     bool request_sort_ascending = false;
+    bool request_sort_active = false;
     constexpr std::size_t request_page_size = 100U;
 
     while (true) {
+        const auto loop_now = std::chrono::steady_clock::now();
+        if (!history_mode && loop_now >= next_data_refresh) {
+            next_data_refresh = loop_now + live_refresh_interval;
+            try {
+                snapshot = build_ui_statistics(log_path, nginx_config,
+                                               statistics_directory);
+                if (!snapshot.status_message.empty() &&
+                    snapshot.status_message != service_live_status) {
+                    status_message = snapshot.status_message;
+                }
+            } catch (const std::exception& error) {
+                status_message = std::string{"Live refresh failed: "} +
+                                 error.what();
+            }
+        }
         const std::vector<SiteRow> sites =
             sorted_sites(snapshot.report, snapshot.activity_totals,
-                         request_period, site_sort_column, site_sort_ascending);
+                         request_period, site_sort_column, site_sort_active,
+                         site_sort_ascending);
         if (sites.empty()) {
             selected = 0;
         } else if (selected >= sites.size()) {
@@ -1096,13 +1128,14 @@ int run_terminal_ui(const std::filesystem::path& log_path,
         if (history_mode) {
             draw_request_screen(history_hostname, request_page,
                                 request_total,
-                                request_sort_column, request_sort_ascending,
+                                request_sort_column, request_sort_active,
+                                request_sort_ascending,
                                 request_selected, request_url_offset,
                                 status_message);
         } else {
             draw_screen(snapshot.report, snapshot.activity_totals,
-                        request_period, log_path, selected, site_sort_column,
-                        site_sort_ascending, status_message);
+                        request_period, log_path, selected, site_sort_active,
+                        site_sort_column, site_sort_ascending, status_message);
         }
         int rows = 0;
         int columns = 0;
@@ -1131,19 +1164,31 @@ int run_terminal_ui(const std::filesystem::path& log_path,
             if (key >= '1' && key <= '4') {
                 const auto selected_column = static_cast<RequestSortColumn>(
                     key - '1');
-                if (selected_column == request_sort_column) {
-                    request_sort_ascending = !request_sort_ascending;
-                } else {
+                if (!request_sort_active ||
+                    selected_column != request_sort_column) {
+                    request_sort_active = true;
                     request_sort_column = selected_column;
+                    request_sort_ascending =
+                        selected_column == RequestSortColumn::client_ip ||
+                        selected_column == RequestSortColumn::method_status ||
+                        selected_column == RequestSortColumn::url;
+                    status_message = "Sorted this page " +
+                        std::string{request_sort_ascending ? "ascending" :
+                                                            "descending"};
+                } else if (request_sort_ascending) {
                     request_sort_ascending = false;
+                    status_message = "Sorted this page descending";
+                } else {
+                    request_sort_active = false;
+                    request_sort_column = RequestSortColumn::timestamp;
+                    request_sort_ascending = false;
+                    status_message =
+                        "Restored newest-first request order";
                 }
                 sort_request_page(request_page, request_sort_column,
                                   request_sort_ascending);
                 request_selected = 0;
                 request_url_offset = 0;
-                status_message = "Sorted this page " +
-                    std::string{request_sort_ascending ? "ascending" :
-                                                        "descending"};
             } else if (key == KEY_LEFT && request_url_offset > 0U) {
                 request_url_offset = request_url_offset > 4U
                                          ? request_url_offset - 4U
@@ -1226,16 +1271,25 @@ int run_terminal_ui(const std::filesystem::path& log_path,
         } else if (key >= '1' && key <= '3') {
             const auto selected_column =
                 static_cast<SiteSortColumn>(key - '1');
-            if (selected_column == site_sort_column) {
-                site_sort_ascending = !site_sort_ascending;
-            } else {
+            if (!site_sort_active || selected_column != site_sort_column) {
+                site_sort_active = true;
                 site_sort_column = selected_column;
                 site_sort_ascending =
                     selected_column == SiteSortColumn::hostname;
+                status_message = "Sorted sites " +
+                    std::string{site_sort_ascending ? "ascending" :
+                                                        "descending"};
+            } else if (site_sort_ascending) {
+                site_sort_ascending = false;
+                status_message = "Sorted sites descending";
+            } else {
+                site_sort_active = false;
+                site_sort_column = SiteSortColumn::last_access;
+                site_sort_ascending = false;
+                status_message =
+                    "Restored latest-access site order";
             }
             selected = 0;
-            status_message = "Sorted sites " +
-                std::string{site_sort_ascending ? "ascending" : "descending"};
         } else if ((key == KEY_UP || key == 'k') && selected > 0) {
             --selected;
         } else if ((key == KEY_DOWN || key == 'j') && selected + 1 < sites.size()) {
@@ -1268,6 +1322,7 @@ int run_terminal_ui(const std::filesystem::path& log_path,
                     newest_page_offset, request_page_size);
                 request_sort_column = RequestSortColumn::timestamp;
                 request_sort_ascending = false;
+                request_sort_active = false;
                 sort_request_page(request_page, request_sort_column,
                                   request_sort_ascending);
                 request_selected = 0;

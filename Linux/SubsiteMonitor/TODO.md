@@ -4,9 +4,8 @@ Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
 Last reviewed: 2026-11-02. Phases 1 through 5 are implemented in development
-version 0.1.0-alpha.15. Alpha.13 is the latest published binary release;
-alpha.15's per-site request-period archive is built and checksum-verified but
-not yet published.
+version 0.1.0-alpha.17. Alpha.13 is the latest published binary release;
+alpha.17's x86_64 archive is built and checksum-verified but not yet published.
 Current default access log:
 `/var/log/subsite-monitor/access.log`. Alpha.9 polishes the UI command bars and
 shows update availability only when a compatible release exists. The updater
@@ -31,7 +30,8 @@ is included in alpha.13.
   root-only config and support validated config values with CLI overrides.
 - [ ] **Phase 7 — Release preparation:** validate the static binary and
   installer on Debian/Ubuntu, review ABI/terminfo portability, and upload the
-  alpha.14 and alpha.15 archives and checksums to their GitHub Releases.
+  alpha.14, alpha.15, and alpha.17 archives and checksums to their GitHub
+  Releases.
 - [x] **Docker-backed development:** Compose Nginx writes host-aware logs to an
   ignored bind mount; `run-dev.sh` uses those files when available.
 - [x] **Prepare alpha.5 package:** build and verify the static archive, checksum,
@@ -42,7 +42,7 @@ is included in alpha.13.
 - [x] **UI table readability:** remove dim styling from alternating website and
   request-history rows; keep the selected row highlighted in white on blue.
 - [x] **Sortable UI tables:** show sites by most recent access by default and
-  allow sorting the site and request tables by their displayed columns.
+  cycle each column through ascending, descending, and default ordering.
 - [x] **In-UI software update:** key `u` checks compatible GitHub releases and
   displays release notes. Installation requires a second explicit `y`
   confirmation and runs the installed release installer, which verifies the
@@ -53,6 +53,9 @@ is included in alpha.13.
 - [x] **Per-site request periods:** default the site table to today's counts;
   press `p` to cycle through 1Y, 6M, 90D, 30D, 7D, and rolling 24H. Press `r`
   to refresh, and sort request counts by the selected period.
+- [x] **Live site overview:** automatically refresh site counts and latest
+  access every five seconds while the overview is open; `r` still refreshes
+  immediately.
 - [ ] **Operational follow-up:** test the installed systemd unit against the
   user's actual Nginx configuration and logrotate policy on the subsites server.
   Confirm installer output shows Nginx validation/reload and monitor service

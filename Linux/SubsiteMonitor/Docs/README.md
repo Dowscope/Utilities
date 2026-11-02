@@ -21,7 +21,7 @@ permissions, Nginx `server_name` discovery, the packaged host-aware log snippet
 and its automatic loading when `conf.d/*.conf` is included inside `http { }`,
 local archive installation, and request detail privacy and storage behavior.
 
-The current development version is alpha.15; the site overview defaults to
+The current development version is alpha.17; the site overview defaults to
 latest access first and supports sorting by its columns. Unselected rows use
 normal brightness and the selected row is bold white on blue. Alpha.13 is the
 latest published binary release. The UI header shows its version and the site
@@ -30,7 +30,8 @@ and the update indicator appears only when a newer compatible release exists.
 The bottom status bar shows the UI process and whether the monitor service lock
 is held; the service state refreshes every two seconds. The overview also
 shows each site's request total for a selected period, defaulting to today.
-Press `p` to cycle through the time periods and `r` to refresh.
+Press `p` to cycle through the time periods. The overview refreshes every five
+seconds; `r` refreshes immediately.
 The installer lists up to 10 compatible
 published releases and verifies the selected archive's SHA-256 before install.
 The UI updater reviews release notes and invokes the installed checksum-

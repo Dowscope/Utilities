@@ -120,6 +120,16 @@ by the user for server testing; no production deployment is implied.
   period. It defaults to today; `p` cycles through 1Y, 6M, 90D, 30D, 7D, and
   rolling 24H. `r` refreshes. The x86_64 release archive is built and ready to
   attach to a GitHub Release.
+- Alpha.16 refreshes the site overview every five seconds while it is open.
+  When the monitor service is active it reads updated stored statistics;
+  without the service it collects from the log using the existing checkpoint.
+  `r` remains available for an immediate refresh. Request history does not
+  auto-refresh while open.
+- Alpha.17 sorting keys in both site overview and request history cycle
+  ascending, descending, and back to the default order. No sort marker is shown
+  when the default order is active.
+- The alpha.17 x86_64 archive and checksum are built and ready to attach to the
+  GitHub Release. The latest published binary release remains alpha.13.
 - In the site overview, `u` fetches up to ten newer compatible GitHub releases,
   shows title/date/notes, and lets the user inspect notes. Enter opens a second
   confirmation; only `y` starts the update. The installed helper at
@@ -170,8 +180,10 @@ by the user for server testing; no production deployment is implied.
   collects/stores on launch and refresh. If the log is unavailable, it can
   display stored statistics alongside discovered configured sites.
 - Site overview defaults to latest access descending. Keys `1`–`3` sort by
-  hostname, request count, or latest access; repeating the active key reverses
-  direction. Changing sort returns selection to the first row.
+  hostname, request count, or latest access. Repeatedly pressing the active key
+  cycles ascending, descending, and default latest-access order. Request
+  history keys `1`–`4` use the same cycle and reset to newest-first order.
+  Changing sort returns selection to the first row.
 - Alternating rows in both UI tables use normal terminal text brightness;
   the selected row is bold white on blue.
 - Request CSVs contain sensitive client IPs and full URLs. Files are mode 0600

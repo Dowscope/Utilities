@@ -11,10 +11,11 @@ import subprocess
 import tempfile
 import termios
 import time
+from datetime import datetime, timezone
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0-alpha.15"
+VERSION = "0.1.0-alpha.17"
 
 
 def compile_test_application(binary: Path, bindir: Path, datadir: Path) -> None:
@@ -57,6 +58,100 @@ def write_executable(path: Path, content: str) -> None:
     path.chmod(0o755)
 
 
+def test_live_refresh(application: Path, mock_bin: Path, directory: Path) -> None:
+    access_log = directory / "live-access.log"
+    access_log.write_text(
+        (ROOT / "tests/fixtures/access.log").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    statistics_directory = directory / "live-stats"
+    process_id, terminal = pty.fork()
+    if process_id == 0:
+        environment = os.environ.copy()
+        environment.update(
+            {
+                "TERM": "xterm",
+                "PATH": f"{mock_bin}:{environment.get('PATH', '')}",
+                "SUBSITE_MONITOR_NGINX_CONFIG": str(
+                    ROOT / "tests/fixtures/nginx/nginx.conf"
+                ),
+                "SUBSITE_MONITOR_STATS_DIR": str(statistics_directory),
+            }
+        )
+        os.execve(
+            application,
+            [str(application), "ui", "--log", str(access_log)],
+            environment,
+        )
+
+    output = bytearray()
+
+    def wait_for(expected: bytes, timeout: float = 12.0) -> None:
+        deadline = time.monotonic() + timeout
+        while expected not in output and time.monotonic() < deadline:
+            readable, _, _ = select.select([terminal], [], [], 0.2)
+            if readable:
+                try:
+                    output.extend(os.read(terminal, 8192))
+                except OSError:
+                    break
+        if expected not in output:
+            raise RuntimeError(f"timed out waiting for {expected!r}")
+
+    try:
+        fcntl.ioctl(
+            terminal,
+            termios.TIOCSWINSZ,
+            struct.pack("HHHH", 24, 100, 0, 0),
+        )
+        wait_for(b"SUBSITE MONITOR")
+        wait_for(b"All-time requests  5")
+
+        timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with access_log.open("a", encoding="utf-8") as log_file:
+            log_file.write(
+                f'{timestamp} live-refresh.example.test 203.0.113.99 '
+                '"GET /live-refresh-probe HTTP/1.1" 200\n'
+            )
+
+        deadline = time.monotonic() + 12.0
+        recorded = False
+        while time.monotonic() < deadline:
+            for request_file in statistics_directory.glob("requests-*.csv"):
+                if "live-refresh-probe" in request_file.read_text(
+                    encoding="utf-8"
+                ):
+                    recorded = True
+                    break
+            if recorded:
+                break
+            readable, _, _ = select.select([terminal], [], [], 0.2)
+            if readable:
+                try:
+                    output.extend(os.read(terminal, 8192))
+                except OSError:
+                    break
+        if not recorded:
+            raise RuntimeError("UI did not collect an appended request live")
+
+        os.write(terminal, b"q")
+        _, status = os.waitpid(process_id, 0)
+        if not os.WIFEXITED(status) or os.WEXITSTATUS(status) != 0:
+            raise RuntimeError(f"live-refresh UI exited with status {status}")
+    except Exception:
+        try:
+            os.kill(process_id, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        try:
+            os.waitpid(process_id, 0)
+        except ChildProcessError:
+            pass
+        raise
+    finally:
+        os.close(terminal)
+
+
 def main() -> None:
     with tempfile.TemporaryDirectory(prefix="subsite-monitor-restart-test-") as temp:
         directory = Path(temp)
@@ -83,9 +178,11 @@ def main() -> None:
         write_executable(
             mock_bin / "python3",
             "#!/bin/sh\n"
-            "printf '0.1.0-alpha.16\\t2026-10-30\\t"
-            "U3Vic2l0ZSBNb25pdG9yIGFscGhhLjE2\\tTm90ZXM=\\n'\n",
+            "printf '0.1.0-alpha.18\\t2026-10-30\\t"
+            "U3Vic2l0ZSBNb25pdG9yIGFscGhhLjE4\\tTm90ZXM=\\n'\n",
         )
+
+        test_live_refresh(application, mock_bin, directory)
 
         process_id, terminal = pty.fork()
         if process_id == 0:
@@ -159,7 +256,7 @@ def main() -> None:
         finally:
             os.close(terminal)
 
-    print("UI update restart tests passed")
+    print("UI live-refresh and update restart tests passed")
 
 
 if __name__ == "__main__":

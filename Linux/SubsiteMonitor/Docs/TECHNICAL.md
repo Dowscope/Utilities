@@ -57,7 +57,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.15` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.17` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -179,8 +179,10 @@ UTC to the monitor host's local timezone and shown with a numeric offset.
 The initial request page is the newest 100 events, ordered newest first.
 Up/Down moves within that page, Page Up/Down loads adjacent chronological
 pages, and Left/Right horizontally scrolls the selected full URL. Keys `1` to
-`4` sort the current page by timestamp, client IP, method/status, or URL; pressing
-the active key again reverses its direction. Sorting is page-local to retain a
+`4` sort the current page by timestamp, client IP, method/status, or URL.
+Repeating the active key cycles ascending, descending, then restores the
+view's default ordering. The default site ordering is latest access descending;
+request history is newest timestamp first. Sorting is page-local to retain a
 bounded 100-record working set. Escape returns to the
 overview and `q` exits. The screen is redrawn on
 terminal resize. Ncursesw is linked through the `pkg-config ncursesw` metadata.
@@ -255,8 +257,9 @@ single documented Nginx log format. Configurable statistics and checkpoint
 directories in the root-only config remain future work.
 
 The website table defaults to latest access descending. Keys `1` through `3`
-sort by hostname, request count, or last access; pressing the active key toggles
-direction. Request-history sorting applies to its current 100-record page.
+cycle each column between ascending, descending, and restoring the default
+latest-access ordering. Request-history sorting cycles the same way on its
+current 100-record page, restoring newest-first order.
 Column headings use descriptive labels without numeric key prefixes; the sort
 shortcuts are shown in each view's footer. Footer commands use the
 `Action: key | Action: key` style and are grouped by task. Both tables render
@@ -271,11 +274,15 @@ TODAY. `p` cycles the displayed period; request-count sorting follows the active
 period. The 24H period streams only request CSV files overlapping the half-open
 rolling interval and aggregates records by hostname using their UTC timestamps.
 This avoids loading event data into memory. The totals and per-site values are
-recomputed on startup and with `r`.
+recomputed on startup, every five seconds in the site overview, and with `r`.
+Automatic refresh calls the same snapshot builder as startup: when the service
+owns the state lock it reads the service's persisted statistics; otherwise it
+collects from the configured log using the existing checkpoint. Request history
+is not automatically refreshed while that view is open.
 
 Last reviewed: 2026-11-02. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.15
-release candidate. Alpha.13 is the latest published package; alpha.15's
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.17
+release candidate. Alpha.13 is the latest published package; the alpha.17
 archive is prepared for upload.
 
 

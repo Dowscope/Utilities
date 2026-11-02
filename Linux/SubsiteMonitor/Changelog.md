@@ -1,5 +1,35 @@
 # Changelog
 
+### Alpha.17 release candidate — 2026-11-02T13:00:01-05:00
+
+- Bumped the development version to `0.1.0-alpha.17`.
+- Sorting keys in both site overview and request history now cycle through
+  ascending, descending, and the view's default ordering.
+- Clearing a site sort restores latest-access-first order; clearing request
+  history sorting restores newest-first order. Active headers show direction,
+  and footers identify the cycle/off behavior.
+- Updated manual and technical documentation and added pseudo-terminal checks
+  for the three-state sorting cycle.
+- `./verify.sh` passed, including build, all tests, installer validation, and
+  UI integration checks, without compiler warnings.
+- `./packaging/build-alpha.sh` passed and generated the x86_64 Linux archive.
+  SHA-256: `983e423a7234d6add4cf4a7a26aa8866473ca4ba3e08cfb28c9cbbc893a88c3e`.
+- Regenerated `installer.sh` and `install.sh` with the alpha.17 package
+  checksum.
+
+### Alpha.16 development — 2026-11-02T11:14:24-05:00
+
+- Bumped the development version to `0.1.0-alpha.16`.
+- Added automatic site-overview refresh every five seconds and a visible
+  `Live: 5s` indicator. Manual `r` refresh remains available.
+- When the service owns the state lock, live refresh reads the newest stored
+  statistics. Without the service, it incrementally collects from the log
+  through the existing checkpoint.
+- Added a pseudo-terminal test that appends a request while the UI is open and
+  verifies that live refresh collects it. Request-history view remains static.
+- `./verify.sh` passed, including the full build, test suite, and live-refresh
+  integration test, without compiler warnings.
+
 ### Alpha.15 release candidate — 2026-11-02T10:38:56-05:00
 
 - Bumped the development version to `0.1.0-alpha.15`.

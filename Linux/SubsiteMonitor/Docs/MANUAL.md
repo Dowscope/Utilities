@@ -233,7 +233,11 @@ The website table's request column shows a separate count for each site. It
 starts on `TODAY`; press `p` to cycle through `1 YEAR`, `6 MONTHS`, `90 DAYS`,
 `30 DAYS`, `7 DAYS`, and `24 HOURS`, then back to `TODAY`. The table heading and
 period total above the table identify the selected period. Sorting by request
-count uses the currently selected period. Press `r` to refresh the data.
+count uses the currently selected period. The overview refreshes automatically
+every five seconds and shows `Live: 5s`; press `r` to refresh immediately.
+When the monitor service is active, this reloads the service's latest stored
+statistics. Without the service, the UI collects new log lines through its
+saved checkpoint.
 
 Calendar windows use server-local access-log dates and include the start and
 current dates. `24 HOURS` is an exact rolling interval counted from per-request
@@ -270,17 +274,19 @@ wildcard names are listed; regex server names and `_` are skipped. The log
 must use the host-aware format below to attribute activity by site. Nginx's
 standard access log usually omits the hostname, so use the documented custom
 format for per-site request counts. The overview defaults to latest access
-first. Press `1` for website, `2` for requests, or `3` for last access; press
-the active number again to reverse sort direction. The active heading displays
-`v` for descending or `^` for ascending. The overview is a snapshot. Press
-up/down or `j`/`k` to select a website;
+first. Press `1` for website, `2` for requests, or `3` for last access.
+Repeat the active number to cycle ascending, descending, then restore
+latest-access-first order. The active heading displays `v` for descending or
+`^` for ascending; no marker means the default order. The overview refreshes
+automatically every five seconds. Press up/down or `j`/`k` to select a website;
 Enter opens every stored request for that site. Each request occupies one table row with server-local timestamp and numeric
 offset, client IP, method/status, and request URL columns. The view opens on the
 newest 100 requests, newest first. Down moves toward older requests; Page
 Down loads the next older page. Press `1` for time, `2` for client IP, `3` for
-method/status, or `4` for URL to sort the current page; press the same number
-again to reverse its order. The active header shows `v` for descending or `^`
-for ascending. Up/Page Up move toward newer requests, and left/right scroll the
+method/status, or `4` for URL to sort the current page. Repeat the active
+number to cycle ascending, descending, then restore newest-first order. The
+active header shows `v` for descending or `^` for ascending; no marker means
+the default order. Up/Page Up move toward newer requests, and left/right scroll the
 selected URL. Sorting is limited to the current page so memory remains bounded
 for large logs. Column headers use descriptive names; the sort keys remain
 shown in the overview and request-history footers.
