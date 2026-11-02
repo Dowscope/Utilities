@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <cstring>
 #include <exception>
 #include <filesystem>
@@ -140,6 +141,55 @@ void draw_update_badge(int rows, int columns,
     attron(COLOR_PAIR(4) | A_BOLD);
     write_at(rows - 3, left, label, badge_width);
     attroff(COLOR_PAIR(4) | A_BOLD);
+}
+
+enum class MonitorServiceState { active, stopped, unknown };
+
+MonitorServiceState monitor_service_state(
+    const std::filesystem::path& statistics_directory) {
+    try {
+        return monitor_service_is_active(statistics_directory)
+                   ? MonitorServiceState::active
+                   : MonitorServiceState::stopped;
+    } catch (const std::exception&) {
+        return MonitorServiceState::unknown;
+    }
+}
+
+void draw_health_bar(int rows, int columns,
+                     MonitorServiceState service_state) {
+    if (rows < 18 || columns < 64) return;
+
+    mvhline(rows - 1, 0, ' ', columns);
+    attron(COLOR_PAIR(4) | A_BOLD);
+    const std::string app_status = " APP: RUNNING ";
+    write_at(rows - 1, 1, app_status,
+             std::min(static_cast<int>(app_status.size()), columns - 2));
+    attroff(COLOR_PAIR(4) | A_BOLD);
+
+    const std::string separator = "|";
+    write_at(rows - 1, 16, separator, 1);
+    const std::string service_label = " MONITOR SERVICE: ";
+    write_at(rows - 1, 18, service_label,
+             std::min(static_cast<int>(service_label.size()), columns - 20));
+
+    std::string service_value;
+    int color = COLOR_PAIR(5) | A_BOLD;
+    switch (service_state) {
+    case MonitorServiceState::active:
+        service_value = "ACTIVE";
+        color = COLOR_PAIR(4) | A_BOLD;
+        break;
+    case MonitorServiceState::stopped:
+        service_value = "STOPPED";
+        break;
+    case MonitorServiceState::unknown:
+        service_value = "UNKNOWN";
+        break;
+    }
+    attron(color);
+    write_at(rows - 1, 36, service_value, columns - 38);
+    attroff(color);
 }
 
 enum class SiteSortColumn { hostname, requests, last_access };
@@ -927,6 +977,10 @@ int run_terminal_ui(const std::filesystem::path& log_path,
     const std::shared_ptr<UpdateCheckResult> update_check =
         start_update_check();
     timeout(250);
+    MonitorServiceState service_state =
+        monitor_service_state(statistics_directory);
+    auto next_service_check = std::chrono::steady_clock::now() +
+                              std::chrono::seconds{2};
     std::size_t selected = 0;
     std::string status_message = std::move(snapshot.status_message);
     SiteSortColumn site_sort_column = SiteSortColumn::last_access;
@@ -964,7 +1018,13 @@ int run_terminal_ui(const std::filesystem::path& log_path,
         int rows = 0;
         int columns = 0;
         getmaxyx(stdscr, rows, columns);
+        const auto now = std::chrono::steady_clock::now();
+        if (now >= next_service_check) {
+            service_state = monitor_service_state(statistics_directory);
+            next_service_check = now + std::chrono::seconds{2};
+        }
         draw_update_badge(rows, columns, update_check);
+        draw_health_bar(rows, columns, service_state);
         refresh();
         status_message.clear();
         const int key = getch();

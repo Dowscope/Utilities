@@ -223,6 +223,12 @@ After installation, the UI automatically restarts using the new executable
 and preserves its startup arguments. If it cannot restart, quit and relaunch
 manually.
 
+The bottom status bar displays `APP: RUNNING` while the UI is responsive and
+reports the monitor service as `ACTIVE`, `STOPPED`, or `UNKNOWN`. The service
+indicator checks whether the collector holds its private lock every two
+seconds. `ACTIVE` confirms the service owns that lock; it does not guarantee
+that new requests are arriving or that the collector is making progress.
+
 The service checkpoints the log device, inode, offset, and committed event CSV
 sizes. Event rows are synced before the checkpoint advances. After an
 interrupted append, startup truncates uncommitted CSV tails and rebuilds the

@@ -3,9 +3,9 @@
 Planned work, ordered by the project's development phases. Checked items are
 complete. Begin each new phase only after the user approves it.
 
-Last reviewed: 2026-10-29. Phases 1 through 5 are implemented in development
-version 0.1.0-alpha.13. Alpha.12 is the latest published binary release for
-server testing. The alpha.13 archive and checksum are prepared for publication.
+Last reviewed: 2026-11-02. Phases 1 through 5 are implemented in development
+version 0.1.0-alpha.14. Alpha.13 is the latest published binary release for
+server testing. The alpha.14 status-bar archive is built and checksum-verified.
 Current default access log:
 `/var/log/subsite-monitor/access.log`. Alpha.9 polishes the UI command bars and
 shows update availability only when a compatible release exists. The updater
@@ -29,8 +29,8 @@ is included in alpha.13.
 - [ ] **Phase 6 — Configuration:** add statistics/state directories to the
   root-only config and support validated config values with CLI overrides.
 - [ ] **Phase 7 — Release preparation:** validate the static binary and
-  installer on Debian/Ubuntu, review ABI/terminfo portability, and publish the
-  alpha.13 archive and checksum.
+  installer on Debian/Ubuntu, review ABI/terminfo portability, and upload the
+  alpha.14 archive and checksum to its GitHub Release.
 - [x] **Docker-backed development:** Compose Nginx writes host-aware logs to an
   ignored bind mount; `run-dev.sh` uses those files when available.
 - [x] **Prepare alpha.5 package:** build and verify the static archive, checksum,
@@ -47,6 +47,8 @@ is included in alpha.13.
   confirmation and runs the installed release installer, which verifies the
   release archive SHA-256. It uses `sudo` only after that confirmation when the
   UI is not root, then automatically restarts the UI into the newly installed version.
+- [x] **UI/service health bar:** show that the UI is running and whether the
+  monitor service owns its lock, refreshing the service state every two seconds.
 - [ ] **Operational follow-up:** test the installed systemd unit against the
   user's actual Nginx configuration and logrotate policy on the subsites server.
   Confirm installer output shows Nginx validation/reload and monitor service

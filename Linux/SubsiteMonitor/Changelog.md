@@ -1,5 +1,18 @@
 # Changelog
 
+### Alpha.14 development — 2026-11-02T09:02:28-05:00
+
+- Bumped the development version to `0.1.0-alpha.14`; alpha.13 is the latest
+  published binary release.
+- Added a bottom UI status bar that shows the UI is running and reports whether
+  the monitor service lock is active, stopped, or unavailable.
+- Refresh the monitor service status every two seconds and use existing green
+  and yellow UI colors to make the state easy to spot.
+- Added a pseudo-terminal check for the status-bar labels. `./verify.sh` and
+  `./packaging/build-alpha.sh` passed without compiler warnings. The release
+  archive and checksum are in `packaging/dist/`; archive SHA-256:
+  `9229f199e9d74878d211f1e9d1c3659b56dabbcee4cf7dc1cdd1ae285fe06f8f`.
+
 ### Alpha.13 release preparation — 2026-10-29T15:25:28-04:00
 
 - Bumped development and packaging version to `0.1.0-alpha.13`; alpha.12 is

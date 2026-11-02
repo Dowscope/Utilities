@@ -14,7 +14,7 @@ import time
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0-alpha.13"
+VERSION = "0.1.0-alpha.14"
 
 
 def compile_test_application(binary: Path, bindir: Path, datadir: Path) -> None:
@@ -83,8 +83,8 @@ def main() -> None:
         write_executable(
             mock_bin / "python3",
             "#!/bin/sh\n"
-            "printf '0.1.0-alpha.14\\t2026-10-30\\t"
-            "U3Vic2l0ZSBNb25pdG9yIGFscGhhLjE0\\tTm90ZXM=\\n'\n",
+            "printf '0.1.0-alpha.15\\t2026-10-30\\t"
+            "U3Vic2l0ZSBNb25pdG9yIGFscGhhLjE1\\tTm90ZXM=\\n'\n",
         )
 
         process_id, terminal = pty.fork()
@@ -133,6 +133,8 @@ def main() -> None:
                 struct.pack("HHHH", 24, 100, 0, 0),
             )
             wait_for(b"SUBSITE MONITOR")
+            wait_for(b"APP: RUNNING")
+            wait_for(b"MONITOR SERVICE:")
             os.write(terminal, b"u")
             wait_for(b"SOFTWARE UPDATE")
             os.write(terminal, b"\n")

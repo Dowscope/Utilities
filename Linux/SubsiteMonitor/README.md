@@ -1,7 +1,7 @@
 # Subsite Monitor
 
-Current development version: **0.1.0-alpha.13**. The latest published release
-is **0.1.0-alpha.12**. Release binaries target x86_64 Linux on
+Current development version: **0.1.0-alpha.14**. The latest published release
+is **0.1.0-alpha.13**. Release binaries target x86_64 Linux on
 Debian, Ubuntu, and Arch, statically link ncursesw and the C++ runtime, and use
 host terminfo for the terminal UI.
 
@@ -43,10 +43,10 @@ The UI site table opens with most recently active sites first and supports
 sorting by website, request count, or last access with keys `1`–`3`; repeat the
 active key to reverse the direction. The UI command bars use grouped
 `Action: key | Action: key` hints; update availability appears in the lower
-right only when a newer compatible release is found. The alpha.13 source and
-release archive are built and verified. The archive checksum is in
-`packaging/dist/SHA256SUMS`; see `packaging/README.md` for the release title,
-notes, and upload steps.
+right only when a newer compatible release is found. A bottom status bar shows
+that the UI is running and whether the monitor service lock is active. The
+alpha.14 status-bar change is packaged and verified; see `packaging/README.md`
+for its archive checksum and release upload instructions.
 The running version appears in the UI header, and the overview links to
 [GitHub Issues](https://github.com/Dowscope/Utilities/issues).
 See `packaging/README.md` for alpha build and release steps.
@@ -121,8 +121,8 @@ to `subsite-monitor`, allowing CLI commands or a different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.12 is the latest published binary; alpha.13's
-archive and checksum are ready for its GitHub Release. Release
+`packaging/README.md`. Alpha.13 is the latest published binary; the alpha.14
+archive and checksum will be built for its GitHub Release. Release
 binaries target Debian, Ubuntu, and Arch on x86_64.
 The installer seeds the root-only monitor config and installs a host-aware
 snippet at `/etc/nginx/conf.d/subsite-monitor.conf`, a logrotate policy, and the

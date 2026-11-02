@@ -57,7 +57,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.13` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.14` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -261,10 +261,15 @@ Column headings use descriptive labels without numeric key prefixes; the sort
 shortcuts are shown in each view's footer. Footer commands use the
 `Action: key | Action: key` style and are grouped by task. Both tables render
 unselected rows at normal brightness and the selected row in bold white on blue.
+The bottom status bar reports the responsive UI process and samples the
+collector's exclusive service lock every two seconds. A held lock is shown as
+active, an available lock as stopped, and lock inspection errors as unknown.
+This verifies that the collector process owns its lock; it does not measure
+request freshness or prove the process is making progress.
 
-Last reviewed: 2026-10-29. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.13
-development source. Alpha.12 is the latest published package.
+Last reviewed: 2026-11-02. This reference describes the CLI, TUI, root-only
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.14
+development source. Alpha.13 is the latest published package.
 
 
 ## Docker Nginx development fixture
