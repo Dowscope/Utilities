@@ -229,6 +229,17 @@ indicator checks whether the collector holds its private lock every two
 seconds. `ACTIVE` confirms the service owns that lock; it does not guarantee
 that new requests are arriving or that the collector is making progress.
 
+The website table's request column shows a separate count for each site. It
+starts on `TODAY`; press `p` to cycle through `1 YEAR`, `6 MONTHS`, `90 DAYS`,
+`30 DAYS`, `7 DAYS`, and `24 HOURS`, then back to `TODAY`. The table heading and
+period total above the table identify the selected period. Sorting by request
+count uses the currently selected period. Press `r` to refresh the data.
+
+Calendar windows use server-local access-log dates and include the start and
+current dates. `24 HOURS` is an exact rolling interval counted from per-request
+event records; `TODAY` starts at local midnight. The summary above the table
+continues to show all-time requests across all sites.
+
 The service checkpoints the log device, inode, offset, and committed event CSV
 sizes. Event rows are synced before the checkpoint advances. After an
 interrupted append, startup truncates uncommitted CSV tails and rebuilds the

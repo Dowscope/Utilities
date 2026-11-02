@@ -54,6 +54,11 @@ struct RequestPage {
 [[nodiscard]] StatisticsReport read_stored_statistics(
     const std::filesystem::path& directory, std::size_t days = 0);
 
+// Count requests by site in the half-open UTC interval [begin, end).
+[[nodiscard]] std::map<std::string, std::uint64_t> count_requests_between(
+    const std::filesystem::path& directory, std::chrono::sys_seconds begin,
+    std::chrono::sys_seconds end);
+
 // Reads the selected site's rows from its daily CSV snapshots, newest first.
 [[nodiscard]] std::vector<SiteDayHistory> read_site_history(
     const std::filesystem::path& directory, const std::string& hostname,

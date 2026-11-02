@@ -1,5 +1,19 @@
 # Changelog
 
+### Alpha.15 release candidate — 2026-11-02T10:38:56-05:00
+
+- Bumped the development version to `0.1.0-alpha.15`.
+- Added a per-site request count column that defaults to today; `p` cycles
+  through 1Y, 6M, 90D, 30D, 7D, and rolling 24H. Press `r` to refresh.
+- Calendar ranges sum each site's persisted daily summaries; 24H streams event
+  CSVs overlapping the interval and aggregates exact UTC timestamps by site.
+- Request-count sorting follows the selected period. Tests cover per-site
+  aggregation, calendar-window boundaries, and the rolling 24-hour count.
+- `./verify.sh` and `./packaging/build-alpha.sh` passed without compiler
+  warnings. The x86_64 Linux archive SHA-256 is
+  `36ff0a5b064606188c4a56f48b112c005ff6a19cc0b6d3168387dd2a232837b7`.
+- Regenerated `installer.sh` and `install.sh` with alpha.15's package checksum.
+
 ### Alpha.14 development — 2026-11-02T09:02:28-05:00
 
 - Bumped the development version to `0.1.0-alpha.14`; alpha.13 is the latest

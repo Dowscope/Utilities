@@ -113,9 +113,13 @@ by the user for server testing; no production deployment is implied.
   a successful update, preserving the original UI arguments. Existing alpha.12
   processes cannot use the new behavior until manually reopened once.
 - Alpha.14 adds a UI status bar for the running UI and monitor-service lock;
-  the service state refreshes every two seconds. Its x86_64 release archive is
-  built and verified; the checksum and release notes are in
+  the service state refreshes every two seconds. Its x86_64 archive is built,
+  verified, tagged, and ready to upload; checksum and notes are in
   `packaging/README.md` and `packaging/dist/SHA256SUMS`.
+- Alpha.15 displays a request count for each site and one selected
+  period. It defaults to today; `p` cycles through 1Y, 6M, 90D, 30D, 7D, and
+  rolling 24H. `r` refreshes. The x86_64 release archive is built and ready to
+  attach to a GitHub Release.
 - In the site overview, `u` fetches up to ten newer compatible GitHub releases,
   shows title/date/notes, and lets the user inspect notes. Enter opens a second
   confirmation; only `y` starts the update. The installed helper at
@@ -132,9 +136,9 @@ by the user for server testing; no production deployment is implied.
   and `./packaging/build-alpha.sh` are run for each release candidate. Alpha.12
   archive/checksum details are recorded in `packaging/README.md` and
   `packaging/dist/SHA256SUMS`.
-- The latest published release is tagged `v0.1.0-alpha.13`. Alpha.14 is the
-  current local development version; its release archive has not been built.
-  The current change adds a UI/service health bar. Alpha.13 includes automatic
+- The latest published release is alpha.13. Alpha.14 is tagged and its archive
+  is prepared for upload. Alpha.15 is the current local development version.
+  Alpha.13 includes automatic
   UI restart after updates, but existing alpha.12 processes cannot use that
   behavior until manually reopened once.
 - Phases 1 through 5 are implemented locally: C++23 CLI, bounded streaming

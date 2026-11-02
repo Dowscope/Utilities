@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string_view>
@@ -26,6 +27,59 @@ int main() {
 
     require(report.sites.size() == 2, "aggregate requests by virtual host");
     require(report.malformed_lines == 2, "count malformed log lines");
+
+    using namespace std::chrono;
+    using namespace subsite_monitor;
+    const sys_days today{2026y / October / 27};
+    const sys_seconds now = today + hours{12};
+    StatisticsReport activity_report;
+    SiteStatistics activity_site;
+    const auto add_day = [&activity_site](sys_days day, std::uint64_t count) {
+        const year_month_day date{day};
+        std::ostringstream value;
+        value << std::setfill('0') << std::setw(4)
+              << static_cast<int>(date.year()) << '-' << std::setw(2)
+              << static_cast<unsigned>(date.month()) << '-' << std::setw(2)
+              << static_cast<unsigned>(date.day());
+        activity_site.requests_by_day.emplace(value.str(), count);
+    };
+    add_day(sys_days{2025y / October / 26}, 100);
+    add_day(sys_days{2025y / October / 27}, 1);
+    add_day(sys_days{2026y / April / 27}, 2);
+    add_day(today - days{89}, 3);
+    add_day(today - days{29}, 4);
+    add_day(today - days{6}, 5);
+    add_day(today - days{1}, 6);
+    add_day(today, 7);
+    activity_report.sites.emplace("activity.test", activity_site);
+    SiteStatistics other_activity_site;
+    other_activity_site.requests = 9;
+    other_activity_site.requests_by_day.emplace("2026-10-27", 9);
+    activity_report.sites.emplace("other.test", other_activity_site);
+    const std::map<std::string, std::uint64_t> recent_requests{
+        {"activity.test", 8}, {"other.test", 2}};
+    const RequestActivityTotals activity = calculate_request_activity_totals(
+        activity_report, now, recent_requests);
+    const RequestPeriodCounts activity_site_counts =
+        activity.by_site.at("activity.test");
+    require(activity_site_counts.one_year == 28,
+            "sum the site's trailing calendar year");
+    require(activity_site_counts.six_months == 27,
+            "sum the site's trailing calendar six months");
+    require(activity_site_counts.ninety_days == 25,
+            "sum the site's trailing 90 calendar days");
+    require(activity_site_counts.thirty_days == 22,
+            "sum the site's trailing 30 calendar days");
+    require(activity_site_counts.seven_days == 18,
+            "sum the site's trailing seven calendar days");
+    require(activity_site_counts.twenty_four_hours == 8,
+            "preserve the exact rolling 24-hour count");
+    require(activity_site_counts.today == 7,
+            "sum this site's requests since local midnight");
+    require(activity.by_site.at("other.test").today == 9 &&
+                activity.all_sites.today == 16 &&
+                activity.all_sites.twenty_four_hours == 10,
+            "keep request windows independent for each website");
 
     const auto live = report.sites.find("live.lakeheadschools.ca");
     require(live != report.sites.end(), "include live virtual host");

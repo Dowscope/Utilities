@@ -15,6 +15,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -78,10 +79,12 @@ private:
 struct SiteRow {
     std::string_view hostname;
     const SiteStatistics* statistics{};
+    std::optional<std::uint64_t> period_requests;
 };
 
 struct UiSnapshot {
     StatisticsReport report;
+    RequestActivityTotals activity_totals;
     std::string status_message;
 };
 
@@ -194,14 +197,56 @@ void draw_health_bar(int rows, int columns,
 
 enum class SiteSortColumn { hostname, requests, last_access };
 
+std::string_view request_period_label(RequestPeriod period) {
+    switch (period) {
+    case RequestPeriod::today: return "TODAY";
+    case RequestPeriod::one_year: return "1 YEAR";
+    case RequestPeriod::six_months: return "6 MONTHS";
+    case RequestPeriod::ninety_days: return "90 DAYS";
+    case RequestPeriod::thirty_days: return "30 DAYS";
+    case RequestPeriod::seven_days: return "7 DAYS";
+    case RequestPeriod::twenty_four_hours: return "24 HOURS";
+    }
+    return "TODAY";
+}
+
+RequestPeriod next_request_period(RequestPeriod period) {
+    switch (period) {
+    case RequestPeriod::today: return RequestPeriod::one_year;
+    case RequestPeriod::one_year: return RequestPeriod::six_months;
+    case RequestPeriod::six_months: return RequestPeriod::ninety_days;
+    case RequestPeriod::ninety_days: return RequestPeriod::thirty_days;
+    case RequestPeriod::thirty_days: return RequestPeriod::seven_days;
+    case RequestPeriod::seven_days: return RequestPeriod::twenty_four_hours;
+    case RequestPeriod::twenty_four_hours: return RequestPeriod::today;
+    }
+    return RequestPeriod::today;
+}
+
+std::optional<std::uint64_t> period_count(
+    const RequestPeriodCounts& counts, RequestPeriod period) {
+    switch (period) {
+    case RequestPeriod::today: return counts.today;
+    case RequestPeriod::one_year: return counts.one_year;
+    case RequestPeriod::six_months: return counts.six_months;
+    case RequestPeriod::ninety_days: return counts.ninety_days;
+    case RequestPeriod::thirty_days: return counts.thirty_days;
+    case RequestPeriod::seven_days: return counts.seven_days;
+    case RequestPeriod::twenty_four_hours: return counts.twenty_four_hours;
+    }
+    return std::nullopt;
+}
+
 int compare_site_field(const SiteRow& left, const SiteRow& right,
                        SiteSortColumn column) {
     switch (column) {
     case SiteSortColumn::hostname:
         return left.hostname.compare(right.hostname);
     case SiteSortColumn::requests:
-        if (left.statistics->requests < right.statistics->requests) return -1;
-        if (left.statistics->requests > right.statistics->requests) return 1;
+        if (left.period_requests.value_or(0) <
+            right.period_requests.value_or(0)) return -1;
+        if (left.period_requests.value_or(0) >
+            right.period_requests.value_or(0)) return 1;
         return 0;
     case SiteSortColumn::last_access:
         if (left.statistics->latest_access_utc <
@@ -217,13 +262,20 @@ int compare_site_field(const SiteRow& left, const SiteRow& right,
     return 0;
 }
 
-std::vector<SiteRow> sorted_sites(const StatisticsReport& report,
-                                 SiteSortColumn sort_column,
-                                 bool sort_ascending) {
+std::vector<SiteRow> sorted_sites(
+    const StatisticsReport& report,
+    const RequestActivityTotals& activity_totals,
+    RequestPeriod request_period, SiteSortColumn sort_column,
+    bool sort_ascending) {
     std::vector<SiteRow> sites;
     sites.reserve(report.sites.size());
     for (const auto& [hostname, statistics] : report.sites) {
-        sites.push_back({hostname, &statistics});
+        const auto site_totals = activity_totals.by_site.find(hostname);
+        const std::optional<std::uint64_t> period_requests =
+            site_totals == activity_totals.by_site.end()
+                ? std::nullopt
+                : period_count(site_totals->second, request_period);
+        sites.push_back({hostname, &statistics, period_requests});
     }
     std::sort(sites.begin(), sites.end(), [sort_column, sort_ascending](
                                                const SiteRow& left,
@@ -269,22 +321,36 @@ UiSnapshot build_ui_statistics(
             snapshot.report = read_stored_statistics(statistics_directory);
         }
     }
-    if (nginx_config.empty()) {
-        return snapshot;
+    if (!nginx_config.empty()) {
+        constexpr std::size_t max_ui_sites = 10000U;
+        for (const std::string& hostname :
+             discover_nginx_server_names(nginx_config)) {
+            if (snapshot.report.sites.contains(hostname)) {
+                continue;
+            }
+            if (snapshot.report.sites.size() >= max_ui_sites) {
+                throw std::runtime_error(
+                    "statistics limit exceeded: too many configured and observed websites");
+            }
+            snapshot.report.sites.emplace(hostname, SiteStatistics{});
+        }
     }
 
-    constexpr std::size_t max_ui_sites = 10000U;
-    for (const std::string& hostname :
-         discover_nginx_server_names(nginx_config)) {
-        if (snapshot.report.sites.contains(hostname)) {
-            continue;
+    const auto now = std::chrono::time_point_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now());
+    std::optional<std::map<std::string, std::uint64_t>>
+        twenty_four_hour_requests;
+    try {
+        twenty_four_hour_requests = count_requests_between(
+            statistics_directory, now - std::chrono::hours{24}, now);
+    } catch (const std::exception&) {
+        if (!snapshot.status_message.empty()) {
+            snapshot.status_message += "; ";
         }
-        if (snapshot.report.sites.size() >= max_ui_sites) {
-            throw std::runtime_error(
-                "statistics limit exceeded: too many configured and observed websites");
-        }
-        snapshot.report.sites.emplace(hostname, SiteStatistics{});
+        snapshot.status_message += "24-hour request total unavailable";
     }
+    snapshot.activity_totals = calculate_request_activity_totals(
+        snapshot.report, now, twenty_four_hour_requests);
     return snapshot;
 }
 
@@ -417,6 +483,8 @@ void configure_colors() {
 }
 
 void draw_screen(const StatisticsReport& report,
+                 const RequestActivityTotals& activity_totals,
+                 RequestPeriod request_period,
                  const std::filesystem::path& log_path, std::size_t selected,
                  SiteSortColumn sort_column, bool sort_ascending,
                  std::string_view status_message) {
@@ -434,7 +502,8 @@ void draw_screen(const StatisticsReport& report,
     }
 
     const std::vector<SiteRow> sites =
-        sorted_sites(report, sort_column, sort_ascending);
+        sorted_sites(report, activity_totals, request_period, sort_column,
+                     sort_ascending);
     const int content_width = columns - 2;
 
     attron(COLOR_PAIR(1) | A_BOLD);
@@ -462,36 +531,50 @@ void draw_screen(const StatisticsReport& report,
         total_requests += statistics.requests;
     }
     std::ostringstream summary;
-    summary << "Requests  " << total_requests
+    summary << "All-time requests  " << total_requests
             << "     Websites  " << report.sites.size()
             << "     Malformed lines  " << report.malformed_lines;
     attron(A_BOLD);
     write_at(3, 2, summary.str(), content_width);
     attroff(A_BOLD);
-    mvhline(4, 1, ACS_HLINE, content_width);
 
-    const int site_width = std::max(16, std::min(30, columns - 52));
+    const std::optional<std::uint64_t> period_total =
+        period_count(activity_totals.all_sites, request_period);
+    std::ostringstream period_summary;
+    period_summary << "Requests " << request_period_label(request_period) << "  ";
+    if (period_total) {
+        period_summary << *period_total;
+    } else {
+        period_summary << "n/a";
+    }
+    period_summary << "     Press p to change period";
+    write_at(4, 2, period_summary.str(), content_width);
+    const int separator_row = 5;
+    mvhline(separator_row, 1, ACS_HLINE, content_width);
+
+    const int site_width = std::max(16, std::min(30, columns - 62));
     const int requests_column = 2 + site_width + 2;
-    const int last_access_column = requests_column + 12;
+    const int last_access_column = requests_column + 20;
+    const int header_row = separator_row + 1;
     attron(A_BOLD);
-    write_at(5, 2, "WEBSITE" +
+    write_at(header_row, 2, "WEBSITE" +
                          sort_direction(SiteSortColumn::hostname, sort_column,
                                         sort_ascending),
              site_width);
-    write_at(5, requests_column, "REQUESTS" +
-                                      sort_direction(SiteSortColumn::requests,
-                                                     sort_column,
-                                                     sort_ascending),
-             10);
-    write_at(5, last_access_column,
+    write_at(header_row, requests_column,
+             "REQUESTS " + std::string{request_period_label(request_period)} +
+                 sort_direction(SiteSortColumn::requests, sort_column,
+                                sort_ascending),
+             18);
+    write_at(header_row, last_access_column,
              "LAST ACCESS (SERVER TIME)" +
                  sort_direction(SiteSortColumn::last_access, sort_column,
                                 sort_ascending),
              columns - last_access_column - 2);
     attroff(A_BOLD);
-    mvhline(6, 1, ACS_HLINE, content_width);
+    mvhline(header_row + 1, 1, ACS_HLINE, content_width);
 
-    const int first_site_row = 7;
+    const int first_site_row = header_row + 2;
     const int daily_header_row = rows - 6;
     const int visible_sites =
         std::max(0, daily_header_row - 1 - first_site_row);
@@ -515,8 +598,12 @@ void draw_screen(const StatisticsReport& report,
 
         write_at(row, 2, site.hostname, site_width);
         std::ostringstream requests;
-        requests << site.statistics->requests;
-        write_at(row, requests_column, requests.str(), 10);
+        if (site.period_requests) {
+            requests << *site.period_requests;
+        } else {
+            requests << "n/a";
+        }
+        write_at(row, requests_column, requests.str(), 18);
         const std::string last_access = site.statistics->requests == 0
                                             ? "Never"
                                             : format_timestamp_local(
@@ -561,9 +648,9 @@ void draw_screen(const StatisticsReport& report,
 
     mvhline(rows - 2, 0, ' ', columns);
     attron(COLOR_PAIR(1));
-    const std::string footer = columns >= 68
-        ? " Sort: 1-3 | Select: Up/Dn | Details: Enter | Refresh: r | Quit: q"
-        : "Sort:1-3 | Select:Up/Dn | Details:Enter | Refresh:r | Quit:q";
+    const std::string footer = columns >= 90
+        ? " Sort: 1-3 | Period: p | Select: Up/Dn | Details: Enter | Refresh: r | Quit: q"
+        : "Sort:1-3 | Period:p | Move:Up/Dn | Enter:open | r:refresh | q:quit";
     write_at(rows - 2, 1, footer, columns - 2);
     attroff(COLOR_PAIR(1));
     if (!status_message.empty()) {
@@ -983,6 +1070,7 @@ int run_terminal_ui(const std::filesystem::path& log_path,
                               std::chrono::seconds{2};
     std::size_t selected = 0;
     std::string status_message = std::move(snapshot.status_message);
+    RequestPeriod request_period = RequestPeriod::today;
     SiteSortColumn site_sort_column = SiteSortColumn::last_access;
     bool site_sort_ascending = false;
     bool history_mode = false;
@@ -997,8 +1085,8 @@ int run_terminal_ui(const std::filesystem::path& log_path,
 
     while (true) {
         const std::vector<SiteRow> sites =
-            sorted_sites(snapshot.report, site_sort_column,
-                         site_sort_ascending);
+            sorted_sites(snapshot.report, snapshot.activity_totals,
+                         request_period, site_sort_column, site_sort_ascending);
         if (sites.empty()) {
             selected = 0;
         } else if (selected >= sites.size()) {
@@ -1012,7 +1100,8 @@ int run_terminal_ui(const std::filesystem::path& log_path,
                                 request_selected, request_url_offset,
                                 status_message);
         } else {
-            draw_screen(snapshot.report, log_path, selected, site_sort_column,
+            draw_screen(snapshot.report, snapshot.activity_totals,
+                        request_period, log_path, selected, site_sort_column,
                         site_sort_ascending, status_message);
         }
         int rows = 0;
@@ -1128,7 +1217,11 @@ int run_terminal_ui(const std::filesystem::path& log_path,
             }
             continue;
         }
-        if (key == 'u' || key == 'U') {
+        if (key == 'p' || key == 'P') {
+            request_period = next_request_period(request_period);
+            status_message = "Showing requests for " +
+                std::string{request_period_label(request_period)};
+        } else if (key == 'u' || key == 'U') {
             status_message = update_from_ui(startup_arguments);
         } else if (key >= '1' && key <= '3') {
             const auto selected_column =

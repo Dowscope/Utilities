@@ -1,7 +1,8 @@
 # Subsite Monitor
 
-Current development version: **0.1.0-alpha.14**. The latest published release
-is **0.1.0-alpha.13**. Release binaries target x86_64 Linux on
+Current release candidate: **0.1.0-alpha.15**. The latest published release
+is **0.1.0-alpha.13**; the alpha.15 archive is built and ready to attach to a
+GitHub Release. Release binaries target x86_64 Linux on
 Debian, Ubuntu, and Arch, statically link ncursesw and the C++ runtime, and use
 host terminfo for the terminal UI.
 
@@ -43,10 +44,12 @@ The UI site table opens with most recently active sites first and supports
 sorting by website, request count, or last access with keys `1`–`3`; repeat the
 active key to reverse the direction. The UI command bars use grouped
 `Action: key | Action: key` hints; update availability appears in the lower
-right only when a newer compatible release is found. A bottom status bar shows
-that the UI is running and whether the monitor service lock is active. The
-alpha.14 status-bar change is packaged and verified; see `packaging/README.md`
-for its archive checksum and release upload instructions.
+right only when a newer compatible release is found. The bottom status bar
+shows whether the UI is running and the monitor service state. The main screen
+shows a per-site request count for the selected period, starting with today.
+Press `p` to cycle through 1 year, 6 months, 90 days, 30 days, 7 days, and the
+last 24 hours. Press `r` to refresh counts. See `packaging/README.md` for
+release archive details.
 The running version appears in the UI header, and the overview links to
 [GitHub Issues](https://github.com/Dowscope/Utilities/issues).
 See `packaging/README.md` for alpha build and release steps.
@@ -121,8 +124,8 @@ to `subsite-monitor`, allowing CLI commands or a different log path.
 ## Alpha installer
 
 The installer and release build instructions are in `installer.sh` and
-`packaging/README.md`. Alpha.13 is the latest published binary; the alpha.14
-archive and checksum will be built for its GitHub Release. Release
+`packaging/README.md`. Alpha.13 is the latest published binary; alpha.15 is
+prepared for upload. Release
 binaries target Debian, Ubuntu, and Arch on x86_64.
 The installer seeds the root-only monitor config and installs a host-aware
 snippet at `/etc/nginx/conf.d/subsite-monitor.conf`, a logrotate policy, and the

@@ -1,9 +1,9 @@
 # Alpha Release Packaging
 
-The development target is **0.1.0-alpha.14**. Alpha.13 is the latest
-published binary release. Alpha.14 adds a bottom status bar for the UI and the
-monitoring service. Its x86_64 release archive and checksum have been built and
-verified.
+The development target is **0.1.0-alpha.15**. Alpha.13 is the latest
+published binary release. The alpha.15 release candidate adds per-site request
+counts for a selected time period. Its x86_64 archive is built and
+checksum-verified; the release has not yet been published.
 
 ## Build the release package
 
@@ -22,17 +22,14 @@ tradeoffs; test on each target distribution before production use.
 
 The build produces:
 
-- `packaging/dist/subsite-monitor-0.1.0-alpha.14-linux-x86_64-gnu.tar.gz`
+- `packaging/dist/subsite-monitor-0.1.0-alpha.15-linux-x86_64-gnu.tar.gz`
 - `packaging/dist/SHA256SUMS`
 - checksum-pinned `installer.sh` and compatibility `install.sh`
 
-The alpha.14 archive checksum is recorded in `packaging/dist/SHA256SUMS`. The
-status bar reports the UI as running and checks whether the monitor service
-holds its exclusive lock every two seconds. It shows `ACTIVE`, `STOPPED`, or
-`UNKNOWN`; an active lock confirms ownership but does not prove that requests
-are arriving or that the service is making progress.
-The archive SHA-256 is
-`9229f199e9d74878d211f1e9d1c3659b56dabbcee4cf7dc1cdd1ae285fe06f8f`.
+Alpha.15's archive checksum is recorded in `packaging/dist/SHA256SUMS`:
+`36ff0a5b064606188c4a56f48b112c005ff6a19cc0b6d3168387dd2a232837b7`. The
+site table defaults to today; `p` cycles the per-site counts through calendar
+windows and an exact rolling 24-hour count.
 
 The archive contains the executable, README, user manual, example configs,
 Nginx log-format snippet, logrotate policy, and systemd unit. The installer
@@ -45,7 +42,7 @@ the main Nginx config or starts an inactive Nginx service.
 For local testing before publication, pass the archive directly:
 
 ```sh
-sudo env SUBSITE_MONITOR_ARCHIVE="$PWD/packaging/dist/subsite-monitor-0.1.0-alpha.14-linux-x86_64-gnu.tar.gz" ./installer.sh
+sudo env SUBSITE_MONITOR_ARCHIVE="$PWD/packaging/dist/subsite-monitor-0.1.0-alpha.15-linux-x86_64-gnu.tar.gz" ./installer.sh
 ```
 
 The installer still checks the archive's embedded checksum. Set
@@ -54,26 +51,24 @@ fresh installation; existing custom configuration is retained.
 
 ## Publish the release
 
-Create tag `v0.1.0-alpha.14` and a GitHub Release with this title:
+Create tag `v0.1.0-alpha.15` and a GitHub Release with this title:
 
-> Subsite Monitor 0.1.0-alpha.14 — UI and Monitor Health Status
+> Subsite Monitor 0.1.0-alpha.15 — Request Activity Time Ranges
 
 Release notes:
 
-> - Added a bottom status bar showing that the UI is running and the monitor
->   service state.
-> - The monitor service status refreshes every two seconds and shows active,
->   stopped, or unknown based on its exclusive service lock.
-> - The updater preserves the original UI arguments. Users updating directly
->   from alpha.12 must close and reopen the UI once; alpha.12 cannot run the
->   automatic restart behavior introduced in alpha.13.
+> - Added per-site request counts for a selectable period, defaulting to today.
+> - Press `p` to cycle through 1 year, 6 months, 90 days, 30 days, 7 days,
+>   and an exact rolling 24 hours; sorting follows the selected period.
+> - Press `r` to refresh the per-site counts.
+> - The UI status bar reports whether the monitor service lock is active.
 > - Release binaries target x86_64 Linux and use host terminfo.
 
-Attach the matching alpha.14 archive and `SHA256SUMS` from `packaging/dist/`.
-The generated installer is pinned to this archive and will not offer alpha.14
+Attach the matching alpha.15 archive and `SHA256SUMS` from `packaging/dist/`.
+The generated installer is pinned to this archive and will not offer alpha.15
 as an installable update until both assets are attached to the GitHub Release.
 
-The tracked installer URL is
+After the source commit is pushed, the tracked installer URL is
 `https://raw.githubusercontent.com/Dowscope/Utilities/main/Linux/SubsiteMonitor/installer.sh`.
 It reflects this source update after the commit is pushed. No server deployment
 is performed by the packaging step.

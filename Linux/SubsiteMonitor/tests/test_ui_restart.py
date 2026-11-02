@@ -14,7 +14,7 @@ import time
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.1.0-alpha.14"
+VERSION = "0.1.0-alpha.15"
 
 
 def compile_test_application(binary: Path, bindir: Path, datadir: Path) -> None:
@@ -83,8 +83,8 @@ def main() -> None:
         write_executable(
             mock_bin / "python3",
             "#!/bin/sh\n"
-            "printf '0.1.0-alpha.15\\t2026-10-30\\t"
-            "U3Vic2l0ZSBNb25pdG9yIGFscGhhLjE1\\tTm90ZXM=\\n'\n",
+            "printf '0.1.0-alpha.16\\t2026-10-30\\t"
+            "U3Vic2l0ZSBNb25pdG9yIGFscGhhLjE2\\tTm90ZXM=\\n'\n",
         )
 
         process_id, terminal = pty.fork()

@@ -1276,6 +1276,46 @@ StatisticsReport read_stored_statistics(const std::filesystem::path& directory,
     return report;
 }
 
+std::map<std::string, std::uint64_t> count_requests_between(
+    const std::filesystem::path& directory, std::chrono::sys_seconds begin,
+    std::chrono::sys_seconds end) {
+    if (end < begin) {
+        throw std::runtime_error("request count range ends before it begins");
+    }
+    if (!private_existing_directory(directory)) {
+        return {};
+    }
+
+    const std::string local_begin = format_timestamp_local(begin).substr(0, 10);
+    const std::string local_end = format_timestamp_local(end).substr(0, 10);
+    if (local_begin.size() != 10U || local_end.size() != 10U) {
+        throw std::runtime_error("cannot determine local date for request range");
+    }
+
+    StoreLock lock{directory, LOCK_SH};
+    std::map<std::string, std::uint64_t> totals;
+    for (const std::string& date : list_request_dates(directory)) {
+        if (date < local_begin || date > local_end) {
+            continue;
+        }
+        const std::filesystem::path path =
+            directory / ("requests-" + date + ".csv");
+        scan_request_file(path, date, std::nullopt,
+                          [&totals, begin, end](RequestRecord record) {
+            if (record.timestamp_utc >= begin && record.timestamp_utc < end) {
+                auto [site, inserted] = totals.try_emplace(record.hostname, 0);
+                (void)inserted;
+                if (site->second == std::numeric_limits<std::uint64_t>::max()) {
+                    throw std::runtime_error("request count exceeds supported limits");
+                }
+                ++site->second;
+            }
+            return true;
+        });
+    }
+    return totals;
+}
+
 std::vector<SiteDayHistory> read_site_history(
     const std::filesystem::path& directory, const std::string& hostname,
     std::size_t days) {

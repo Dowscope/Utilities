@@ -61,6 +61,7 @@ unsigned mode_of(const std::filesystem::path& path) {
 } // namespace
 
 int main() {
+    using namespace std::chrono;
     TemporaryDirectory temporary;
     const std::filesystem::path store = temporary.path() / "stats";
 
@@ -81,6 +82,18 @@ int main() {
     require(loaded.sites.size() == 2, "load both websites from daily CSV files");
     require(loaded.malformed_lines == 0,
             "CSV storage contains valid statistics only");
+    const auto interval_begin = std::chrono::sys_seconds{
+        std::chrono::sys_days{2026y / October / 26} +
+        std::chrono::hours{14}};
+    const auto interval_end = std::chrono::sys_seconds{
+        std::chrono::sys_days{2026y / October / 27} +
+        std::chrono::hours{15}};
+    const auto recent_counts = subsite_monitor::count_requests_between(
+        store, interval_begin, interval_end);
+    require(recent_counts.size() == 2 &&
+                recent_counts.at("live.lakeheadschools.ca") == 3 &&
+                recent_counts.at("test.lakeheadschools.ca") == 1,
+            "count request events by site in the exact half-open interval");
     const auto live = loaded.sites.find("live.lakeheadschools.ca");
     require(live != loaded.sites.end() && live->second.requests == 4,
             "repeated collection replaces snapshots without double counting");

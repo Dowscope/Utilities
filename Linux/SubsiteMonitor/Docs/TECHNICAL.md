@@ -57,7 +57,7 @@ unavailable. Existing snippets and logrotate files are preserved.
 ## CLI and process behavior
 
 - `--help` and `-h`: print usage and return 0.
-- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.14` and return 0.
+- `--version` and `-V`: print `subsite-monitor 0.1.0-alpha.15` and return 0.
 - `collect --log <path> [--stats-dir <path>]`: scan a supported access log,
   report valid/malformed counts, and replace daily CSV snapshots.
 - `stats [--days N] [--stats-dir <path>]`: read stored daily CSVs; `--days`
@@ -266,10 +266,17 @@ collector's exclusive service lock every two seconds. A held lock is shown as
 active, an available lock as stopped, and lock inspection errors as unknown.
 This verifies that the collector process owns its lock; it does not measure
 request freshness or prove the process is making progress.
+Per-site period counts use daily CSV snapshots for 1Y, 6M, 90D, 30D, 7D, and
+TODAY. `p` cycles the displayed period; request-count sorting follows the active
+period. The 24H period streams only request CSV files overlapping the half-open
+rolling interval and aggregates records by hostname using their UTC timestamps.
+This avoids loading event data into memory. The totals and per-site values are
+recomputed on startup and with `r`.
 
 Last reviewed: 2026-11-02. This reference describes the CLI, TUI, root-only
-log config, CSV storage, checkpointed service, Nginx integration, and alpha.14
-development source. Alpha.13 is the latest published package.
+log config, CSV storage, checkpointed service, Nginx integration, and alpha.15
+release candidate. Alpha.13 is the latest published package; alpha.15's
+archive is prepared for upload.
 
 
 ## Docker Nginx development fixture

@@ -17,7 +17,7 @@ grep -q 'stats \[--days <count>\]' "$tmp_dir/help.txt"
 grep -q 'ui --log <path>' "$tmp_dir/help.txt"
 grep -q 'https://github.com/Dowscope/Utilities/issues' "$tmp_dir/help.txt"
 
-[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.14' ]
+[ "$("$program" --version)" = 'subsite-monitor 0.1.0-alpha.15' ]
 
 if "$program" --unknown >"$tmp_dir/out.txt" 2>"$tmp_dir/error.txt"; then
     echo 'expected an unknown option to fail' >&2
@@ -51,15 +51,18 @@ grep -q 'ui requires an interactive terminal' "$tmp_dir/error.txt"
 if command -v script >/dev/null 2>&1; then
     printf 'q' | TERM=xterm \
         SUBSITE_MONITOR_LOG="$tmp_dir/missing-access.log" \
+        SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-missing-stats" \
         SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-missing-log.txt"
     grep -q 'alpha.example.test' "$tmp_dir/ui-missing-log.txt"
-    grep -q 'v0.1.0-alpha.14' "$tmp_dir/ui-missing-log.txt"
+    grep -q 'v0.1.0-alpha.15' "$tmp_dir/ui-missing-log.txt"
     grep -q 'https://github.com/Dowscope/Utilities/issues' \
         "$tmp_dir/ui-missing-log.txt"
     grep -q 'Access log unavailable; showing configured sites only.' \
         "$tmp_dir/ui-missing-log.txt"
-    grep -q 'Sort: 1-3.*Select: Up/Dn.*Details: Enter.*Refresh: r.*Quit: q' \
+    grep -q 'Requests TODAY[[:space:]]*0' "$tmp_dir/ui-missing-log.txt"
+    grep -q 'REQUESTS TODAY' "$tmp_dir/ui-missing-log.txt"
+    grep -q 'Sort:1-3.*Period:p.*Move:Up/Dn' \
         "$tmp_dir/ui-missing-log.txt"
     grep -q 'LAST ACCESS' "$tmp_dir/ui-missing-log.txt"
     if grep -q 'u Update' "$tmp_dir/ui-missing-log.txt"; then
@@ -67,10 +70,16 @@ if command -v script >/dev/null 2>&1; then
         exit 1
     fi
 
+    printf 'pq' | TERM=xterm \
+        SUBSITE_MONITOR_LOG=tests/fixtures/access.log \
+        SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-period-stats" \
+        script -q -e -c "$program" /dev/null >"$tmp_dir/ui-period.txt"
+    grep -q 'Showing requests for 1 YEAR' "$tmp_dir/ui-period.txt"
+
     mkdir -p "$tmp_dir/mock-bin"
     cat >"$tmp_dir/mock-bin/python3" <<'MOCK_PYTHON'
 #!/bin/sh
-printf '0.1.0-alpha.15\t2026-10-30\tU3Vic2l0ZSBNb25pdG9yIGFscGhhLjE1\tUmVwYWlyZWQgYnVncyBhbmQgaW1wcm92ZWQgdXBkYXRlciBzYWZldHku\n'
+printf '0.1.0-alpha.16\t2026-10-30\tU3Vic2l0ZSBNb25pdG9yIGFscGhhLjE2\tUmVwYWlyZWQgYnVncyBhbmQgaW1wcm92ZWQgdXBkYXRlciBzYWZldHku\n'
 MOCK_PYTHON
     chmod 0755 "$tmp_dir/mock-bin/python3"
     { sleep 1; printf 'q'; } | TERM=xterm PATH="$tmp_dir/mock-bin:$PATH" \
@@ -78,14 +87,14 @@ MOCK_PYTHON
         SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
         SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-badge-stats" \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-badge.txt"
-    grep -q 'Update 0.1.0-alpha.15 (u)' "$tmp_dir/ui-badge.txt"
+    grep -q 'Update 0.1.0-alpha.16 (u)' "$tmp_dir/ui-badge.txt"
 
     printf 'u\nnqq' | TERM=xterm PATH="$tmp_dir/mock-bin:$PATH" \
         SUBSITE_MONITOR_LOG=tests/fixtures/access.log \
         SUBSITE_MONITOR_NGINX_CONFIG=tests/fixtures/nginx/nginx.conf \
         SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-updater-stats" \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-updater.txt"
-    grep -q 'alpha.15' "$tmp_dir/ui-updater.txt"
+    grep -q 'alpha.16' "$tmp_dir/ui-updater.txt"
     grep -q 'Repair' "$tmp_dir/ui-updater.txt"
     grep -q 'CONFIRM' "$tmp_dir/ui-updater.txt"
 
@@ -111,18 +120,14 @@ MOCK_NO_UPDATE
         SUBSITE_MONITOR_STATS_DIR="$tmp_dir/ui-stats" \
         script -q -e -c "$program" /dev/null >"$tmp_dir/ui-history.txt"
     grep -q 'HISTORY' "$tmp_dir/ui-history.txt"
-    grep -q 'v0.1.0-alpha.14' "$tmp_dir/ui-history.txt"
+    grep -q 'v0.1.0-alpha.15' "$tmp_dir/ui-history.txt"
     grep -q 'TIME' "$tmp_dir/ui-history.txt"
-    grep -Eq 'Sort: ?1-4' "$tmp_dir/ui-history.txt"
+    grep -q '4 | Rows:Up/Dn' "$tmp_dir/ui-history.txt"
     grep -Eq 'Rows: ?Up/Dn' "$tmp_dir/ui-history.txt"
     grep -Eq 'Pages?: ?PgUp/Dn' "$tmp_dir/ui-history.txt"
     grep -Eq 'URL: ?L/R' "$tmp_dir/ui-history.txt"
     grep -Eq 'Back: ?Esc' "$tmp_dir/ui-history.txt"
-    newest_site_position=$(grep -abo 'live.lakeheadschools.ca' \
-        "$tmp_dir/ui-history.txt" | head -n 1 | cut -d: -f1)
-    older_site_position=$(grep -abo 'test.lakeheadschools.ca' \
-        "$tmp_dir/ui-history.txt" | head -n 1 | cut -d: -f1)
-    [ "$newest_site_position" -lt "$older_site_position" ]
+    grep -q 'Requests 1-4 of 4 (newest first)' "$tmp_dir/ui-history.txt"
     newest_position=$(grep -abo '/health' "$tmp_dir/ui-history.txt" |
         head -n 1 | cut -d: -f1)
     older_position=$(grep -abo '/check' "$tmp_dir/ui-history.txt" |
